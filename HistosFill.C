@@ -2673,7 +2673,7 @@ void HistosFill::InitAll(string name) {
 
   TDirectory *curdir = gDirectory;
   TFile *f = _outfile;
-  assert(f && !f->IsZombie());
+  assert(f and !f->IsZombie());
   f->mkdir(name.c_str());
   bool enteroutdir = f->cd(name.c_str());
   assert(enteroutdir);
@@ -2698,132 +2698,164 @@ void HistosFill::FillAll(string name)
   assert(h);
 
   if (_pass_qcdmet and njt>1 and _jetids[0]) {
-
     // Tag & probes method
     // We do implicit binning or histogramming by tag pt, so no need to look at firing triggers.
     double pttag = jtpt[0];
     double etatag = jteta[0];
-    if (fabs(etatag)<1.3 and pttag>jp::wwptrange[0]) {
+    //if (fabs(etatag)<1.3 and pttag>jp::wwptrange[0]) {
+    if (fabs(etatag)<1.3 and pttag>30) {
       // We cannot use the indices i0, i1 and i2 here due to general mapping issues #SAD
       // That is, even if the ordering of jets might be different in the original scheme (0,1,2,...),
       // the final scheme (i1,i2,i3) and the nol2l3 scheme, the most straightforward method (and a
       // good approximation) is to assume that the original ordering is conserved.
-      int ptbin = -1;
-      for (unsigned ptloc = 0; ptloc < jp::nwwpts; ++ptloc) {
-        if (pttag < jp::wwptrange[ptloc+1]) {
-          ptbin = ptloc;
-          break;
-        }
+
+      double pxtag = pttag*TMath::Cos(jtphi[0]);
+      double pytag = pttag*TMath::Cos(jtphi[0]);
+
+      unsigned ntot = (h->mNPts)*(h->mNEtas);
+      vector<double> tmpVec(ntot,0.0);
+      double collector = -1.0;
+      for (int jidx = 1; jidx < njt; ++jidx) {
+        // Only take the good jets.
+        if (!_jetids[jidx]) continue;
+        double ptj = jtpt[jidx];
+        double pxj = ptj*TMath::Cos(jtphi[jidx]);
+        double pyj = ptj*TMath::Cos(jtphi[jidx]);
+        double proj = (pxtag*pxj+pytag*pyj)/(pttag*pttag);
+
+        collector -= proj;
+        int pbin = h->PhaseBin(ptj,jteta[jidx]);
+        if (pbin>=0) tmpVec[pbin] += proj;
       }
-      // We want to be inside a supported bin and we check the quality of the four leading jets
-      if (ptbin>0 and (njt<2 or _jetids[1]) and (njt<3 or _jetids[2]) and (njt<4 or _jetids[3]) and (njt<5 or _jetids[4])) {
-        // This code sector is separated from standard weighting strategies: for data, no weight is applied
-        double wt = 1.0;
-        if (!jp::isdt) wt = _w;
-
-        // Let's create a universal tag unit vector
-        double ju_px = cos(jtphi[0]);
-        double ju_py = sin(jtphi[0]);
-
-        // Let's fill MET histos and pttag histos
-        double pttag_nol2l3 = jtpt_nol2l3[0];
-        double projmet = ju_px * cos(metphi1) + ju_py * sin(metphi1);
-        double projmet_nol2l3 = ju_px * cos(metphi1_nol2l3) + ju_py * sin(metphi1_nol2l3);
-        h->pmetave         ->Fill(pttag,       projmet       *met1,       wt);
-        h->pmetave_nol2l3  ->Fill(pttag_nol2l3,projmet_nol2l3*met1_nol2l3,wt);
-        h->ppttagave       ->Fill(pttag,       pttag,                     wt);
-        h->ppttagave_nol2l3->Fill(pttag_nol2l3,pttag_nol2l3,              wt);
-
-        // First jet
-        int pidx = 1;
-        if (pidx<njt and jtpt[pidx]>jp::recopt) {
-          double proj1 = ju_px*cos(jtphi[pidx]) + ju_py*sin(jtphi[pidx]);
-          double etaj1       = jteta      [pidx];
-          double ptj1        = jtpt       [pidx];
-          double ptj1_nol2l3 = jtpt_nol2l3[pidx];
-          h->h2njet1        [ptbin]->Fill(ptj1,       etaj1,                  wt);
-          h->h2njet1_nol2l3 [ptbin]->Fill(ptj1_nol2l3,etaj1,                  wt);
-          h->p2ptjet1       [ptbin]->Fill(ptj1,       etaj1,proj1*ptj1,       wt);
-          h->p2ptjet1_nol2l3[ptbin]->Fill(ptj1_nol2l3,etaj1,proj1*ptj1_nol2l3,wt);
-        }
-        // Second jet
-        pidx = 2;
-        if (pidx<njt and jtpt[pidx]>jp::recopt) {
-          double proj2 = ju_px*cos(jtphi[pidx]) + ju_py*sin(jtphi[pidx]);
-          double etaj2       = jteta      [pidx];
-          double ptj2        = jtpt       [pidx];
-          double ptj2_nol2l3 = jtpt_nol2l3[pidx];
-          h->h2njet2        [ptbin]->Fill(ptj2,       etaj2,                  wt);
-          h->h2njet2_nol2l3 [ptbin]->Fill(ptj2_nol2l3,etaj2,                  wt);
-          h->p2ptjet2       [ptbin]->Fill(ptj2,       etaj2,proj2*ptj2,       wt);
-          h->p2ptjet2_nol2l3[ptbin]->Fill(ptj2_nol2l3,etaj2,proj2*ptj2_nol2l3,wt);
-        }
-        // Third jet
-        pidx = 3;
-        if (pidx<njt and jtpt[pidx]>jp::recopt) {
-          double proj3 = ju_px*cos(jtphi[pidx]) + ju_py*sin(jtphi[pidx]);
-          double etaj3       = jteta      [pidx];
-          double ptj3        = jtpt       [pidx];
-          double ptj3_nol2l3 = jtpt_nol2l3[pidx];
-          h->h2njet3        [ptbin]->Fill(ptj3,       etaj3,                  wt);
-          h->h2njet3_nol2l3 [ptbin]->Fill(ptj3_nol2l3,etaj3,                  wt);
-          h->p2ptjet3       [ptbin]->Fill(ptj3,       etaj3,proj3*ptj3,       wt);
-          h->p2ptjet3_nol2l3[ptbin]->Fill(ptj3_nol2l3,etaj3,proj3*ptj3_nol2l3,wt);
-        }
-        // Fourth jet & friends
-        pidx = 4;
-        if (pidx<njt and jtpt[pidx]>jp::recopt) {
-          // First, we seek for the jet<->bin connections
-          map<int,int> jet2bin;
-          map<int,int> jet2bin_nol2l3;
-          for (int jidx = 4; jidx < njt; ++jidx) {
-            jet2bin       [jidx] = h->h2njet4plus[ptbin]->FindBin(jtpt       [jidx],jteta[jidx]);
-            jet2bin_nol2l3[jidx] = h->h2njet4plus[ptbin]->FindBin(jtpt_nol2l3[jidx],jteta[jidx]);
+      (*(h->mSingle))[0][0] += 1.0;
+      (*(h->mSingle))[0][1] += collector;
+      for (unsigned i = 0; i < ntot; ++i) {
+          double tval = tmpVec[i];
+          (*(h->mColumn))[i][0] += tval;
+          (*(h->mColumn))[i][1] += tval*collector;
+          (*(h->mSquare))[i][i] += tval*tval;
+          for (unsigned j = i+1; j < ntot; ++j) {
+              double tval2 = tval*tmpVec[j];
+              (*(h->mSquare))[i][j] += tval2;
+              (*(h->mSquare))[j][i] += tval2;
           }
-          // Loop over the remaining jets (we do not consider jetids here).
-          // For each jet, we fill the bin that corresponds to it with a sum over the jets within that bin.
-          for (pidx = 4; pidx < njt; ++pidx) {
-            int assoc        = jet2bin       [pidx];
-            int assoc_nol2l3 = jet2bin_nol2l3[pidx];
-            // This is an indicator that this jet has already been considered
-            if (assoc==-1 and assoc_nol2l3==-1) continue;
-
-            double cumul        = 0;
-            double cumul_nol2l3 = 0;
-            // We loop over jets, including the current jet, and take the cumulative sum corresponding to the bin of this jet
-            // A jet already considered is marked with the tag '-1'
-            for (int jidx = pidx; jidx < njt; ++jidx) {
-              bool match        = (assoc == jet2bin[jidx]);
-              bool match_nol2l3 = (assoc_nol2l3 == jet2bin_nol2l3[jidx]);
-              if (match or match_nol2l3) {
-                double proj4p = ju_px*cos(jtphi[jidx]) + ju_py*sin(jtphi[jidx]);
-                if (match) {
-                  cumul        += proj4p*jtpt       [jidx];
-                  jet2bin       [jidx] = -1;
-                }
-                if (match_nol2l3) {
-                  cumul_nol2l3 += proj4p*jtpt_nol2l3[jidx];
-                  jet2bin_nol2l3[jidx] = -1;
-                }
-              }
-            }
-            double etaj4 = jteta[pidx];
-            if (assoc!=-1) {
-              double ptj4 = jtpt[pidx];
-              h->h2njet4plus [ptbin]->Fill(ptj4,etaj4,      wt);
-              h->p2ptjet4plus[ptbin]->Fill(ptj4,etaj4,cumul,wt);
-            }
-            if (assoc_nol2l3!=-1) {
-              double ptj4_nol2l3 = jtpt_nol2l3[pidx];
-              h->h2njet4plus_nol2l3 [ptbin]->Fill(ptj4_nol2l3,etaj4,             wt);
-              h->p2ptjet4plus_nol2l3[ptbin]->Fill(ptj4_nol2l3,etaj4,cumul_nol2l3,wt);
-            }
-          } // 4th jet & friends jet loop
-        } // 4th jet & friends
       }
-    }
-  }
 
+      //int ptbin = -1;
+      //for (unsigned ptloc = 0; ptloc < jp::nwwpts; ++ptloc) {
+      //  if (pttag < jp::wwptrange[ptloc+1]) {
+      //    ptbin = ptloc;
+      //    break;
+      //  }
+      //}
+      //// We want to be inside a supported bin and we check the quality of the four leading jets
+      //if (ptbin>0 and (njt<2 or _jetids[1]) and (njt<3 or _jetids[2]) and (njt<4 or _jetids[3]) and (njt<5 or _jetids[4])) {
+      //  // This code sector is separated from standard weighting strategies: for data, no weight is applied
+      //  double wt = 1.0;
+      //  if (!jp::isdt) wt = _w;
+
+      //  // Let's create a universal tag unit vector
+      //  double ju_px = cos(jtphi[0]);
+      //  double ju_py = sin(jtphi[0]);
+
+      //  // Let's fill MET histos and pttag histos
+      //  double pttag_nol2l3 = jtpt_nol2l3[0];
+      //  double projmet = ju_px * cos(metphi1) + ju_py * sin(metphi1);
+      //  double projmet_nol2l3 = ju_px * cos(metphi1_nol2l3) + ju_py * sin(metphi1_nol2l3);
+      //  h->pmetave         ->Fill(pttag,       projmet       *met1,       wt);
+      //  h->pmetave_nol2l3  ->Fill(pttag_nol2l3,projmet_nol2l3*met1_nol2l3,wt);
+      //  h->ppttagave       ->Fill(pttag,       pttag,                     wt);
+      //  h->ppttagave_nol2l3->Fill(pttag_nol2l3,pttag_nol2l3,              wt);
+
+      //  // First jet
+      //  int pidx = 1;
+      //  if (pidx<njt and jtpt[pidx]>jp::recopt) {
+      //    double proj1 = ju_px*cos(jtphi[pidx]) + ju_py*sin(jtphi[pidx]);
+      //    double etaj1       = jteta      [pidx];
+      //    double ptj1        = jtpt       [pidx];
+      //    double ptj1_nol2l3 = jtpt_nol2l3[pidx];
+      //    h->h2njet1        [ptbin]->Fill(ptj1,       etaj1,                  wt);
+      //    h->h2njet1_nol2l3 [ptbin]->Fill(ptj1_nol2l3,etaj1,                  wt);
+      //    h->p2ptjet1       [ptbin]->Fill(ptj1,       etaj1,proj1*ptj1,       wt);
+      //    h->p2ptjet1_nol2l3[ptbin]->Fill(ptj1_nol2l3,etaj1,proj1*ptj1_nol2l3,wt);
+      //  }
+      //  // Second jet
+      //  pidx = 2;
+      //  if (pidx<njt and jtpt[pidx]>jp::recopt) {
+      //    double proj2 = ju_px*cos(jtphi[pidx]) + ju_py*sin(jtphi[pidx]);
+      //    double etaj2       = jteta      [pidx];
+      //    double ptj2        = jtpt       [pidx];
+      //    double ptj2_nol2l3 = jtpt_nol2l3[pidx];
+      //    h->h2njet2        [ptbin]->Fill(ptj2,       etaj2,                  wt);
+      //    h->h2njet2_nol2l3 [ptbin]->Fill(ptj2_nol2l3,etaj2,                  wt);
+      //    h->p2ptjet2       [ptbin]->Fill(ptj2,       etaj2,proj2*ptj2,       wt);
+      //    h->p2ptjet2_nol2l3[ptbin]->Fill(ptj2_nol2l3,etaj2,proj2*ptj2_nol2l3,wt);
+      //  }
+      //  // Third jet
+      //  pidx = 3;
+      //  if (pidx<njt and jtpt[pidx]>jp::recopt) {
+      //    double proj3 = ju_px*cos(jtphi[pidx]) + ju_py*sin(jtphi[pidx]);
+      //    double etaj3       = jteta      [pidx];
+      //    double ptj3        = jtpt       [pidx];
+      //    double ptj3_nol2l3 = jtpt_nol2l3[pidx];
+      //    h->h2njet3        [ptbin]->Fill(ptj3,       etaj3,                  wt);
+      //    h->h2njet3_nol2l3 [ptbin]->Fill(ptj3_nol2l3,etaj3,                  wt);
+      //    h->p2ptjet3       [ptbin]->Fill(ptj3,       etaj3,proj3*ptj3,       wt);
+      //    h->p2ptjet3_nol2l3[ptbin]->Fill(ptj3_nol2l3,etaj3,proj3*ptj3_nol2l3,wt);
+      //  }
+      //  // Fourth jet & friends
+      //  pidx = 4;
+      //  if (pidx<njt and jtpt[pidx]>jp::recopt) {
+      //    // First, we seek for the jet<->bin connections
+      //    map<int,int> jet2bin;
+      //    map<int,int> jet2bin_nol2l3;
+      //    for (int jidx = 4; jidx < njt; ++jidx) {
+      //      jet2bin       [jidx] = h->h2njet4plus[ptbin]->FindBin(jtpt       [jidx],jteta[jidx]);
+      //      jet2bin_nol2l3[jidx] = h->h2njet4plus[ptbin]->FindBin(jtpt_nol2l3[jidx],jteta[jidx]);
+      //    }
+      //    // Loop over the remaining jets (we do not consider jetids here).
+      //    // For each jet, we fill the bin that corresponds to it with a sum over the jets within that bin.
+      //    for (pidx = 4; pidx < njt; ++pidx) {
+      //      int assoc        = jet2bin       [pidx];
+      //      int assoc_nol2l3 = jet2bin_nol2l3[pidx];
+      //      // This is an indicator that this jet has already been considered
+      //      if (assoc==-1 and assoc_nol2l3==-1) continue;
+
+      //      double cumul        = 0;
+      //      double cumul_nol2l3 = 0;
+      //      // We loop over jets, including the current jet, and take the cumulative sum corresponding to the bin of this jet
+      //      // A jet already considered is marked with the tag '-1'
+      //      for (int jidx = pidx; jidx < njt; ++jidx) {
+      //        bool match        = (assoc == jet2bin[jidx]);
+      //        bool match_nol2l3 = (assoc_nol2l3 == jet2bin_nol2l3[jidx]);
+      //        if (match or match_nol2l3) {
+      //          double proj4p = ju_px*cos(jtphi[jidx]) + ju_py*sin(jtphi[jidx]);
+      //          if (match) {
+      //            cumul        += proj4p*jtpt       [jidx];
+      //            jet2bin       [jidx] = -1;
+      //          }
+      //          if (match_nol2l3) {
+      //            cumul_nol2l3 += proj4p*jtpt_nol2l3[jidx];
+      //            jet2bin_nol2l3[jidx] = -1;
+      //          }
+      //        }
+      //      }
+      //      double etaj4 = jteta[pidx];
+      //      if (assoc!=-1) {
+      //        double ptj4 = jtpt[pidx];
+      //        h->h2njet4plus [ptbin]->Fill(ptj4,etaj4,      wt);
+      //        h->p2ptjet4plus[ptbin]->Fill(ptj4,etaj4,cumul,wt);
+      //      }
+      //      if (assoc_nol2l3!=-1) {
+      //        double ptj4_nol2l3 = jtpt_nol2l3[pidx];
+      //        h->h2njet4plus_nol2l3 [ptbin]->Fill(ptj4_nol2l3,etaj4,             wt);
+      //        h->p2ptjet4plus_nol2l3[ptbin]->Fill(ptj4_nol2l3,etaj4,cumul_nol2l3,wt);
+      //      }
+      //    } // 4th jet & friends jet loop
+      //  } // 4th jet & friends
+      //}
+    } // Tag within barrel and the pt range
+  } // Basic sanity checks
 } // FillAll
 
 
@@ -2839,43 +2871,43 @@ void HistosFill::WriteAll()
     dir->cd();
     HistosAll *h = hh.second;
     // We create correctly scaled end user histograms to reduce future error rate
-    for (unsigned idx = 0; idx < jp::nwwpts; ++idx) {
-      // Total event counts are best fetched from the MET histos
-      double sf        = h->pmetave       ->GetBinEntries(idx+1);
-      double sf_nol2l3 = h->pmetave_nol2l3->GetBinEntries(idx+1);
-      sf        = (sf>0        ? 1.0/sf        : 1.0);
-      sf_nol2l3 = (sf_nol2l3>0 ? 1.0/sf_nol2l3 : 1.0);
+    //for (unsigned idx = 0; idx < jp::nwwpts; ++idx) {
+    //  // Total event counts are best fetched from the MET histos
+    //  double sf        = h->pmetave       ->GetBinEntries(idx+1);
+    //  double sf_nol2l3 = h->pmetave_nol2l3->GetBinEntries(idx+1);
+    //  sf        = (sf>0        ? 1.0/sf        : 1.0);
+    //  sf_nol2l3 = (sf_nol2l3>0 ? 1.0/sf_nol2l3 : 1.0);
 
-      int num = jp::wwptrange[idx];
-      string number = std::to_string(num);
-      // Get the histos as projections
-      h->h2ptjet1           [idx] = h->p2ptjet1           [idx]->ProjectionXY((string("h2ptj1_")        +number+string("GeV")).c_str(),"e");
-      h->h2ptjet2           [idx] = h->p2ptjet2           [idx]->ProjectionXY((string("h2ptj2_")        +number+string("GeV")).c_str(),"e");
-      h->h2ptjet3           [idx] = h->p2ptjet3           [idx]->ProjectionXY((string("h2ptj3_")        +number+string("GeV")).c_str(),"e");
-      h->h2ptjet4plus       [idx] = h->p2ptjet4plus       [idx]->ProjectionXY((string("h2ptj4p_")       +number+string("GeV")).c_str(),"e");
-      h->h2ptjet1_nol2l3    [idx] = h->p2ptjet1_nol2l3    [idx]->ProjectionXY((string("h2ptj1_nol2l3_") +number+string("GeV")).c_str(),"e");
-      h->h2ptjet2_nol2l3    [idx] = h->p2ptjet2_nol2l3    [idx]->ProjectionXY((string("h2ptj2_nol2l3_") +number+string("GeV")).c_str(),"e");
-      h->h2ptjet3_nol2l3    [idx] = h->p2ptjet3_nol2l3    [idx]->ProjectionXY((string("h2ptj3_nol2l3_") +number+string("GeV")).c_str(),"e");
-      h->h2ptjet4plus_nol2l3[idx] = h->p2ptjet4plus_nol2l3[idx]->ProjectionXY((string("h2ptj4p_nol2l3_")+number+string("GeV")).c_str(),"e");
-      // Multiply by bin event counts
-      h->h2ptjet1           [idx]->Multiply(h->h2njet1           [idx]);
-      h->h2ptjet2           [idx]->Multiply(h->h2njet2           [idx]);
-      h->h2ptjet3           [idx]->Multiply(h->h2njet3           [idx]);
-      h->h2ptjet4plus       [idx]->Multiply(h->h2njet4plus       [idx]);
-      h->h2ptjet1_nol2l3    [idx]->Multiply(h->h2njet1_nol2l3    [idx]);
-      h->h2ptjet2_nol2l3    [idx]->Multiply(h->h2njet2_nol2l3    [idx]);
-      h->h2ptjet3_nol2l3    [idx]->Multiply(h->h2njet3_nol2l3    [idx]);
-      h->h2ptjet4plus_nol2l3[idx]->Multiply(h->h2njet4plus_nol2l3[idx]);
-      // Divide by total event counts
-      h->h2ptjet1           [idx]->Scale(sf);
-      h->h2ptjet2           [idx]->Scale(sf);
-      h->h2ptjet3           [idx]->Scale(sf);
-      h->h2ptjet4plus       [idx]->Scale(sf);
-      h->h2ptjet1_nol2l3    [idx]->Scale(sf_nol2l3);
-      h->h2ptjet2_nol2l3    [idx]->Scale(sf_nol2l3);
-      h->h2ptjet3_nol2l3    [idx]->Scale(sf_nol2l3);
-      h->h2ptjet4plus_nol2l3[idx]->Scale(sf_nol2l3);
-    }
+    //  int num = jp::wwptrange[idx];
+    //  string number = std::to_string(num);
+    //  // Get the histos as projections
+    //  h->h2ptjet1           [idx] = h->p2ptjet1           [idx]->ProjectionXY((string("h2ptj1_")        +number+string("GeV")).c_str(),"e");
+    //  h->h2ptjet2           [idx] = h->p2ptjet2           [idx]->ProjectionXY((string("h2ptj2_")        +number+string("GeV")).c_str(),"e");
+    //  h->h2ptjet3           [idx] = h->p2ptjet3           [idx]->ProjectionXY((string("h2ptj3_")        +number+string("GeV")).c_str(),"e");
+    //  h->h2ptjet4plus       [idx] = h->p2ptjet4plus       [idx]->ProjectionXY((string("h2ptj4p_")       +number+string("GeV")).c_str(),"e");
+    //  h->h2ptjet1_nol2l3    [idx] = h->p2ptjet1_nol2l3    [idx]->ProjectionXY((string("h2ptj1_nol2l3_") +number+string("GeV")).c_str(),"e");
+    //  h->h2ptjet2_nol2l3    [idx] = h->p2ptjet2_nol2l3    [idx]->ProjectionXY((string("h2ptj2_nol2l3_") +number+string("GeV")).c_str(),"e");
+    //  h->h2ptjet3_nol2l3    [idx] = h->p2ptjet3_nol2l3    [idx]->ProjectionXY((string("h2ptj3_nol2l3_") +number+string("GeV")).c_str(),"e");
+    //  h->h2ptjet4plus_nol2l3[idx] = h->p2ptjet4plus_nol2l3[idx]->ProjectionXY((string("h2ptj4p_nol2l3_")+number+string("GeV")).c_str(),"e");
+    //  // Multiply by bin event counts
+    //  h->h2ptjet1           [idx]->Multiply(h->h2njet1           [idx]);
+    //  h->h2ptjet2           [idx]->Multiply(h->h2njet2           [idx]);
+    //  h->h2ptjet3           [idx]->Multiply(h->h2njet3           [idx]);
+    //  h->h2ptjet4plus       [idx]->Multiply(h->h2njet4plus       [idx]);
+    //  h->h2ptjet1_nol2l3    [idx]->Multiply(h->h2njet1_nol2l3    [idx]);
+    //  h->h2ptjet2_nol2l3    [idx]->Multiply(h->h2njet2_nol2l3    [idx]);
+    //  h->h2ptjet3_nol2l3    [idx]->Multiply(h->h2njet3_nol2l3    [idx]);
+    //  h->h2ptjet4plus_nol2l3[idx]->Multiply(h->h2njet4plus_nol2l3[idx]);
+    //  // Divide by total event counts
+    //  h->h2ptjet1           [idx]->Scale(sf);
+    //  h->h2ptjet2           [idx]->Scale(sf);
+    //  h->h2ptjet3           [idx]->Scale(sf);
+    //  h->h2ptjet4plus       [idx]->Scale(sf);
+    //  h->h2ptjet1_nol2l3    [idx]->Scale(sf_nol2l3);
+    //  h->h2ptjet2_nol2l3    [idx]->Scale(sf_nol2l3);
+    //  h->h2ptjet3_nol2l3    [idx]->Scale(sf_nol2l3);
+    //  h->h2ptjet4plus_nol2l3[idx]->Scale(sf_nol2l3);
+    //}
     curdir->cd();
   }
 

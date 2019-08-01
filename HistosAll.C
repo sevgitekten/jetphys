@@ -5,7 +5,6 @@
 #include "HistosAll.h"
 
 HistosAll::HistosAll(TDirectory *dir) {
-
   TDirectory *curdir = gDirectory;
   bool enter = dir->cd();
   assert(enter);
@@ -14,45 +13,78 @@ HistosAll::HistosAll(TDirectory *dir) {
   // Once and for all (even if few too many with Sumw2)
   TH1::SetDefaultSumw2(kTRUE);
 
-  pmetave        = new TProfile("pmetave",       ";p_T^{tag};MET^{proj}_{ave};",jp::nwwpts,jp::wwptrange);
-  pmetave_nol2l3 = new TProfile("pmetave_nol2l3",";p_T^{tag};MET^{proj}_{ave};",jp::nwwpts,jp::wwptrange);
-  ppttagave        = new TProfile("ppttagave",       ";p_T^{tag};p^{proj}_{T,ave};",jp::nwwpts,jp::wwptrange);
-  ppttagave_nol2l3 = new TProfile("ppttagave_nol2l3",";p_T^{tag};p^{proj}_{T,ave};",jp::nwwpts,jp::wwptrange);
-  for (unsigned idx = 0; idx < jp::nwwpts; ++idx) {
-    int num = jp::wwptrange[idx];
-    string number = std::to_string(num);
-    p2ptjet1.push_back           ( new TProfile2D((string("p2ptj1_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    p2ptjet2.push_back           ( new TProfile2D((string("p2ptj2_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    p2ptjet3.push_back           ( new TProfile2D((string("p2ptj3_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    p2ptjet4plus.push_back       ( new TProfile2D((string("p2ptj4p_")       +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    p2ptjet1_nol2l3.push_back    ( new TProfile2D((string("p2ptj1_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    p2ptjet2_nol2l3.push_back    ( new TProfile2D((string("p2ptj2_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    p2ptjet3_nol2l3.push_back    ( new TProfile2D((string("p2ptj3_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    p2ptjet4plus_nol2l3.push_back( new TProfile2D((string("p2ptj4p_nol2l3_")+number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    h2njet1.push_back           ( new TH2D((string("h2nj1_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    h2njet2.push_back           ( new TH2D((string("h2nj2_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    h2njet3.push_back           ( new TH2D((string("h2nj3_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    h2njet4plus.push_back       ( new TH2D((string("h2nj4p_")       +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    h2njet1_nol2l3.push_back    ( new TH2D((string("h2nj1_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    h2njet2_nol2l3.push_back    ( new TH2D((string("h2nj2_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    h2njet3_nol2l3.push_back    ( new TH2D((string("h2nj3_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-    h2njet4plus_nol2l3.push_back( new TH2D((string("h2nj4p_nol2l3_")+number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
-  }
-  h2ptjet1            = vector<TH2D*>(jp::nwwpts,0);
-  h2ptjet2            = vector<TH2D*>(jp::nwwpts,0);
-  h2ptjet3            = vector<TH2D*>(jp::nwwpts,0);
-  h2ptjet4plus        = vector<TH2D*>(jp::nwwpts,0);
-  h2ptjet1_nol2l3     = vector<TH2D*>(jp::nwwpts,0);
-  h2ptjet2_nol2l3     = vector<TH2D*>(jp::nwwpts,0);
-  h2ptjet3_nol2l3     = vector<TH2D*>(jp::nwwpts,0);
-  h2ptjet4plus_nol2l3 = vector<TH2D*>(jp::nwwpts,0);
+  //pmetave        = new TProfile("pmetave",       ";p_T^{tag};MET^{proj}_{ave};",jp::nwwpts,jp::wwptrange);
+  //pmetave_nol2l3 = new TProfile("pmetave_nol2l3",";p_T^{tag};MET^{proj}_{ave};",jp::nwwpts,jp::wwptrange);
+  //ppttagave        = new TProfile("ppttagave",       ";p_T^{tag};p^{proj}_{T,ave};",jp::nwwpts,jp::wwptrange);
+  //ppttagave_nol2l3 = new TProfile("ppttagave_nol2l3",";p_T^{tag};p^{proj}_{T,ave};",jp::nwwpts,jp::wwptrange);
+  //for (unsigned idx = 0; idx < jp::nwwpts; ++idx) {
+  //  int num = jp::wwptrange[idx];
+  //  string number = std::to_string(num);
+  //  p2ptjet1.push_back           ( new TProfile2D((string("p2ptj1_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  p2ptjet2.push_back           ( new TProfile2D((string("p2ptj2_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  p2ptjet3.push_back           ( new TProfile2D((string("p2ptj3_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  p2ptjet4plus.push_back       ( new TProfile2D((string("p2ptj4p_")       +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  p2ptjet1_nol2l3.push_back    ( new TProfile2D((string("p2ptj1_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  p2ptjet2_nol2l3.push_back    ( new TProfile2D((string("p2ptj2_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  p2ptjet3_nol2l3.push_back    ( new TProfile2D((string("p2ptj3_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  p2ptjet4plus_nol2l3.push_back( new TProfile2D((string("p2ptj4p_nol2l3_")+number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  h2njet1.push_back           ( new TH2D((string("h2nj1_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  h2njet2.push_back           ( new TH2D((string("h2nj2_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  h2njet3.push_back           ( new TH2D((string("h2nj3_")        +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  h2njet4plus.push_back       ( new TH2D((string("h2nj4p_")       +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  h2njet1_nol2l3.push_back    ( new TH2D((string("h2nj1_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  h2njet2_nol2l3.push_back    ( new TH2D((string("h2nj2_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  h2njet3_nol2l3.push_back    ( new TH2D((string("h2nj3_nol2l3_") +number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //  h2njet4plus_nol2l3.push_back( new TH2D((string("h2nj4p_nol2l3_")+number+string("GeV")).c_str(),";p_T;#eta;",jp::npts_semi,jp::ptrange_semi,jp::netas,jp::etarange) );
+  //}
+  //h2ptjet1            = vector<TH2D*>(jp::nwwpts,0);
+  //h2ptjet2            = vector<TH2D*>(jp::nwwpts,0);
+  //h2ptjet3            = vector<TH2D*>(jp::nwwpts,0);
+  //h2ptjet4plus        = vector<TH2D*>(jp::nwwpts,0);
+  //h2ptjet1_nol2l3     = vector<TH2D*>(jp::nwwpts,0);
+  //h2ptjet2_nol2l3     = vector<TH2D*>(jp::nwwpts,0);
+  //h2ptjet3_nol2l3     = vector<TH2D*>(jp::nwwpts,0);
+  //h2ptjet4plus_nol2l3 = vector<TH2D*>(jp::nwwpts,0);
+
+  mPts = {15, 21, 28, 37, 49, 64, 84, 114, 153, 196, 272, 330, 395, 468, 548, 686, 846, 1032, 1248, 1588, 2500, 100000};
+  mEtas = {0.0,0.5,1.0,1.5,2.0,2.5,3.5,5.0};
+  mNPts = mPts.size()-1;
+  mNEtas = mEtas.size()-1;
+  int ntot = mNPts*mNEtas;
+  mSquare = new TMatrixD(ntot,ntot);
+  mColumn = new TMatrixD(ntot,2);
+  mSingle = new TMatrixD(1,2);
 
   curdir->cd();
+}
+
+int HistosAll::PhaseBin(double pt, double eta) {
+    eta = fabs(eta);
+    int ebin = -1;
+    int ptbin = -1;
+    for (unsigned ieta = 0; ieta < mNEtas; ++ieta) {
+        if (eta < mEtas[ieta+1]) {
+            ebin = ieta;
+            break;
+        }
+    }
+    for (unsigned ipt = 0; ipt < mNPts; ++ipt) {
+        if (pt < mPts[ipt+1]) {
+            ptbin = ipt;
+            break;
+        }
+    }
+    if (ebin==-1 or ptbin==-1) return -1;
+
+    return ebin*mNPts+ptbin;
 }
 
 void HistosAll::Write() {
   dir->cd();
   dir->Write();
+  mSquare->Write();
+  mColumn->Write();
+  mSingle->Write();
 }
 
 HistosAll::~HistosAll() {
