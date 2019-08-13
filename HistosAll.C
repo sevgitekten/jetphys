@@ -51,9 +51,17 @@ HistosAll::HistosAll(TDirectory *dir) {
   mNPts = mPts.size()-1;
   mNEtas = mEtas.size()-1;
   int ntot = mNPts*mNEtas;
-  mSquare = new TMatrixD(ntot,ntot);
-  mColumn = new TMatrixD(ntot,2);
+  mSquare = new TMatrixD(ntot,2*ntot);
+  mColumn = new TMatrixD(ntot,3);
   mSingle = new TMatrixD(1,2);
+  mTSquare = new TMatrixD(2*ntot,4*ntot);
+  mTColumn = new TMatrixD(2*ntot,2);
+  //mTSquare = new TMatrixD(4*ntot,4*ntot);
+  //mTColumn = new TMatrixD(4*ntot,2);
+  mSquareT = new TMatrixD(ntot,3*ntot);
+  mColumnT = new TMatrixD(ntot,3);
+  //mTSquareT = new TMatrixD(4*ntot,4*ntot);
+  //mTColumnT = new TMatrixD(4*ntot,1);
 
   curdir->cd();
 }
@@ -85,6 +93,12 @@ void HistosAll::Write() {
   mSquare->Write();
   mColumn->Write();
   mSingle->Write();
+  mTSquare->Write();
+  mTColumn->Write();
+  mSquareT->Write();
+  mColumnT->Write();
+  //mTSquareT->Write();
+  //mTColumnT->Write();
 }
 
 HistosAll::~HistosAll() {

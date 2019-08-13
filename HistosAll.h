@@ -66,6 +66,12 @@ public:
   TMatrixD *mSquare;
   TMatrixD *mColumn;
   TMatrixD *mSingle;
+  TMatrixD *mSquareT;
+  TMatrixD *mColumnT;
+  TMatrixD *mTSquare;
+  TMatrixD *mTColumn;
+  TMatrixD *mTSquareT;
+  TMatrixD *mTColumnT;
 
   HistosAll() {}
   HistosAll(TDirectory *dir);

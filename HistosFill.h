@@ -33,6 +33,8 @@
 #include "TSystem.h"
 #include "TLorentzVector.h"
 #include "TRandom3.h"
+#include "TMatrixD.h"
+#include "TVectorD.h"
 
 #include "settings.h"
 #include "HistosBasic.h"
@@ -159,6 +161,7 @@ public :
   Int_t           PFJetsCHS__mlvTrk_[kMaxPFJetsCHS_];   //[PFJetsCHS__]
   Int_t           PFJetsCHS__mjtTrk_[kMaxPFJetsCHS_];   //[PFJetsCHS__]
 
+  vector<double>  mCorrs;
   /////////////////////////////////////////////////////////////////////////////
   // Following lines added by hand and must come *after* auto-generated header
   /////////////////////////////////////////////////////////////////////////////
