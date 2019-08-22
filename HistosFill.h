@@ -256,7 +256,6 @@ private:
   vector<string> _availFlts;
   vector<string> _availTrigs;
   vector<unsigned int> _goodTrigs;
-  vector<double> _goodWgts;
   vector<bool> _jetids;
   vector<int> _jkmore;
 
@@ -399,16 +398,24 @@ private:
   Float_t         &metphi;
   Float_t         &metsumet;
 #ifdef NEWMODE
+  Float_t         &met0;
+  Float_t         &metphi0;
+  Float_t         &metsumet0;
   Float_t         &met01;
+  Float_t         &metphi01;
   Float_t         &metsumet01;
 #endif
 
   Float_t         met1;
   Float_t         metphi1;
+  Float_t         metsumet1;
   Float_t         met1_nol2l3;
   Float_t         metphi1_nol2l3;
   Float_t         met2;
   Float_t         metphi2;
+
+  Float_t         mht;
+  Float_t         mhtphi;
 
   string         _runinfo;
 };

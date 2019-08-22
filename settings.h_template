@@ -39,9 +39,9 @@ using std::regex;
 #define DEBUG 0
 // Values 0/1. This flag should not be set to one, unless the user understands all the consequences.
 // This resembles "DEBUG" in the way that it acts as a safeguard against naive mistakes, but eats performance.
-#define EXPERT 0
+#define EXPERT 1
 // Values 0/1. Set to 1 to perform jet resolution correction in MC, 0 otherwise.
-#define JETRESO EXPERT
+#define JETRESO 0
 // New handling for triggers etc.; possibility to comment this out is left for legacy use.
 #define NEWMODE
 
@@ -56,20 +56,20 @@ namespace jp {
   // In case of DATA, choose run (all options given in dtfiles).
   // This also affects the hot zone cuts done in MC.
   // The naming format is "RunX...", where X should be chosen correctly.
-  constexpr const char* run = "RunG";
+  constexpr const char* run = "RunA";
   // The base location of files that are to be used. The user should check that the listings under "*path_" and "*files_" are found
   // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
   constexpr const char* filepath = "/work/jet_tuples/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
 
   // Which run year are we analyzing?
-  const unsigned int   yid = 0; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int   yid = 3; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   const unsigned int   yrs = 4; // Number of supported Run years
 
   // Choose DT pileup era to be used with MC
   // 16: 0=BCD, 1=EF, 2=GH, 3=BCDEFGH
   // 17: 0=B, 1=C, 2=DE, 3=F, 4=BCDEF
-  // 18: 0=A, 1=B, 2=C, 3=D, 4=ABCD
-  const unsigned int PUIOVidx = 2;
+  // 18: 0=A, 1=B, 2=C, 3=D, 4=ABCD, 5=ABC
+  const unsigned int PUIOVidx = 5;
   // Do we use pthat binned MC (if not, we use flat or htbinned)
   constexpr bool pthatbins = false;
   // Do we use ht binned MC (if not, we use flat; if yes pthatbins must be set to false)
@@ -79,10 +79,10 @@ namespace jp {
   //{ BEGIN run settings
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
-  -1; // all
+  //-1; // all
   //10; // debug
   //100; //debug
-  //1000;
+  1000;
   //10000; // shorter test run
   //100000; // short test run
   //1000000; // shortish test run
@@ -112,12 +112,12 @@ namespace jp {
   // Toggle phi histograms
   constexpr bool doPhiHistos = false;
   // Toggle development histos
-  constexpr bool doMpfHistos = false;
+  constexpr bool doMpfHistos = true;
 
 
   // In the newest ntuples (mid 2019 onwards), MET filters may be saved separately, as before these
-  constexpr bool fetchMETFilters = true;
-  constexpr bool doMETFiltering = true;
+  constexpr bool fetchMETFilters = false;
+  constexpr bool doMETFiltering = false;
 
   //{ BEGIN Special HistosFill analyses that are not typically needed
   // Eta phi exclusion due to hot ECAL regions (produced with dataequality.C).
@@ -312,7 +312,7 @@ namespace jp {
     "_V20",
     "_V32",
     "_V32",
-    "_V15"
+    "_V16h"
   };
   const string jecversdt = jecversdt_.at(yid);
   const array<string,yrs> jecversmc_ = {
@@ -320,7 +320,7 @@ namespace jp {
     "_V32",
     //"_V3", (RunF 09May2018)
     "_V32",
-    "_V15"
+    "_V16h"
   };
   const string jecversmc = jecversmc_.at(yid);
 
@@ -378,7 +378,8 @@ namespace jp {
         {"RunH_ZB",{"H_ZB.root"}}
       },
       {
-        {"RunA",{"A_ZB.root", "A.root"}},
+        {"RunA",{"A.root"}},
+        //{"RunA",{"A_ZB.root", "A.root"}},
         {"RunB",{"B_ZB.root", "B.root"}},
         {"RunC",{"C_ZB.root","C.root"}},
         {"RunD",{"D_ZB.root","D.root"}}
@@ -510,10 +511,10 @@ namespace jp {
     constexpr const double maxpu = 80.0;
 
     const array<vector<string>,yrs> PUIOVs_ = {{
-      {"BCD/","EF/","GH/","BCDEFGH/"},
+      {"BCD/","EF/","GH/","BCDEFGH/","G/"},
       {"B/","C/","DE/","F/","BCDEF/"},
       {"F/"}, // Run2017F is used for Run2017H (lowpu)
-      {"A/","B/","C/","D/","ABCD/"},
+      {"A/","B/","C/","D/","ABCD/","ABC/"},
     }};
     const vector<string> PUIOVs = PUIOVs_.at(yid);
 
@@ -742,19 +743,9 @@ namespace jp {
   // Luminosity weighting options (DATA)
   // Do we use trigger lumi weighting (see triglumi or triglumiera)
   constexpr bool usetriglumi = true;
-  // Use per-era values in HistosNormalize (not recommmended)
-  // That is, use values from the correct triglumiera instead of triglumi values.
-  constexpr bool usetriglumiera = false;
-  // Do a "pseudo-weighting" procedure within histosFill.
-  // When this setting is on, we weight by w_era/w_year (pseudo-weight) in HistosFill.
-  // Then, in HistosNormalize we apply w_year.
-  constexpr bool useeraweights = true;
-  // So, what is the difference between usetriglumiera and useeraweights?
-  // The former applies the correction within HistosNormalize.
-  // The latter runs a per-run correction within HistosFill and then further applies the common correction in HistosNormalize.
-  // This allows us to "glue" output-*-1.root files together with hadd, if several runs are given at the same time.
-  // Thus, with the latter option we have a "per-Era" kind of weighting procedure - and all the files behave quite as normally.
-  // In HistosFill we apply only small corrections that revolve around one, which is basically just fine-tuning.
+  // Use per-era values in HistosNormalize instead of per-year values.
+  // Note that only after this (the output-*-2a files) hadd can be used safely.
+  constexpr bool usetriglumiera = true;
 
   //{ BEGIN HistosNormalize (leave these off if not interested on details)
   // Correct for trigger efficiency based on MC

@@ -153,7 +153,7 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double et
         loclvl++;
       } else if (TString(indir2->GetName()).Contains("FullEta")) {
         loclvl++;
-      } else if (loclvl>0) {
+      } else if (loclvl>=0) {
         loclvl++;
         cout << endl << " trg: " << indir2->GetName();
       }
@@ -192,9 +192,11 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double et
             continue;
           } // hlumi
 
-          // Set lumi weights
-          lumi = triglumi[trgname];
-          lumiref = triglumi[jp::reftrig];
+          if (triglumi.count(trgname)!=0) {
+            // Set lumi weights if this is a trigger folder
+            lumi = triglumi[trgname];
+            lumiref = triglumi[jp::reftrig];
+          }
         } else { // Use lumi info from hlumi
           TH1D* lumihisto = dynamic_cast<TH1D*>(indir->Get("hlumi"));
           TH1D* lumihistoref = dynamic_cast<TH1D*>(indir->Get(Form("../%s/hlumi",jp::reftrig)));

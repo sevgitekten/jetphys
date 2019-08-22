@@ -58,20 +58,32 @@ public:
   //vector<TH2D *> h2njet2_nol2l3;
   //vector<TH2D *> h2njet3_nol2l3;
   //vector<TH2D *> h2njet4plus_nol2l3;
+  TProfile2D *p2mpf;
+  TProfile2D *p2mpf2;
+  TProfile2D *p2htf;
+  TProfile2D *p2htf2;
+  TProfile2D *p2mpf_fe;
+  TProfile2D *p2mpf2_fe;
+  TProfile2D *p2htf_fe;
+  TProfile2D *p2htf2_fe;
+  TH3D *h3mpf;
+  TH3D *h3htf;
 
   vector<double>            mPts;
   vector<double>            mEtas;
+  vector<double>            mFullEtas;
   unsigned                  mNPts;
   unsigned                  mNEtas;
-  TMatrixD *mSquare;
-  TMatrixD *mColumn;
-  TMatrixD *mSingle;
-  TMatrixD *mSquareT;
-  TMatrixD *mColumnT;
-  TMatrixD *mTSquare;
-  TMatrixD *mTColumn;
-  TMatrixD *mTSquareT;
-  TMatrixD *mTColumnT;
+  unsigned                  mNFullEtas;
+  //TMatrixD *mSquare;
+  //TMatrixD *mColumn;
+  //TMatrixD *mSingle;
+  //TMatrixD *mSquareT;
+  //TMatrixD *mColumnT;
+  //TMatrixD *mTSquare;
+  //TMatrixD *mTColumn;
+  //TMatrixD *mTSquareT;
+  //TMatrixD *mTColumnT;
 
   HistosAll() {}
   HistosAll(TDirectory *dir);
