@@ -120,8 +120,8 @@ void systematics(string type) {
   // due to correlations between unfolding and JEC
 
   // Unfolded data
-  //   TFile *fin = new TFile(Form("output-%s-3.root",type.c_str()),"READ");
- TFile *fin = new TFile(Form("output-%s-2c.root",type.c_str()),"READ");
+ TFile *fin = new TFile(Form("output-%s-3.root",type.c_str()),"READ");
+ //TFile *fin = new TFile(Form("output-%s-2c.root",type.c_str()),"READ");
   assert(fin && !fin->IsZombie());
 
   // Raw data
@@ -211,7 +211,8 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 
   float etamin, etamax;
   assert(sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
-
+  sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
+  
   // Load the uncertainty
   TH1D *hunc = (TH1D*)dunc->Get("punc"); assert(hunc);
   //JetCorrectionUncertainty *func = new JetCorrectionUncertainty(Form("CondFormats/JetMETObjects/data/GR_R_42_V23_Uncertainty_%sPF.txt",jp::algo));
@@ -366,6 +367,7 @@ void jec_shifts(TDirectory *dzr, TDirectory *dout, string type, string algo) {
 
   float etamin, etamax;
   assert(sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
+  sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
   const int neta = 8;
   const int npar = 5;
@@ -461,7 +463,9 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
 
   float etamin, etamax;
   assert(sscanf(din->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
+  sscanf(din->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
+  
   TH1D *hzr = (TH1D*)din->Get(_th ? "hnlo" : "hpt"); assert(hzr);
   
   TF1 *fpt0 = (TF1*)din->Get(_th ? "fnlo" : "fus"); assert(fpt0);
@@ -522,7 +526,7 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
       // Over-ride with Jet Algorithm group's recommendations (interpolated)
       if (jertype=="inc" && !_ismc) {
 	int iy = min(int((etamin+0.001)/0.5),5);
-	djer = kpar[iy][1];
+	djer = kpar2017[iy][1]; // Has to be year-specifically picked
       }
 
       fs->SetParameter(5, +djer);
@@ -756,7 +760,9 @@ void sourceBin(TDirectory *dth, TDirectory *dout) {
 
   float etamin, etamax;
   assert(sscanf(dth->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
+  sscanf(dth->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
+  
   // inclusive jets
   TH1D *hnlo = (TH1D*)dth->Get("hnlo"); assert(hnlo);
   TF1 *fnlo0 = (TF1*)dth->Get("fnlo"); assert(fnlo0); fnlo0->SetName("fnlo0");

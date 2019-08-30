@@ -43,7 +43,6 @@ bool _jet = false; // global variable
 Double_t fPtRes(Double_t *x, Double_t *p) {
 
    return ptresolution(x[0], p[0]);
-   // return effectiveJER(x[0], p[0]);
 }
 
 
@@ -62,35 +61,29 @@ Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
   const double eta = p[1]; // rapidity
 
   //cout << Form("true pt: %10.5f p[0]: %10.5f  %10.5f  %10.5f  %10.5f  %10.5f ", pt, p[0], p[1], p[2], p[3], p[4]) << endl;
-  //  double resold = ptresolution(pt, eta+1e-3) * pt;
-  //  double res = effectiveJER(pt, eta) * pt;    // Switching this on breaks the integration if the kernel. Resolutions look okay
+  
   double res = ptresolution(pt, eta) * pt;
 
-  const double s = TMath::Gaus(ptmeas, pt, res, kTRUE);
- 
-  //   const double f = p[2] * exp(p[3]/pt) * pow(pt, p[4])
-  //    * pow(1 - pt*cosh(eta) / jp::emax, p[5]);
+  const double smear = TMath::Gaus(ptmeas, pt, res, kTRUE);
   const double f = p[2] * pow(pt, p[3])
     * pow(1 - pt*cosh(eta) / jp::emax, p[4]);
   
-  return (f * s);
+  return (f*smear);
 }
 
-// Smeared Ansatzz
-// double _epsilon = 1e-12; // Tolerance too small when using effective JER...
- double _epsilon = 1e-6;
-TF1 *_kernel = 0; // global variable, not pretty but works
+// Smeared Ansatz
+ double _epsilon = 1e-12; // Tolerance for integration
+ TF1 *_kernel = 0; // global variable, not pretty but works
+
 Double_t smearedAnsatz(Double_t *x, Double_t *p) {
 
   const double pt = x[0];
   const double eta = p[0];
-  //const double eta = 0.0;
 
   if (!_kernel) _kernel = new TF1("_kernel", smearedAnsatzKernel,
 				  1., jp::emax/cosh(eta), nk+2);
 
   double res = ptresolution(pt, eta+1e-3) * pt;
-  //  double res = effectiveJER(pt, eta) * pt;
   
   const double sigma = max(0.10, min(res/pt, 0.30));
   double ptmin = pt / (1. + 4.*sigma); // xmin*(1+4*sigma)=x
@@ -122,9 +115,6 @@ void fwdsmearUnfold(string type) {
   TFile *fin = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
   assert(fin && !fin->IsZombie());
 
-  // TFile *fin2 = new TFile(Form("output-%s-2c.root",type.c_str()),"READ");
-  // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
-  // TFile *fin2 = new TFile(Form("output-%s-2c.root","MC"),"READ");
   TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ");
 
   assert(fin2 && !fin2->IsZombie());
@@ -132,7 +122,7 @@ void fwdsmearUnfold(string type) {
   TFile *fout = new TFile(Form("output-%s-3.root",type.c_str()),"RECREATE");
   assert(fout && !fout->IsZombie());
 
-    bool ismc = jp::ismc;
+  bool ismc = jp::ismc;
 
   recurseFile(fin, fin2, fout, ismc);
 
@@ -183,19 +173,7 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
 
     // Found hpt plot: call unfolding routine
     if (obj->InheritsFrom("TH1") &&
-        (string(obj->GetName())=="hpt" /* ||
-	 string(obj->GetName())=="hpt_jet" ||
-	 string(obj->GetName())=="hpt_jk1" ||
-	 string(obj->GetName())=="hpt_jk2" ||
-	 string(obj->GetName())=="hpt_jk3" ||
-	 string(obj->GetName())=="hpt_jk4" ||
-	 string(obj->GetName())=="hpt_jk5" ||
-	 string(obj->GetName())=="hpt_jk6" ||
-	 string(obj->GetName())=="hpt_jk7" ||
-	 string(obj->GetName())=="hpt_jk8" ||
-	 string(obj->GetName())=="hpt_jk9" ||
-	 string(obj->GetName())=="hpt_jk10"*/
-	 )) {
+        (string(obj->GetName())=="hpt")) {
 
       cout << "+" << flush;
 
@@ -234,31 +212,28 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
   curdir->cd();
 } // recurseFile
 
-
 void Unfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 			   bool ismc, bool kscale, string id) {
 
   float y1, y2;
   assert(sscanf(outdir->GetName(),"Eta_%f-%f",&y1,&y2)==2);
   sscanf(outdir->GetName(),"Eta_%f-%f",&y1,&y2);
-  cout << outdir->GetName() << " y1:" << y1 << " y2: " << y2 << endl;
+
+  cout << "Process rapidity bin" << outdir->GetName() << " y1:" << y1 << " y2: " << y2 << endl;
   const char *c = id.c_str();
   if (_jk) c = Form("_jk%d",_jk);
   if (_jet) c = "_jet";
-
 
   _ismcjer = ismc;
 
   // initial fit of the NLO curve to a histogram
   TF1 *fnlo = new TF1(Form("fus%s",c),
-		      //   "[0]*exp([1]/x)*pow(x,[2])"
-		           "[0]*pow(x,[1])"
+                      "[0]*pow(x,[1])"
                       "*pow(1-x*cosh([3])/[4],[2])", //10., 1000.);
 		      jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
 
   
-  fnlo->SetParameters(5e10,-5.2,8.9,y1,jp::emax);
-  //  fnlo->SetParameters(2e14*2e-10,-18,-5,10,y1,jp::emax);
+  fnlo->SetParameters(5e10,-5.2,8.9,y1,jp::emax);  //  fnlo->SetParameters(2e14*2e-10,-18,-5,10,y1,jp::emax);
   fnlo->FixParameter(3,y1);
   fnlo->FixParameter(4,jp::emax);
 
@@ -275,8 +250,7 @@ void Unfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   TGraphErrors *gnlo2 = new TGraphErrors(0); // above + minerr
   gnlo->SetName("gnlo");
   gnlo2->SetName("gnlo2");
-  for (int i = 1; i != hnlo->GetNbinsX()+1; ++i) {
-  
+  for (int i = 1; i != hnlo->GetNbinsX()+1; ++i) {  
     double y = hnlo->GetBinContent(i);
     double dy = hnlo->GetBinError(i);
     double ptmin = hnlo->GetBinLowEdge(i);
@@ -300,8 +274,7 @@ void Unfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   // Bin-centered data points
   TGraphErrors *gpt = new TGraphErrors(0);
   gpt->SetName(Form("gpt%s",c));
-    for (int i = 1; i != hpt->GetNbinsX()+1; ++i) {
-
+  for (int i = 1; i != hpt->GetNbinsX()+1; ++i) {
     double ptmin = hpt->GetBinLowEdge(i);
     double ptmax = hpt->GetBinLowEdge(i+1);
     double y = fnlo->Integral(ptmin, ptmax) / (ptmax - ptmin);
@@ -321,21 +294,17 @@ void Unfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
                        fnlo->GetParameter(2), 0, 0);
   cout << "par0 "<< fnlos->GetParameter(0) << " y1 "<< y1<<endl<<flush; 
 
-  // if (jp::debug)
-    cout << "Calculate forward smearing and unfold hpt" << endl << flush;
+  cout << "Calculate forward smearing and unfold hpt" << endl << flush;
 
   TGraphErrors *gfold_fwd = new TGraphErrors(0);
   gfold_fwd->SetName(Form("gfold_fwd%s",c));
 
-
   TGraphErrors *gcorrpt_fwd = new TGraphErrors(0);
   gcorrpt_fwd->SetName(Form("gcorrpt_fwd%s",c));
-  TH1D *hcorrpt_fwd = (TH1D*)hpt->Clone(Form("hcorrpt_fwd%s",c));
-
- 
   
-  for (int i = 0; i != gpt->GetN(); ++i) {
-    //  for (int i = 1; i != gpt->GetN()+1; ++i) {
+  TH1D *hcorrpt_fwd = (TH1D*)hpt->Clone(Form("hcorrpt_fwd%s",c));
+  
+    for (int i = 1; i != gpt->GetN()+1; ++i) {
     double x, y, ex, ey;
 
     tools::GetPoint(gpt, i, x, y, ex, ey);
@@ -354,11 +323,12 @@ void Unfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   cout << "Forward smearing done!" << endl;
 
-    
+  /////// STORING OUTPUT
+  
   outdir->cd();
 
   // Save resolution function
-    TF1 *fres = new TF1(Form("fres%s",c), fPtRes, jp::xmin, jp::xmax, 1);
+  TF1 *fres = new TF1(Form("fres%s",c), fPtRes, jp::xmin, jp::xmax, 1);
   fres->SetParameter(0, y1);
 
   // Store NLO ratio to (unsmeared) fit
@@ -374,7 +344,7 @@ void Unfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   }
 
    
-  // Store data ratio to (smeared) fit (this is also time consuming)
+  // Store data ratio to (smeared) fit
   TGraphErrors *gratio = new TGraphErrors(0);
   gratio->SetName(Form("gratio%s",c));
   for (int i = 0; i != gpt->GetN(); ++i) {
