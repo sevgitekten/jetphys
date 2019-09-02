@@ -12,7 +12,7 @@
 #include "TMath.h"
 #include "TGraphErrors.h"
 
-#include "ptresolution.h"
+//#include "ptresolution.h"
 #include "tools.h"
 #include "settings.h"
 
@@ -29,6 +29,7 @@
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 
 // Ansatz Kernel (for jer_systematics
+/*
 int cnt_a = 0;
 Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
 
@@ -43,10 +44,12 @@ Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
 
   return (f * s);
 }
+*/
 
 // Smeared Ansatz
+
 double _epsilon = 1e-12;
-TF1 *_kernel = 0; // global variable, not pretty but works
+/*TF1 *_kernel = 0; // global variable, not pretty but works
 Double_t smearedAnsatz(Double_t *x, Double_t *p) {
 
   if (!_kernel) _kernel = new TF1("_kernel", smearedAnsatzKernel, 1.,1000.,7);
@@ -66,6 +69,7 @@ Double_t smearedAnsatz(Double_t *x, Double_t *p) {
  return ( _kernel->Integral(xmin, xmax, _epsilon) );
 
 }
+*/
 
 // JEC systematics are evaluated in two ways:
 // - vary JEC by uncertainty and rescale original data => ratio of histos
@@ -97,8 +101,8 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 void jec_shifts(TDirectory *dzr, TDirectory *dout, string type,
 		string algo = "jpt");
 
-sysc *jer_systematics(TDirectory *dzr, TDirectory *dout,
-		      string type, string jectype="inc");
+//sysc *jer_systematics(TDirectory *dzr, TDirectory *dout,
+//	      string type, string jectype="inc");
 
 sysc *lum_systematics(TDirectory *dzr, TDirectory *dout);
 
@@ -107,7 +111,7 @@ void tot_systematics(TDirectory *dzr, TDirectory *dout,
 		     sysc *cjer1, sysc *cjer2,
 		     sysc *clum);
 
-void statistics(TDirectory *dzr, TDirectory *dout);
+//void statistics(TDirectory *dzr, TDirectory *dout);
 void sourceBin(TDirectory *dth, TDirectory *dout);
 
 bool _ismc = false; // implement as non-global later
@@ -120,30 +124,35 @@ void systematics(string type) {
   // due to correlations between unfolding and JEC
 
   // Unfolded data
- TFile *fin = new TFile(Form("output-%s-3.root",type.c_str()),"READ");
- //TFile *fin = new TFile(Form("output-%s-2c.root",type.c_str()),"READ");
+  TFile *fin = new TFile(Form("output-%s-3.root",type.c_str()),"READ");
+  //TFile *fin = new TFile(Form("output-%s-2c.root",type.c_str()),"READ");
   assert(fin && !fin->IsZombie());
 
   // Raw data
-  TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
-  assert(fin2 && !fin2->IsZombie());
+  //TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
+  //assert(fin2 && !fin2->IsZombie());
+  TFile *fin2 = 0;
 
   TFile *fout = new TFile(Form("output-%s-4.root",type.c_str()),
 			  "RECREATE");
   assert(fout && !fout->IsZombie());
 
   // Select top categories for JEC uncertainty
-  if (!fin->cd("JECPlus"))
-    assert(fin->cd("Standard"));
+  //if (!fin->cd("JECPlus"))
+  //assert(fin->cd("Standard"));
+  fin->cd("Standard");
   TDirectory *dpl0 = gDirectory;
-  if (!fin->cd("JECMinus"))
-    assert(fin->cd("Standard"));
+  //if (!fin->cd("JECMinus"))
+  //assert(fin->cd("Standard"));
+  fin->cd("Standard");
   TDirectory *dmn0 = gDirectory;
-  if (!fin->cd("ResJEC"))
-    assert(fin->cd("Standard"));
+  //if (!fin->cd("ResJEC"))
+  //assert(fin->cd("Standard"));
+  fin->cd("Standard");
   TDirectory *dzr0 = gDirectory;
-  if (!fin2->cd("ResJEC"))
-    assert(fin2->cd("Standard"));
+  //if (!fin2->cd("ResJEC"))
+  //assert(fin2->cd("Standard"));
+  fin->cd("Standard");
   TDirectory *dunc0 = gDirectory;
 
 
@@ -183,11 +192,13 @@ void systematics(string type) {
       sysc *cjec2 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "rel");
       sysc *cjec3 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "bjt");
       sysc *cjec4 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "pt");
-      sysc *cjer1 = jer_systematics(dzr, dout, type, "inc");
-      sysc *cjer2 = jer_systematics(dzr, dout, type, "bjt");
+      //sysc *cjer1 = jer_systematics(dzr, dout, type, "inc");
+      //sysc *cjer2 = jer_systematics(dzr, dout, type, "bjt");
+      sysc *cjer1 = cjec1;
+      sysc *cjer2 = cjec2;
       sysc *clum = lum_systematics(dzr, dout);
       tot_systematics(dzr, dout, cjec1, cjec2, cjec3, cjer1, cjer2, clum);
-      statistics(dzr, dout);
+      //statistics(dzr, dout);
 
       jec_shifts(dzr, dout, type, "pf");
     } // inherits TDirectory
@@ -200,6 +211,7 @@ void systematics(string type) {
 
   fin->Close();
   fin->Delete();
+
 } // systematics
 
 
@@ -211,15 +223,15 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 
   float etamin, etamax;
   assert(sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
-  sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
-  
+  // sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
+
   // Load the uncertainty
-  TH1D *hunc = (TH1D*)dunc->Get("punc"); assert(hunc);
+  //TH1D *hunc = (TH1D*)dunc->Get("punc"); assert(hunc);
   //JetCorrectionUncertainty *func = new JetCorrectionUncertainty(Form("CondFormats/JetMETObjects/data/GR_R_42_V23_Uncertainty_%sPF.txt",jp::algo));
-  string s = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt", jp::jecgt.c_str(), jp::type, jp::algo);
+  //string s = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt", jp::jecgt.c_str(), jp::type, jp::algo);
+  string s = "/home/local/lmartika/Jets/JECDatabase/textFiles/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK4PFchs.txt";
   //const char s = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt", jp::jecgt, jp::type, jp::algo);
 
-  cout << s << endl << flush;
   JetCorrectionUncertainty *func = new JetCorrectionUncertainty(s.c_str());
   const char *jt = jectype.c_str();
 
@@ -233,13 +245,14 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 
   // inclusive jets
   TF1 *fpt0 = (TF1*)dzr->Get("fus"); assert(fpt0); fpt0->SetName("fpt0");
-  TF1 *fpt = new TF1("fpt1","[0]*exp([1]/(x*(1-[6])))*pow(x*(1-[6]),[2])"
-		     "*pow(1-x*(1-[6])*cosh([4])/[5], [3])",
+  TF1 *fpt = new TF1("fpt1",
+		     "[0]*pow(x,[1])"
+                      "*pow(1-x*cosh([3])/[4],[2])",
+     
 		     jp::recopt, jp::emax/cosh(etamin));
   fpt->SetParameters(fpt0->GetParameter(0), fpt0->GetParameter(1),
 		     fpt0->GetParameter(2), fpt0->GetParameter(3),
-		     fpt0->GetParameter(4), fpt0->GetParameter(5),
-		     0.);
+		     fpt0->GetParameter(4));
 
   // first estimate is just ratio of histograms with shifted JEC
   // inclusive jets
@@ -278,9 +291,11 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
   TH1D *hjav = (TH1D*)hzr->Clone(Form("hjec_%s_av", jt));
   hjav->Reset();
 
-  string s2 = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt",
-		   jp::jecgt.c_str(), jp::type, jp::algo);
-  cout << s2 << endl << flush;
+  //string s2 = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt",
+  //	   jp::jecgt.c_str(), jp::type, jp::algo);
+  string s2 = s;
+  //cout << "s2: " << s2 << endl << flush;
+
   JetCorrectionUncertainty *rjet = new JetCorrectionUncertainty(s2.c_str());
 
   for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
@@ -290,7 +305,7 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 	double xmin = hzr->GetBinLowEdge(i);
 	double xmax = hzr->GetBinLowEdge(i+1);
 
-	double unc = hunc->GetBinContent(i);
+	double unc = 0;//hunc->GetBinContent(i);
 	{
 	  double eta = 0.5*(etamin+etamax);
 	  func->setJetPt(hzr->GetBinCenter(i));
@@ -364,10 +379,9 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 void jec_shifts(TDirectory *dzr, TDirectory *dout, string type, string algo) {
   //,
   //	bool is38x) {
-
+  
   float etamin, etamax;
   assert(sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
-  sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
   const int neta = 8;
   const int npar = 5;
@@ -418,13 +432,13 @@ const double p_ak5jpt[8][5] =
 
   // inclusive jets
   TF1 *fpt0 = (TF1*)dzr->Get("fus"); assert(fpt0); fpt0->SetName("fpt0");
-  TF1 *fpt = new TF1("fpt1","[0]*exp([1]/(x*(1-[6])))*pow(x*(1-[6]),[2])"
-		     "*pow(1-x*(1-[6])*cosh([4])/[5], [3])",
+  TF1 *fpt = new TF1("fpt1","[0]*pow(x,[1])"
+                      "*pow(1-x*cosh([3])/[4],[2])", //10., 1000.);
 		     jp::recopt, jp::emax);
+  
   fpt->SetParameters(fpt0->GetParameter(0), fpt0->GetParameter(1),
 		     fpt0->GetParameter(2), fpt0->GetParameter(3),
-		     fpt0->GetParameter(4), fpt0->GetParameter(5),
-		     0.);
+		     fpt0->GetParameter(4)); 
 
   // for second estimate calculate ratio of Ansatzes with shifted pT
   TH1D *hs = (TH1D*)hzr->Clone(Form("hptshift_%s%s", algo.c_str(),""));
@@ -450,9 +464,9 @@ const double p_ak5jpt[8][5] =
   dzr->cd();
 
   return;
-} // jec_shifts
+} // jec_hifts
 
-
+/*
 sysc *jer_systematics(TDirectory *din, TDirectory *dout,
 		      string type, string jertype) {
 
@@ -463,9 +477,7 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
 
   float etamin, etamax;
   assert(sscanf(din->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
-  sscanf(din->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
-  
   TH1D *hzr = (TH1D*)din->Get(_th ? "hnlo" : "hpt"); assert(hzr);
   
   TF1 *fpt0 = (TF1*)din->Get(_th ? "fnlo" : "fus"); assert(fpt0);
@@ -526,7 +538,8 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
       // Over-ride with Jet Algorithm group's recommendations (interpolated)
       if (jertype=="inc" && !_ismc) {
 	int iy = min(int((etamin+0.001)/0.5),5);
-	djer = kpar2017[iy][1]; // Has to be year-specifically picked
+	//djer = kpar[iy][1];
+	djer = kpar2016[iy][1];
       }
 
       fs->SetParameter(5, +djer);
@@ -548,7 +561,7 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
 
   return ( new sysc(hspl, hsmn, hsav) );
 } // jer_systematics
-
+*/
 
 sysc *lum_systematics(TDirectory *din, TDirectory *dout) {
 
@@ -646,9 +659,10 @@ void tot_systematics(TDirectory *din, TDirectory *dout,
   dout->Add(gpt_syst);
 
   curdir->cd();
+
 } // tot_systematics
 
-
+/*
 void statistics(TDirectory *din, TDirectory *dout) {
 
   TH1D *hzr = (TH1D*)din->Get("hpt"); assert(hzr);
@@ -699,7 +713,7 @@ void statistics(TDirectory *din, TDirectory *dout) {
   din->cd();
 
 } // statistics
-
+*/
 
 void sources(string type = "DATA") {
 
@@ -760,14 +774,18 @@ void sourceBin(TDirectory *dth, TDirectory *dout) {
 
   float etamin, etamax;
   assert(sscanf(dth->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
-  sscanf(dth->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
-  
   // inclusive jets
   TH1D *hnlo = (TH1D*)dth->Get("hnlo"); assert(hnlo);
   TF1 *fnlo0 = (TF1*)dth->Get("fnlo"); assert(fnlo0); fnlo0->SetName("fnlo0");
-  TF1 *fnlo = new TF1("fnlo","[0]*exp([1]/x)*pow(x,[2])"
-		     "*pow(1-x*cosh([4])/3500, [3])",
+  TF1 *fnlo = new TF1("fnlo",
+
+		      // "[0]*exp([1]/x)*pow(x,[2])"
+		      // "*pow(1-x*cosh([4])/3500, [3])",
+
+		      "[0]*pow(x,[1])"
+                      "*pow(1-x*cosh([3])/[4],[2])", //10., 1000.);
+		      
 		      jp::recopt, jp::emax);
   fnlo->SetParameters(fnlo0->GetParameter(0), fnlo0->GetParameter(1),
 		      fnlo0->GetParameter(2), fnlo0->GetParameter(3),
@@ -875,6 +893,7 @@ void sourceBin(TDirectory *dth, TDirectory *dout) {
   hldw->SetTitle("Luminosity");
 
   // Resolution (unfolding) source
+  /*
   sysc *sys = jer_systematics(dth, dout, "TH", "inc");
   dout->cd();
 
@@ -887,6 +906,7 @@ void sourceBin(TDirectory *dth, TDirectory *dout) {
   }
   hjerup->SetTitle("Unfolding");
   hjerdw->SetTitle("Unfolding");
+  */
 
   dth->cd();
 } // sources
