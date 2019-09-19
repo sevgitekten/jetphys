@@ -286,9 +286,10 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   hqgl2_g =  new TH2D("hqgl2_g","",nx,&x[0],101,0,1.01);
   hqgl2_q =  new TH2D("hqgl2_q","",nx,&x[0],101,0,1.01);
   hqgl2_u =  new TH2D("hqgl2_u","",nx,&x[0],101,0,1.01);
-  hqgl2_dg =  new TH2D("hqgl2_dg","",nx,&x[0],101,0,1.01);
-  hqgl2_dq =  new TH2D("hqgl2_dq","",nx,&x[0],101,0,1.01);
-  hqgl2_du =  new TH2D("hqgl2_du","",nx,&x[0],101,0,1.01);
+  hqgl2_gen =  new TH2D("hqgl2_gen","",nx,&x[0],101,0,1.01);
+  hqgl2_g_g =  new TH2D("hqgl2_g_g","",nx,&x[0],101,0,1.01);
+  hqgl2_q_g =  new TH2D("hqgl2_q_g","",nx,&x[0],101,0,1.01);
+  hqgl2_u_g =  new TH2D("hqgl2_u_g","",nx,&x[0],101,0,1.01);
   //} QGL study
 
   // control plots for topology (JEC)
@@ -367,6 +368,9 @@ if (jp::do3dHistos) {
   hdjmpftp->Sumw2();
 }
   ppt_probepertag = new TProfile("ppt_probepertag","",nx,&x[0]);
+  ppt_probepertag_g = new TProfile("ppt_probepertag_g","",nx,&x[0]);//qgl okan follow up later
+  ppt_probepertag_q= new TProfile("ppt_probepertag_q","",nx,&x[0]);//qgl okan follow up later
+
 
   // MC checks
   htrpu = new TH1D("htrpu","",120,0.,60.); // for PU reweighing
@@ -418,6 +422,28 @@ if (jp::do3dHistos) {
     p2r_g = new TProfile("p2r_g","",nx,&x[0]);
     p2r_ruw = new TProfile("p2r_ruw","",nx,&x[0]);
     p2r_guw = new TProfile("p2r_guw","",nx,&x[0]);
+    
+    h2r_g_r = new TH2D("h2r_g_r","",nx,&x[0],600,0,3);
+    h2r_g_g = new TH2D("h2r_g_g","",nx,&x[0],600,0,3);
+    p2r_g_r = new TProfile("p2r_g_r","",nx,&x[0]);
+    p2r_g_g = new TProfile("p2r_g_g","",nx,&x[0]);
+    p2r_g_ruw = new TProfile("p2r_g_ruw","",nx,&x[0]);
+    p2r_g_guw = new TProfile("p2r_g_guw","",nx,&x[0]);
+
+    
+    h2r_q_r = new TH2D("h2r_q_r","",nx,&x[0],600,0,3);
+    h2r_q_g = new TH2D("h2r_q_g","",nx,&x[0],600,0,3);
+    p2r_q_r = new TProfile("p2r_q_r","",nx,&x[0]);
+    p2r_q_g = new TProfile("p2r_q_g","",nx,&x[0]);
+    p2r_q_ruw = new TProfile("p2r_q_ruw","",nx,&x[0]);
+    p2r_q_guw = new TProfile("p2r_q_guw","",nx,&x[0]);
+    
+    h2r_u_r = new TH2D("h2r_u_r","",nx,&x[0],600,0,3);
+    h2r_u_g = new TH2D("h2r_u_g","",nx,&x[0],600,0,3);
+    p2r_u_r = new TProfile("p2r_u_r","",nx,&x[0]);
+    p2r_u_g = new TProfile("p2r_u_g","",nx,&x[0]);
+    p2r_u_ruw = new TProfile("p2r_u_ruw","",nx,&x[0]);
+    p2r_u_guw = new TProfile("p2r_u_guw","",nx,&x[0]);
 
     // Rapidity closure
     h2dy_r = new TH2D("h2dy_r","",nx,&x[0],200,-0.5,0.5);

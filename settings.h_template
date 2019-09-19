@@ -136,7 +136,9 @@ namespace jp {
   // Toggle development histos
   constexpr bool doMpfHistos = false;
 
-  // QGL studies by Ozlem (use an external file for qgl studies)
+  // QGL studies (use an external file for qgl studies)
+  constexpr bool isgluon = false;
+  constexpr bool isquark = false;
   constexpr bool doqglfile = false;
   constexpr const char qglfile[] = "output-DATA_RunGfullpart-1.root";
 

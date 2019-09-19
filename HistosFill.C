@@ -1922,6 +1922,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             assert(h->hqgl);  h->hqgl->Fill(qgl[jetidx], _w);
             assert(h->hqgl2); h->hqgl2->Fill(pt, qgl[jetidx], _w);
             if (jp::ismc) {
+              assert(h->hqgl2_gen); h->hqgl2_gen->Fill(ptgen, qgl[jetidx], _w);//ben ekledim sorabilirsin
               assert(h->hqgl_g);
               assert(h->hqgl_q);
 #ifdef NEWMODE
@@ -1944,24 +1945,15 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
               if (isgluon) {
                 h->hqgl_g->Fill(x, _w);
                 h->hqgl2_g->Fill(pt, x, _w);
-                double wg = 1;//-55.7067*pow(x,7) + 113.218*pow(x,6) -21.1421*pow(x,5) -99.927*pow(x,4) + 92.8668*pow(x,3) -34.3663*x*x + 6.27*x + 0.612992;
-                assert(wg>0);
-                h->hqgl_dg->Fill(x, _w*wg);
-                h->hqgl2_dg->Fill(pt, x, _w*wg);
+                h->hqgl2_g_g->Fill(ptgen, x, _w);
               } else if (isquark) {
                 h->hqgl_q->Fill(x, _w);
                 h->hqgl2_q->Fill(pt, x, _w);
-                double wq = 1;// -0.666978*x*x*x + 0.929524*x*x -0.255505*x + 0.981581;
-                assert(wq>0);
-                h->hqgl_dq->Fill(x, _w*wq);
-                h->hqgl2_dq->Fill(pt, x, _w*wq);
+                h->hqgl2_q_g->Fill(ptgen, x, _w);
               } else if(isunmatch){
                 h->hqgl_u->Fill(x, _w);
                 h->hqgl2_u->Fill(pt, x, _w);
-                double wg = 1;//-55.7067*pow(x,7) + 113.218*pow(x,6) -21.1421*pow(x,5) -99.927*pow(x,4) + 92.8668*pow(x,3) -34.3663*x*x + 6.27*x + 0.612992;
-                assert(wg>0);
-                h->hqgl_du->Fill(x, _w*wg);
-                h->hqgl2_du->Fill(pt, x, _w*wg);
+                h->hqgl2_u_g->Fill(ptgen, x, _w);
               }else {
                 PrintInfo("Quark/Gluon status missing from partonflavor");
               }
@@ -1996,14 +1988,47 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             if (r) {
               // Response closure vs NPV
               h->p2rvsnpv->Fill(ptgen, npvgood, r, _w);
-
-              // Response closure
+              
               h->h2r_r->Fill(pt, r, _w);
               h->h2r_g->Fill(ptgen, r, _w);
               h->p2r_r->Fill(pt, r, _w);
               h->p2r_g->Fill(ptgen, r, _w);
               h->p2r_ruw->Fill(pt, r); // unweighted!
               h->p2r_guw->Fill(ptgen, r); // unweighted!
+              
+              if(fabs(partonflavorphys[jetidx]-21)<0.5){
+                  h->h2r_g_r->Fill(pt, r, _w);
+                  h->h2r_g_g->Fill(ptgen, r, _w);
+                  h->p2r_g_r->Fill(pt, r, _w);
+                  h->p2r_g_g->Fill(ptgen, r, _w);
+                  h->p2r_g_ruw->Fill(pt, r); // unweighted!
+                  h->p2r_g_guw->Fill(ptgen, r); // unweighted!
+              }
+              if(fabs(partonflavorphys[jetidx])<6 && partonflavorphys[jetidx]!=0){
+                  h->h2r_q_r->Fill(pt, r, _w);
+                  h->h2r_q_g->Fill(ptgen, r, _w);
+                  h->p2r_q_r->Fill(pt, r, _w);
+                  h->p2r_q_g->Fill(ptgen, r, _w);
+                  h->p2r_q_ruw->Fill(pt, r); // unweighted!
+                  h->p2r_q_guw->Fill(ptgen, r); // unweighted!
+              }
+              if ((fabs(partonflavorphys[jetidx])>=6 && partonflavorphys[jetidx]!=21) || partonflavorphys[jetidx]==0){
+                   /*h->h2r_u_r->Fill(pt, r, _w);
+                   h->h2r_u_g->Fill(ptgen, r, _w);
+                   h->p2r_u_r->Fill(pt, r, _w);
+                   h->p2r_u_g->Fill(ptgen, r, _w);
+                   h->p2r_u_ruw->Fill(pt, r); // unweighted!
+                   h->p2r_u_guw->Fill(ptgen, r); // unweighted!*/
+                   h->h2r_g_r->Fill(pt, r, _w);
+                   h->h2r_g_g->Fill(ptgen, r, _w);
+                   h->p2r_g_r->Fill(pt, r, _w);
+                   h->p2r_g_g->Fill(ptgen, r, _w);
+                   h->p2r_g_ruw->Fill(pt, r); // unweighted!
+                   h->p2r_g_guw->Fill(ptgen, r); // unweighted!
+                   
+              }
+              
+              
 
               // Rapidity closure
               h->h2dy_r->Fill(pt, dy, _w);
