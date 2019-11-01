@@ -66,7 +66,7 @@ Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
 }
 
 // Smeared Ansatz
-double _epsilon = 1e-12;
+double _epsilon = 1e-8;
 TF1 *_kernel = 0; // global variable, not pretty but works
 Double_t smearedAnsatz(Double_t *x, Double_t *p) {
 
@@ -79,7 +79,6 @@ Double_t smearedAnsatz(Double_t *x, Double_t *p) {
   //  const double sigma = max(0.10, min(res, 0.30)); // was max
   const double sigma = min(res, 0.30); // was max
 
-  
   double ptmin = pt /(1. + 4.*sigma); // xmin*(1+4*sigma)=x
   ptmin = max(1.,ptmin); // safety check
   double ptmax = pt /(1. - 3.*sigma); // xmax*(1-3*sigma)=x
@@ -303,7 +302,6 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   double tmp_eps = _epsilon;
   _epsilon = 1e-6; // speed up calculations with acceptable loss of precision
 
-  // NB: GetArray only works if custom x binning
   outdir->cd();
 
   // Deduce range and binning for true and measured spectra
@@ -473,6 +471,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   }
   
   _epsilon = tmp_eps;
+
   if (jp::debug)
     cout << "done." << endl << flush;
 
@@ -728,7 +727,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     fnlo->SetNpx(1000); // otherwise ugly on log x-axis after write
     fnlo->Write();
     fnlos->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
-    fnlos->SetNpx(3000); // otherwise ugly on log x-axis after write 
+    fnlos->SetNpx(1000); // otherwise ugly on log x-axis after write
     fnlos->Write();
     fres->Write();
     grationlo->Write();
