@@ -59,17 +59,14 @@ Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
 
   double res = ptresolution(pt, eta+1e-3) * pt;
   
-  //  cout << pt << " was pt and res is " << res << endl;
-  
   const double s = TMath::Gaus(ptmeas, pt, res, kTRUE);
   const double f = p[2] * pow(pt, p[3]) * pow(1 - pt*cosh(eta) / jp::emax, p[4]);
-  //  cout << f << " " << f*s << endl;
   
   return (f * s);
 }
 
 // Smeared Ansatz
-double _epsilon = 1e-6;
+double _epsilon = 1e-12;
 TF1 *_kernel = 0; // global variable, not pretty but works
 Double_t smearedAnsatz(Double_t *x, Double_t *p) {
 
@@ -78,16 +75,18 @@ Double_t smearedAnsatz(Double_t *x, Double_t *p) {
 
   if (!_kernel) _kernel = new TF1("_kernel", smearedAnsatzKernel, 1., jp::emax/cosh(eta), nk+2);
 
-  double res = ptresolution(pt, eta+1e-3) * pt;
-  const double sigma = max(0.10, min(res/pt, 0.30));
-  double ptmin = pt / (1. + 4.*sigma); // xmin*(1+4*sigma)=x
+  double res = ptresolution(pt, eta+1e-3); // * pt;
+  //  const double sigma = max(0.10, min(res, 0.30)); // was max
+  const double sigma = min(res, 0.30); // was max
+
+  
+  double ptmin = pt /(1. + 4.*sigma); // xmin*(1+4*sigma)=x
   ptmin = max(1.,ptmin); // safety check
-  double ptmax = pt / (1. - 3.*sigma); // xmax*(1-3*sigma)=x
+  double ptmax = pt /(1. - 3.*sigma); // xmax*(1-3*sigma)=x
+  
   //  cout << Form("1pt %10.5f sigma %10.5f ptmin %10.5f ptmax %10.5f eta %10.5f",pt, sigma, ptmin, ptmax, eta) << endl << flush;
   ptmax = min(jp::emax/cosh(eta), ptmax); // safety check
   //  cout << Form("2pt %10.5f sigma %10.5f ptmin %10.5f ptmax %10.5f eta %10.5f",pt, sigma, ptmin, ptmax, eta) << endl << flush;
-
-  if (ptmin > ptmax) cout << "Moi" << endl;
   
   const double par[nk+2] = {pt, eta, p[1], p[2], p[3]};
   _kernel->SetParameters(&par[0]);
@@ -270,9 +269,9 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   TF1 *fnlos = new TF1(Form("fs%s",c),smearedAnsatz,jp::unfptminnlo,maxpt,nk+3); 
   fnlos->SetParameters(y1, fnlo->GetParameter(0), fnlo->GetParameter(1),
                        fnlo->GetParameter(2), 0, 0);
-  cout << "par0 "<< fnlos->GetParameter(0) << "y1 "<< y1<<endl<<flush; 
+  cout << "par0 "<< fnlos->GetParameter(0) << " y1 "<< y1<<endl<<flush; 
 
-  cout << "Calculate forward smearing and unfold ->hpt" << endl << flush;
+  cout << "Calculate forward smearing and unfold" << endl << flush;
 
   TGraphErrors *gfold_fwd = new TGraphErrors(0);
   gfold_fwd->SetName(Form("gfold_fwd%s",c));
@@ -284,9 +283,9 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   for (int i = 0; i != gpt->GetN()+1; ++i) {
     double x, y, ex, ey;
     tools::GetPoint(gpt, i, x, y, ex, ey);
+
     double k = fnlo->Eval(x) / fnlos->Eval(x);
 
-    
     if (!TMath::IsNaN(k)) {
 
       tools::SetPoint(gfold_fwd, gfold_fwd->GetN(), x, k, ex, 0.);
@@ -577,8 +576,8 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   // TODO: TUnfold.
 
 
-  if (jp::debug)
-   cout << "done." << endl << flush;
+  //  if (jp::debug)
+   cout << "Unfolding done." << endl << flush;
 
   // Store "unfolding correction" (unfolded / original) and corrected graph
   //cout << "Store graphs..." << endl << flush;
@@ -723,14 +722,13 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     gnlo2->Write("gnlo");
     gfold_dag->Write("gfold");
 
-    // Fit functions
+    // Fit functions.
     uResp->Write();
     fnlo->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
     fnlo->SetNpx(1000); // otherwise ugly on log x-axis after write
     fnlo->Write();
-
     fnlos->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
-    fnlos->SetNpx(3000); // otherwise ugly on log x-axis after write
+    fnlos->SetNpx(3000); // otherwise ugly on log x-axis after write 
     fnlos->Write();
     fres->Write();
     grationlo->Write();
