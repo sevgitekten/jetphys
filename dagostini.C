@@ -160,11 +160,12 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
     } // inherits from TDirectory
 
     // Found hpt plot: call unfolding routine
-    if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hpt" || string(obj->GetName())=="hpt_jet" )) {
+    // if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hpt" || string(obj->GetName())=="hpt_jet" )) {
+    if (obj->InheritsFrom("TH1") && string(obj->GetName())=="hpt") {
       cout << "+" << flush;
 
       _jet = TString(obj->GetName()).Contains("hpt_jet");
-
+      
       TH1D *hpt = (TH1D*)obj;
       //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
       TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
