@@ -104,10 +104,9 @@ void dagostiniUnfold(string type) {
   TFile *fin = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
   assert(fin && !fin->IsZombie());
 
-  // TFile *fin2 = new TFile(Form("output-%s-2c.root",type.c_str()),"READ");
   // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
   // TFile *fin2 = new TFile(Form("output-%s-2c.root","MC"),"READ");
-  TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
+  TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-DATA-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
 
   TFile *fout = new TFile(Form("output-%s-3.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());
 
@@ -168,8 +167,7 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
 
       TH1D *hpt = (TH1D*)obj;
       //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
-      //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
-        TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
+      TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
 
        if (hpt2)
         dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
@@ -208,7 +206,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   //hnlo->Fit(fnlo,"QRN");
   //hnlo->Scale(2e-10); // TEMP PATCH
-  fnlo->SetRange(max(60.,jp::unfptminnlo), min(jp::xmax, jp::emax/cosh(y1)));
+  fnlo->SetRange(max(jp::fitmin,jp::unfptminnlo), min(jp::xmax, jp::emax/cosh(y1)));
   cout << "fit hnlo" << endl;
   hnlo->Fit(fnlo,"RN");  // There seems to be abnormal terminations
   fnlo->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
@@ -236,7 +234,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   // Second fit to properly centered graph
   //gnlo2->Fit(fnlo,"QRN");
-  fnlo->SetRange(max(60.,jp::unfptminnlo), min(jp::xmax, jp::emax/cosh(y1)));   // Fit ranges here...
+  fnlo->SetRange(max(jp::fitmin,jp::unfptminnlo), min(jp::xmax, jp::emax/cosh(y1)));   // Fit ranges here...
   cout << "fit to gnlo2" << endl;
   gnlo2->Fit(fnlo,"RN");
   fnlo->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
@@ -265,20 +263,21 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
                        fnlo->GetParameter(2), 0, 0);
   cout << "par0 "<< fnlos->GetParameter(0) << "y1 "<< y1<<endl<<flush; 
 
-  cout << "Calculate forward smearing and unfold hpt" << endl << flush;
+  cout << "Calculate forward smearing and unfold ->hpt" << endl << flush;
 
   TGraphErrors *gfold_fwd = new TGraphErrors(0);
   gfold_fwd->SetName(Form("gfold_fwd%s",c));
   TGraphErrors *gcorrpt_fwd = new TGraphErrors(0);
   gcorrpt_fwd->SetName(Form("gcorrpt_fwd%s",c));
   TH1D *hcorrpt_fwd = (TH1D*)hpt->Clone(Form("hcorrpt_fwd%s",c));
+  hcorrpt_fwd->Reset();
 
-  //  for (int i = 0; i != gpt->GetN(); ++i) {
   for (int i = 1; i != gpt->GetN()+1; ++i) {
     double x, y, ex, ey;
     tools::GetPoint(gpt, i, x, y, ex, ey);
     double k = fnlo->Eval(x) / fnlos->Eval(x);
 
+    
     if (!TMath::IsNaN(k)) {
 
       tools::SetPoint(gfold_fwd, gfold_fwd->GetN(), x, k, ex, 0.);
@@ -422,14 +421,14 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   }
 
   K->SetMatrixArray(mtEntries.GetArray());
-  K->Print();
+  //  K->Print();
 
   TDecompSVD *svd = new TDecompSVD(*K);
   svd->Decompose(); 
 
   // Get singular values
   TVectorD singulars = svd->GetSig();
-  singulars.Print();
+  // singulars.Print();
 
 
   // For BinByBin and SVD, need square matrix
@@ -560,10 +559,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
       }
    }
 
-  // TUnfold.
-
-  // cout << "Moving to TUnfold" << endl;
-
+  // TODO: TUnfold.
 
 
   if (jp::debug)
@@ -706,11 +702,9 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     // Inputs and central method results
     hpt->Write("hpt");
     hcorrpt_dag->Write("hcorrpt");
-    //hpt->Write("hcorrpt"); // TEMP PATCH bypass
     hnlo->Write("hnlo");
     gpt->Write("gpt");
     gcorrpt_dag->Write("gcorrpt");
-    //gpt->Write("gcorrpt"); // TEMP PATCH bypass
     gnlo2->Write("gnlo");
     gfold_dag->Write("gfold");
 
@@ -719,10 +713,9 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     fnlo->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
     fnlo->SetNpx(1000); // otherwise ugly on log x-axis after write
     fnlo->Write();
-    // Calculating points for fs is taking significant time,
-    // and even got stuck at some point when too far out of the range
+
     fnlos->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
-    fnlos->SetNpx(1000); // otherwise ugly on log x-axis after write
+    fnlos->SetNpx(3000); // otherwise ugly on log x-axis after write
     fnlos->Write();
     fres->Write();
     grationlo->Write();
