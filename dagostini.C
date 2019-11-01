@@ -243,7 +243,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   // Bin-centered data points
   TGraphErrors *gpt = new TGraphErrors(0);
   gpt->SetName(Form("gpt%s",c));
-    for (int i = 1; i != hpt->GetNbinsX()+1; ++i) {
+    for (int i = 0; i != hpt->GetNbinsX()+1; ++i) {
  
       double ptmin = hpt->GetBinLowEdge(i);
       double ptmax = hpt->GetBinLowEdge(i+1);
@@ -273,7 +273,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   TH1D *hcorrpt_fwd = (TH1D*)hpt->Clone(Form("hcorrpt_fwd%s",c));
   hcorrpt_fwd->Reset();
 
-  for (int i = 1; i != gpt->GetN()+1; ++i) {
+  for (int i = 0; i != gpt->GetN()+1; ++i) {
     double x, y, ex, ey;
     tools::GetPoint(gpt, i, x, y, ex, ey);
     double k = fnlo->Eval(x) / fnlos->Eval(x);
@@ -430,6 +430,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   // Get singular values
   TVectorD singulars = svd->GetSig();
   // singulars.Print();
+  // TODO: save values, handling zero rows/columns in mt
 
 
   // For BinByBin and SVD, need square matrix
