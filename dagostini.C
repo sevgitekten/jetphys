@@ -58,14 +58,18 @@ Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
   const double eta = p[1]; // rapidity
 
   double res = ptresolution(pt, eta+1e-3) * pt;
+  
+  //  cout << pt << " was pt and res is " << res << endl;
+  
   const double s = TMath::Gaus(ptmeas, pt, res, kTRUE);
   const double f = p[2] * pow(pt, p[3]) * pow(1 - pt*cosh(eta) / jp::emax, p[4]);
+  //  cout << f << " " << f*s << endl;
   
   return (f * s);
 }
 
 // Smeared Ansatz
-double _epsilon = 1e-12;
+double _epsilon = 1e-6;
 TF1 *_kernel = 0; // global variable, not pretty but works
 Double_t smearedAnsatz(Double_t *x, Double_t *p) {
 
@@ -83,6 +87,8 @@ Double_t smearedAnsatz(Double_t *x, Double_t *p) {
   ptmax = min(jp::emax/cosh(eta), ptmax); // safety check
   //  cout << Form("2pt %10.5f sigma %10.5f ptmin %10.5f ptmax %10.5f eta %10.5f",pt, sigma, ptmin, ptmax, eta) << endl << flush;
 
+  if (ptmin > ptmax) cout << "Moi" << endl;
+  
   const double par[nk+2] = {pt, eta, p[1], p[2], p[3]};
   _kernel->SetParameters(&par[0]);
 
@@ -195,7 +201,6 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   // initial fit of the NLO curve to a histogram
   TF1 *fnlo = new TF1(Form("fus%s",c),
-		      //   "[0]*exp([1]/x)*pow(x,[2])"
 		           "[0]*pow(x,[1])"
                       "*pow(1-x*cosh([3])/[4],[2])", //10., 1000.);
 		      jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
@@ -209,7 +214,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   //hnlo->Scale(2e-10); // TEMP PATCH
   fnlo->SetRange(max(jp::fitmin,jp::unfptminnlo), min(jp::xmax, jp::emax/cosh(y1)));
   cout << "fit hnlo" << endl;
-  hnlo->Fit(fnlo,"RN");  // There seems to be abnormal terminations
+  hnlo->Fit(fnlo,"RN"); 
   fnlo->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
 
   // Graph of theory points with centered bins
@@ -225,12 +230,14 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     double ptmin = hnlo->GetBinLowEdge(i);
     double ptmax = hnlo->GetBinLowEdge(i+1);
 
-    double y0 = fnlo->Integral(ptmin, ptmax) / (ptmax - ptmin);
-    double x = fnlo->GetX(y0, ptmin, ptmax);
+    if (!isnan(fnlo->Eval(ptmax))) {
+      double y0 = fnlo->Integral(ptmin, ptmax) / (ptmax - ptmin);
+      double x = fnlo->GetX(y0, ptmin, ptmax);
 
-    int n = gnlo->GetN();
-    tools::SetPoint(gnlo, n, x, y, 0, dy);
-    tools::SetPoint(gnlo2, n, x, y, 0, tools::oplus(dy, minerr*y));
+      int n = gnlo->GetN();
+      tools::SetPoint(gnlo, n, x, y, 0, dy);
+      tools::SetPoint(gnlo2, n, x, y, 0, tools::oplus(dy, minerr*y));
+    }
   }
 
   // Second fit to properly centered graph
@@ -247,11 +254,12 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
  
       double ptmin = hpt->GetBinLowEdge(i);
       double ptmax = hpt->GetBinLowEdge(i+1);
-      double y = fnlo->Integral(ptmin, ptmax) / (ptmax - ptmin);
-      double x = fnlo->GetX(y, ptmin, ptmax);
       double ym = hpt->GetBinContent(i);
-      double ym_err = hpt->GetBinError(i);
-      if (ym>0) {
+      
+      if (ym>0 && !isnan(fnlo->Eval(ptmax))) { // Ingrate only if this is a bin that has some content
+	double y = fnlo->Integral(ptmin, ptmax) / (ptmax - ptmin);
+	double ym_err = hpt->GetBinError(i);
+	double x = fnlo->GetX(y, ptmin, ptmax);    
 	tools::SetPoint(gpt, gpt->GetN(), x, ym, 0., ym_err);
       }
   } // for i
@@ -359,9 +367,14 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
    
     double ptreco1 = mt->GetXaxis()->GetBinLowEdge(i);
     double ptreco2 = mt->GetXaxis()->GetBinLowEdge(i+1);
-    double yreco = fnlo->Integral(ptreco1, ptreco2) / (ptreco2 - ptreco1);
-    double ptreco = fnlo->GetX(yreco, ptreco1, ptreco2);
 
+    double ptreco = 0;
+    if (!isnan(fnlo->Eval(ptreco2))) {
+      double yreco = fnlo->Integral(ptreco1, ptreco2) / (ptreco2 - ptreco1);
+      ptreco = fnlo->GetX(yreco, ptreco1, ptreco2);
+      }
+        
+    
     for (int j = 1; j != mt->GetNbinsY()+1; ++j) {
 
       double ptgen1 = min(jp::emax/cosh(y1), mt->GetYaxis()->GetBinLowEdge(j));
