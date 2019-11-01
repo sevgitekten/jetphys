@@ -106,7 +106,7 @@ void dagostiniUnfold(string type) {
 
   // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
   // TFile *fin2 = new TFile(Form("output-%s-2c.root","MC"),"READ");
-  TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-DATA-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
+  TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
 
   TFile *fout = new TFile(Form("output-%s-3.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());
 
