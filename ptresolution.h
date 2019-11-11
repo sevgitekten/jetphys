@@ -9,6 +9,7 @@
 
 #include <string>
 
+// For official JERs
 #include "JetMETCorrections/Modules/interface/JetResolution.h"
 
 
