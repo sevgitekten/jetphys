@@ -11,12 +11,13 @@
 
 #include "JetMETCorrections/Modules/interface/JetResolution.h"
 
+
 using std::string;
 
 // Switch MC truth or data resolutions
-bool _ismcjer = true;
+bool _ismcjer = false;
 // Use official JME resolutions
-bool _usejme = false; // true;
+bool _usejme = false;
 //bool _jerkscale = true;//false;
 // Define cone size (default Run I AK5)
 //bool _ak7 = false;
@@ -24,7 +25,7 @@ bool _usejme = false; // true;
 enum jer_iov { none, run1, run2016, run2017, run2018, run2018abc, run2018d,
 	       run2016bcd, run2016ef, run2016gh,
 	       run2017b, run2017c, run2017d, run2017e, run2017f, run2017de};
-jer_iov _jer_iov = run2017; //none;
+jer_iov _jer_iov = run2017;
 
 const int _nres = 8;
 
@@ -262,10 +263,10 @@ double ptresolution(double pt, double eta) {
       _jer_sf = new JME::JetResolutionScaleFactor(scaleFactorFile);
     }
     if (_jer_iov==run2017 && !_jer && !_jer_sf) {
-      string resolutionFile = "../JRDatabase/textFiles/Fall17_V3_MC/"
-	"Fall17_V3_MC_PtResolution_AK4PFchs.txt";
-      string scaleFactorFile = "../JRDatabase/textFiles/Fall17_V3_MC/"
-	"Fall17_V3_MC_SF_AK4PFchs.txt";
+      string resolutionFile = "JRDatabase/textFiles/Fall17_V7_MC/"
+	"Fall17_V7_MC_PtResolution_AK4PFchs.txt";
+      string scaleFactorFile = "JRDatabase/textFiles/Fall17_V7_MC/"
+	"Fall17_V7_MC_SF_AK4PFchs.txt";
       string weightFile = "rootfiles/jerweights.root";
 
       _jer = new JME::JetResolution(resolutionFile);
@@ -315,9 +316,10 @@ double ptresolution(double pt, double eta) {
     //{rho,rho}
 
     //double rho = 19.31; // Data-Fall17V8-D, jt500 hrho
+
     double jet_resolution = _jer->getResolution({{JME::Binning::JetPt, pt}, {JME::Binning::JetEta, eta}, {JME::Binning::Rho, _rho}});
     double jer_sf = _jer_sf->getScaleFactor({{JME::Binning::JetEta, eta}}, Variation::NOMINAL);//m_systematic_variation);
-
+   
     res = jet_resolution;
     if (!_ismcjer) res *= jer_sf;
   }
@@ -417,5 +419,31 @@ double ecalprefire(double pt, double eta, jer_iov run) {
 
   return (_fecalpf->Eval(pt));
 }
+
+
+jer_iov prefireIOV(const char* run, unsigned int yid) {
+
+    if (yid == 0) {
+      if (strncmp(run,"RunB",4)) return run2016bcd;
+      else if (strncmp(run,"RunC",4)) return run2016bcd;   
+      else if (strncmp(run,"RunD",4)) return run2016bcd;
+      else if (strncmp(run,"RunE",4)) return run2016ef;   
+      else if (strncmp(run,"RunF",4)) return run2016ef;
+      else if (strncmp(run,"RunG",4)) return run2016gh;
+      else if (strncmp(run,"RunH",4)) return run2016gh;
+      else return run2016;
+    }
+    else if (yid == 1) {
+      if (strncmp(run,"RunB",4)) return run2017b;
+      else if (strncmp(run,"RunC",4)) return run2017c;   
+      else if (strncmp(run,"RunD",4)) return run2017de;
+      else if (strncmp(run,"RunE",4)) return run2017de;   
+      else if (strncmp(run,"RunF",4)) return run2017f;
+      else return run2017;
+    }
+    else return run2018;
+}
+
+
 
 #endif // __ptresolution_h__

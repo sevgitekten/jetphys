@@ -171,6 +171,8 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
       _jet = TString(obj->GetName()).Contains("hpt_jet");
       
       TH1D *hpt = (TH1D*)obj;
+
+      
       //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
       TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
 
@@ -196,6 +198,32 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   if (_jet) c = "_jet";
 
   _ismcjer = ismc;
+
+
+  // Correct hpt (data) for ECAL prefire
+  // Similar way as in https://github.com/miquork/jecsys/blob/2018_Moriond19/minitools/drawDeltaJEC.C
+
+  if (y1 >= 2.0 && y2 <= 3.0 && jp::yid < 2) {
+
+    jer_iov runECAL =  prefireIOV(jp::run,jp::yid);
+
+    for (int i = 0; i != hpt->GetNbinsX()+1; ++i) {
+ 
+      double pt = hpt->GetBinCenter(i);
+      double y = hpt->GetBinContent(i);
+      double yerr = hpt->GetBinError(i);
+
+      double ineff = ecalprefire(pt, y1+0.1, runECAL); 
+      double eff = 1-ineff;
+      double corr = 1./eff;
+            
+      if (y>0) {
+	hpt->SetBinContent(i, corr*y);
+	hpt->SetBinError(i, corr*yerr);
+       }
+     }
+
+  }  // ECAL prefire
 
   // initial fit of the NLO curve to a histogram
   TF1 *fnlo = new TF1(Form("fus%s",c),
