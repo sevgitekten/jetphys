@@ -205,7 +205,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   if (y1 >= 2.0 && y2 <= 3.0 && jp::yid < 2) {
 
-    jer_iov runECAL =  prefireIOV(jp::run,jp::yid);
+    jer_iov runECAL = prefireIOV();
 
     for (int i = 0; i != hpt->GetNbinsX()+1; ++i) {
  

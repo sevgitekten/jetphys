@@ -12,6 +12,7 @@
 // For official JERs
 #include "JetMETCorrections/Modules/interface/JetResolution.h"
 
+#include "settings.h"
 
 using std::string;
 
@@ -26,7 +27,10 @@ bool _usejme = false;
 enum jer_iov { none, run1, run2016, run2017, run2018, run2018abc, run2018d,
 	       run2016bcd, run2016ef, run2016gh,
 	       run2017b, run2017c, run2017d, run2017e, run2017f, run2017de};
-jer_iov _jer_iov = run2017;
+
+jer_iov jerIOVauto();
+
+jer_iov _jer_iov = jerIOVauto();
 
 const int _nres = 8;
 
@@ -445,6 +449,36 @@ jer_iov prefireIOV(const char* run, unsigned int yid) {
     else return run2018;
 }
 
+jer_iov prefireIOV() {
+
+  if (jp::yid == 0) {
+      if (strncmp(jp::run,"RunB",4)) return run2016bcd;
+      else if (strncmp(jp::run,"RunC",4)) return run2016bcd;   
+      else if (strncmp(jp::run,"RunD",4)) return run2016bcd;
+      else if (strncmp(jp::run,"RunE",4)) return run2016ef;   
+      else if (strncmp(jp::run,"RunF",4)) return run2016ef;
+      else if (strncmp(jp::run,"RunG",4)) return run2016gh;
+      else if (strncmp(jp::run,"RunH",4)) return run2016gh;
+      else return run2016;
+    }
+    else if (jp::yid == 1) {
+      if (strncmp(jp::run,"RunB",4)) return run2017b;
+      else if (strncmp(jp::run,"RunC",4)) return run2017c;   
+      else if (strncmp(jp::run,"RunD",4)) return run2017de;
+      else if (strncmp(jp::run,"RunE",4)) return run2017de;   
+      else if (strncmp(jp::run,"RunF",4)) return run2017f;
+      else return run2017;
+    }
+    else return run2018;
+}
+
+jer_iov jerIOVauto() {
+  if (jp::yid == 0) return run2016;
+  else if (jp::yid == 1) return run2017;
+  else if (jp::yid == 2) return run2017;
+  else if (jp::yid == 3) return run2018;
+  else return none;
+}
 
 
 #endif // __ptresolution_h__
