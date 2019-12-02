@@ -12,7 +12,7 @@
 #include "TMath.h"
 #include "TGraphErrors.h"
 
-//#include "ptresolution.h"
+#include "ptresolution.h"
 #include "tools.h"
 #include "settings.h"
 
@@ -23,60 +23,61 @@
 #include "CondFormats/JetMETObjects/interface/SimpleJetCorrectionUncertainty.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 
+// Resolution function
+Double_t fPtRes(Double_t *x, Double_t *p) { return ptresolution(x[0], p[0]);}
 
-// Ansatz Kernel (for jer_systematics
-/*
+// Ansatz Kernel 
 int cnt_a = 0;
+const int nk = 3; // number of kernel parameters (excluding pt, eta)
+
 Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
 
-  if (++cnt_a%1000000==0) cout << "." << flush;
+  if (++cnt_a%1000000==0) cout << "+" << flush;
 
-  const double pt = x[0]; // true pT, p[0] is measured pT
-  const double eta = p[5];
-  const double res = ptresolution(pt, eta+1e-3) * pt * (1. + p[6]);
-  const double s = TMath::Gaus(p[0], pt, res, kTRUE);
-  const double f = p[1] * exp(p[2]/pt) * pow(pt, p[3])
-    * pow(1 - pt*cosh(eta)/jp::emax, p[4]);
+  const double pt = x[0]; // true pT
+  const double ptmeas = p[0]; // measured pT
+  const double eta = p[1]; // rapidity
 
+  double res = ptresolution(pt, eta+1e-3) * pt;
+  
+  const double s = TMath::Gaus(ptmeas, pt, res, kTRUE);
+  const double f = p[2] * pow(pt, p[3]) * pow(1 - pt*cosh(eta) / jp::emax, p[4]);
+  
   return (f * s);
 }
-*/
+
 
 // Smeared Ansatz
-
-double _epsilon = 1e-12;
-/*TF1 *_kernel = 0; // global variable, not pretty but works
+double _epsilon = 1e-8;
+TF1 *_kernel = 0; // global variable, not pretty but works
 Double_t smearedAnsatz(Double_t *x, Double_t *p) {
 
-  if (!_kernel) _kernel = new TF1("_kernel", smearedAnsatzKernel, 1.,1000.,7);
-
   const double pt = x[0];
-  const double eta = p[4];
-  const double res = ptresolution(pt, eta+1e-3) * pt * (1 + p[5]);
-  const double sigma = min(res, 0.30);
-  double xmin = pt / (1. + 4.*sigma); // xmin*(1+4*sigma)=x
-  xmin = max(1.,xmin); // safety check
-  double xmax = pt / (1. - 2.*sigma); // xmax*(1-2*sigma)=x
-  xmax = min(jp::emax/cosh(eta),xmax); // safety check
-  const double par[7] = {pt, p[0], p[1], p[2], p[3], p[4], p[5]};
+  const double eta = p[0];
+  
+  if (!_kernel) _kernel = new TF1("_kernel", smearedAnsatzKernel, 1., jp::emax/cosh(eta), nk+2);
+
+  double res = ptresolution(pt, eta+1e-3); // * pt;
+  //  const double sigma = max(0.10, min(res, 0.30)); // was max
+  const double sigma = min(res, 0.30); // was max
+
+  double ptmin = pt /(1. + 4.*sigma); // xmin*(1+4*sigma)=x
+  ptmin = max(1.,ptmin); // safety check
+  double ptmax = pt /(1. - 3.*sigma); // xmax*(1-3*sigma)=x
+  
+  //  cout << Form("1pt %10.5f sigma %10.5f ptmin %10.5f ptmax %10.5f eta %10.5f",pt, sigma, ptmin, ptmax, eta) << endl << flush;
+  ptmax = min(jp::emax/cosh(eta), ptmax); // safety check
+  //  cout << Form("2pt %10.5f sigma %10.5f ptmin %10.5f ptmax %10.5f eta %10.5f",pt, sigma, ptmin, ptmax, eta) << endl << flush;
+  
+  const double par[nk+2] = {pt, eta, p[1], p[2], p[3]};
   _kernel->SetParameters(&par[0]);
 
-  //  return ( _kernel->Integral(xmin, xmax, &par[0], _epsilon) );
- return ( _kernel->Integral(xmin, xmax, _epsilon) );
+  // Set pT bin limits needed in smearing matrix generation
+  if (p[4]>0 && p[4]<jp::emax/cosh(eta)) ptmin = p[4];
+  if (p[5]>0 && p[5]<jp::emax/cosh(eta)) ptmax = p[5];
 
+  return ( _kernel->Integral(ptmin, ptmax, _epsilon) );
 }
-*/
-
-// JEC systematics are evaluated in two ways:
-// - vary JEC by uncertainty and rescale original data => ratio of histos
-// - shift Ansatzt by JEC uncertainty => ratio of functions
-// The former usually suffers from low statistics fluctuations at high pT,
-// but still works as a good cross check for the latter method. The Ansatz
-// approach also decouples unfolding from JEC uncertainty, which could be
-// good or bad (not quite sure yet how the correlation should be treated).
-// The Ansatz method is very fast and because it does not suffer from low
-// statistics, can be used to break JEC uncertainty into uncorrelated sources
-// (D0 measurement of inclusive jets used 91 sources for JEC uncertainty...)
 
 // systematics container for calculating total
 struct sysc {
@@ -97,8 +98,8 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 void jec_shifts(TDirectory *dzr, TDirectory *dout, string type,
 		string algo = "jpt");
 
-//sysc *jer_systematics(TDirectory *dzr, TDirectory *dout,
-//	      string type, string jectype="inc");
+sysc *jer_systematics(TDirectory *dzr, TDirectory *dout,
+	      string type, string jectype="inc");
 
 sysc *lum_systematics(TDirectory *dzr, TDirectory *dout);
 
@@ -107,7 +108,7 @@ void tot_systematics(TDirectory *dzr, TDirectory *dout,
 		     sysc *cjer1, sysc *cjer2,
 		     sysc *clum);
 
-//void statistics(TDirectory *dzr, TDirectory *dout);
+void statistics(TDirectory *dzr, TDirectory *dout);
 void sourceBin(TDirectory *dth, TDirectory *dout);
 
 bool _ismc = false; // implement as non-global later
@@ -182,13 +183,13 @@ void systematics(string type) {
       sysc *cjec2 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "rel");
       sysc *cjec3 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "bjt");
       sysc *cjec4 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "pt");
-      //sysc *cjer1 = jer_systematics(dzr, dout, type, "inc");
-      //sysc *cjer2 = jer_systematics(dzr, dout, type, "bjt");
-      sysc *cjer1 = cjec1;
-      sysc *cjer2 = cjec2;
+      sysc *cjer1 = jer_systematics(dzr, dout, type, "inc");
+      sysc *cjer2 = jer_systematics(dzr, dout, type, "bjt");
+      //      sysc *cjer1 = cjec1;
+      //      sysc *cjer2 = cjec2;
       sysc *clum = lum_systematics(dzr, dout);
       tot_systematics(dzr, dout, cjec1, cjec2, cjec3, cjer1, cjer2, clum);
-      //statistics(dzr, dout);
+       statistics(dzr, dout);
 
       jec_shifts(dzr, dout, type, "pf");
     } // inherits TDirectory
@@ -217,9 +218,8 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
   // Load the uncertainty
   //TH1D *hunc = (TH1D*)dunc->Get("punc"); assert(hunc);
   //JetCorrectionUncertainty *func = new JetCorrectionUncertainty(Form("CondFormats/JetMETObjects/data/GR_R_42_V23_Uncertainty_%sPF.txt",jp::algo));
-  //string s = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt", jp::jecgt.c_str(), jp::type, jp::algo);
-  string s = "/home/local/lmartika/Jets/JECDatabase/textFiles/Summer16_07Aug2017BCD_V11_DATA/Summer16_07Aug2017BCD_V11_DATA_Uncertainty_AK4PFchs.txt";
-  //const char s = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt", jp::jecgt, jp::type, jp::algo);
+
+  string s = "/home/local/lmartika/Jets/JECDatabase/textFiles/Fall17_17Nov2017B_V32_DATA/Fall17_17Nov2017B_V32_DATA_Uncertainty_AK4PFchs.txt";
 
   JetCorrectionUncertainty *func = new JetCorrectionUncertainty(s.c_str());
   const char *jt = jectype.c_str();
@@ -326,6 +326,7 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 	//	if (type==""); // suppress warning
 
 	//        if (xmax!=xmin) {
+
 	if (!isnan(fpt->Eval(xmax))) {     // xmax*(1+djec1) might still be out of range for eta bins 2.5-3.0 + bins more forward
 	    double ypl = fpt->Integral(xmin/(1+djec0), xmax/(1+djec1)) / (xmax-xmin);
 	    double ymn = fpt->Integral(xmin*(1+djec0), xmax*(1+djec1)) / (xmax-xmin);
@@ -460,7 +461,7 @@ const double p_ak5jpt[8][5] =
   return;
 } // jec_hifts
 
-/*
+
 sysc *jer_systematics(TDirectory *din, TDirectory *dout,
 		      string type, string jertype) {
 
@@ -470,7 +471,7 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
   bool _th = (type=="TH");
 
   float etamin, etamax;
-  assert(sscanf(din->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
+  sscanf(din->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
   TH1D *hzr = (TH1D*)din->Get(_th ? "hnlo" : "hpt"); assert(hzr);
   
@@ -482,17 +483,17 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
   double xmax =  jp::emax; // Guess xmin and xmax to fix this error
 
   
-  TF1 *fpt = new TF1("fpt2","[0]*exp([1]/x)*pow(x,[2])"
-		     "*pow(1-x*cosh([4])/[5].,[3])",xmin,xmax);
+  TF1 *fpt = new TF1("fpt2","[0]*pow(x,[1])"
+		     "*pow(1-x*cosh([3])/[4],[2])",xmin,xmax); // check ranges!
 
   fpt->SetParameters(fpt0->GetParameter(0), fpt0->GetParameter(1),
 		     fpt0->GetParameter(2), fpt0->GetParameter(3),
-		     fpt0->GetParameter(4), fpt0->GetParameter(5));
+		     fpt0->GetParameter(4)); //, fpt0->GetParameter(5));
 
   TF1 *fs = new TF1("fs2",smearedAnsatz,xmin,xmax,6);
-  fs->SetParameters(fpt->GetParameter(0), fpt->GetParameter(1),
-		    fpt->GetParameter(2), fpt->GetParameter(3),
-		    fpt->GetParameter(4), 0.);
+  fs->SetParameters(fpt->GetParameter(3), fpt->GetParameter(0),
+		    fpt->GetParameter(1), fpt->GetParameter(2),
+		    0., 0.);
 
   // make sure new histograms get created in the output file
   dout->cd();
@@ -508,7 +509,7 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
     double ptmin = hzr->GetBinLowEdge(i);
     double ptmax = hzr->GetBinLowEdge(i+1);
 
-    if (ptmin>=xmin && ptmax<=xmax && hzr->GetBinContent(i)!=0) {
+    if (ptmin>=xmin && ptmax<=xmax && hzr->GetBinContent(i)!=0 && !isnan(fpt->Eval(ptmax))) {
 
       double y = fpt->Integral(ptmin, ptmax) / (ptmax - ptmin);
       double x = fpt->GetX(y, ptmin, ptmax);
@@ -537,11 +538,11 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
       }
 
       fs->SetParameter(5, +djer);
-      double ypl = fs->Eval(x);
+      double ypl = 1; // fs->Eval(x);
       fs->SetParameter(5, -djer);
-      double ymn = fs->Eval(x);
+      double ymn = 1; //fs->Eval(x);
       fs->SetParameter(5, 0.);
-      double yzr = fs->Eval(x);
+      double yzr = 1; //fs->Eval(x);
 
       hspl->SetBinContent(i, yzr ? max(ypl / yzr - 1, 0.) : 0.);
       hsmn->SetBinContent(i, yzr ? min(ymn / yzr - 1, 0.) : 0.);
@@ -555,7 +556,7 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
 
   return ( new sysc(hspl, hsmn, hsav) );
 } // jer_systematics
-*/
+
 
 sysc *lum_systematics(TDirectory *din, TDirectory *dout) {
 
@@ -656,26 +657,34 @@ void tot_systematics(TDirectory *din, TDirectory *dout,
 
 } // tot_systematics
 
-/*
+
 void statistics(TDirectory *din, TDirectory *dout) {
 
+  //  float etamin, etamax;
+  //  sscanf(din->GetName(),"Eta_%f-%f",&etamin,&etamax);
+  //  cout << "Etamin " << etamin << endl;
+  
   TH1D *hzr = (TH1D*)din->Get("hpt"); assert(hzr);
-
+ 
   // make sure new histograms get created in the output file
   dout->cd();
 
   TF1 *fpt0 = (TF1*)din->Get("fus"); assert(fpt0); fpt0->SetName("fpt0");
-  TF1 *fpt = new TF1("fpt3","[0]*exp([1]/x)*pow(x,[2])"
-		     "*pow(1-x*cosh([4])/[5],[3])",
-		     jp::recopt, jp::emax);
+  TF1 *fpt = new TF1("fpt3","[0]*pow(x,[1])"
+		     "*pow(1-x*cosh([3])/[4],[2])",
+		     jp::recopt, jp::emax); // check maximum
+
+  
   fpt->SetParameters(fpt0->GetParameter(0), fpt0->GetParameter(1),
 		     fpt0->GetParameter(2), fpt0->GetParameter(3),
-		     fpt0->GetParameter(4), fpt0->GetParameter(5));
+		     fpt0->GetParameter(4));
 
-  TF1 *fs = new TF1("fs3",smearedAnsatz, jp::recopt, jp::emax, 6);
-  fs->SetParameters(fpt->GetParameter(0), fpt->GetParameter(1),
-		    fpt->GetParameter(2), fpt->GetParameter(3),
-		    fpt->GetParameter(4), 0.);
+  TF1 *fs = new TF1("fs3",smearedAnsatz, jp::recopt-10, jp::emax, 6);
+  //smearedAz pars: y1, 0, 1, 2, 0, 0
+  
+   fs->SetParameters(fpt->GetParameter(3), fpt->GetParameter(0), fpt->GetParameter(1),
+  	    fpt->GetParameter(2), 0,
+   	    0); // 0.);
 
   // Estimate statistical uncertainty with 10 mub-1 and 1pb-1
   TH1D *hmub = (TH1D*)hzr->Clone("hsta_mub"); hmub->Reset();
@@ -683,31 +692,35 @@ void statistics(TDirectory *din, TDirectory *dout) {
   TH1D *hpb = (TH1D*)hzr->Clone("hsta_pb"); hpb->Reset();
 
   _epsilon = 1e-4; // default 1e-12
-  for (int i = 1; i != hzr->GetNbinsX()+1 && false; ++i) {
+  //  for (int i = 1; i != hzr->GetNbinsX()+1 && false; ++i) {
+   for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
 
     double xmin = hzr->GetBinLowEdge(i);
     double xmax = hzr->GetBinLowEdge(i+1);
-    double y = fpt->Integral(xmin, xmax) / (xmax - xmin);
-    double x = fpt->GetX(y, xmin, xmax);
 
-    // sanity checks
-    assert(x >= xmin);
-    assert(x <= xmax);
+    if (!isnan(fpt->Eval(xmax)) and !isnan(fpt->Eval(xmin))) {
+      double y = fpt->Integral(xmin, xmax) / (xmax - xmin);
+      double x = fpt->GetX(y, xmin, xmax);
 
-    double nd = fs->Eval(x)*(xmax-xmin); // 1/bin/pb-1
-    double stat_mub = 1./sqrt(nd*0.0001);
-    double stat_nb  = 1./sqrt(nd*0.01);
-    double stat_pb  = 1./sqrt(nd*1.);
-
-    if (stat_mub<1.) hmub->SetBinContent(i, stat_mub);
-    if (stat_nb<1.) hnb->SetBinContent(i, stat_nb);
-    if (stat_pb<1.) hpb->SetBinContent(i, stat_pb);
+      // sanity checks
+      if (x >= xmin and x <= xmax and !isnan(fs->Eval(x))) { // The last one causing error at low pt (smearing)
+	double nd = fs->Eval(x)*(xmax-xmin); // 1/bin/pb-1
+	
+	double stat_mub = 1./sqrt(nd*0.0001);
+	double stat_nb  = 1./sqrt(nd*0.01);
+	double stat_pb  = 1./sqrt(nd*1.);
+	
+	if (stat_mub<1.) hmub->SetBinContent(i, stat_mub);
+	if (stat_nb<1.) hnb->SetBinContent(i, stat_nb);
+	if (stat_pb<1.) hpb->SetBinContent(i, stat_pb);
+      }
+    }
   } // for i
 
   din->cd();
 
 } // statistics
-*/
+
 
 void sources(string type = "DATA") {
 
