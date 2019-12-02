@@ -16,17 +16,13 @@
 #include "tools.h"
 #include "settings.h"
 
-#include "CondFormats/JetMETObjects/src/Utilities.cc"
-
-// #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/SimpleJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 // For JEC uncertainty
 #include "CondFormats/JetMETObjects/interface/SimpleJetCorrectionUncertainty.h"
-
-
-#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+
 
 // Ansatz Kernel (for jer_systematics
 /*
@@ -125,7 +121,6 @@ void systematics(string type) {
 
   // Unfolded data
   TFile *fin = new TFile(Form("output-%s-3.root",type.c_str()),"READ");
-  //TFile *fin = new TFile(Form("output-%s-2c.root",type.c_str()),"READ");
   assert(fin && !fin->IsZombie());
 
   // Raw data
@@ -139,25 +134,20 @@ void systematics(string type) {
 
   // Select top categories for JEC uncertainty
   //if (!fin->cd("JECPlus"))
-  //assert(fin->cd("Standard"));
   fin->cd("Standard");
   TDirectory *dpl0 = gDirectory;
   //if (!fin->cd("JECMinus"))
-  //assert(fin->cd("Standard"));
   fin->cd("Standard");
   TDirectory *dmn0 = gDirectory;
   //if (!fin->cd("ResJEC"))
-  //assert(fin->cd("Standard"));
   fin->cd("Standard");
   TDirectory *dzr0 = gDirectory;
   //if (!fin2->cd("ResJEC"))
-  //assert(fin2->cd("Standard"));
   fin->cd("Standard");
   TDirectory *dunc0 = gDirectory;
 
-
   fout->mkdir("Standard");
-  assert(fout->cd("Standard"));
+  fout->cd("Standard");
   TDirectory *dout0 = gDirectory;
 
   // Automatically go through the list of keys (directories)
@@ -172,17 +162,17 @@ void systematics(string type) {
     // Found a subdirectory
     if (obj->InheritsFrom("TDirectory")) {
 
-      assert(dzr0->cd(obj->GetName()));
+      dzr0->cd(obj->GetName());
       TDirectory *dzr = gDirectory;
-      assert(dpl0->cd(obj->GetName()));
+      dpl0->cd(obj->GetName());
       TDirectory *dpl = gDirectory;
-      assert(dmn0->cd(obj->GetName()));
+      dmn0->cd(obj->GetName());
       TDirectory *dmn = gDirectory;
-      assert(dunc0->cd(obj->GetName()));
+      dunc0->cd(obj->GetName());
       TDirectory *dunc = gDirectory;
 
       dout0->mkdir(obj->GetName());
-      assert(dout0->cd(obj->GetName()));
+      dout0->cd(obj->GetName());
       TDirectory *dout = gDirectory;
 
       // Process subdirectory
@@ -222,8 +212,7 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 		      string jectype) {
 
   float etamin, etamax;
-  assert(sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
-  // sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
+  sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
   // Load the uncertainty
   //TH1D *hunc = (TH1D*)dunc->Get("punc"); assert(hunc);
@@ -245,11 +234,9 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 
   // inclusive jets
   TF1 *fpt0 = (TF1*)dzr->Get("fus"); assert(fpt0); fpt0->SetName("fpt0");
-  TF1 *fpt = new TF1("fpt1",
-		     "[0]*pow(x,[1])"
-                      "*pow(1-x*cosh([3])/[4],[2])",
-     
+  TF1 *fpt = new TF1("fpt1","[0]*pow(x,[1])*pow(1-x*cosh([3])/[4],[2])",
 		     jp::recopt, jp::emax/cosh(etamin));
+  
   fpt->SetParameters(fpt0->GetParameter(0), fpt0->GetParameter(1),
 		     fpt0->GetParameter(2), fpt0->GetParameter(3),
 		     fpt0->GetParameter(4));
@@ -338,15 +325,17 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 	double djec1 = djec;
 	//	if (type==""); // suppress warning
 
-	assert(xmax!=xmin);
-	double ypl = fpt->Integral(xmin/(1+djec0), xmax/(1+djec1)) / (xmax-xmin);
-	double ymn = fpt->Integral(xmin*(1+djec0), xmax*(1+djec1)) / (xmax-xmin);
-	double yzr = fpt->Integral(xmin, xmax) / (xmax-xmin);
+	//        if (xmax!=xmin) {
+	if (!isnan(fpt->Eval(xmax))) {     // xmax*(1+djec1) might still be out of range for eta bins 2.5-3.0 + bins more forward
+	    double ypl = fpt->Integral(xmin/(1+djec0), xmax/(1+djec1)) / (xmax-xmin);
+	    double ymn = fpt->Integral(xmin*(1+djec0), xmax*(1+djec1)) / (xmax-xmin);
+	    double yzr = fpt->Integral(xmin, xmax) / (xmax-xmin);
 
 	// sanity checks
 	//cout << Form("xmin %1.3g xmax %1.3g", xmin, xmax) << endl;
 	//cout << Form("ymin %1.3g ymax %1.3g yzr %1.3g",
 	//	 fpt->Eval(xmin), fpt->Eval(xmax), yzr) << endl;
+	
 	if (yzr > fpt->Eval(xmin) || yzr < fpt->Eval(xmax)) {
 
 	  double ymin = fpt->Eval(xmin);
@@ -364,6 +353,7 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 	hjpl->SetBinContent(i, yzr ? ypl / yzr - 1 : 0.);
 	hjmn->SetBinContent(i, yzr ? ymn / yzr - 1 : 0.);
 	hjav->SetBinContent(i, yzr ? 0.5*(fabs(ypl/yzr-1)+fabs(ymn/yzr-1)) : 0.);
+	}
     }
   } // for i
 
@@ -381,7 +371,7 @@ void jec_shifts(TDirectory *dzr, TDirectory *dout, string type, string algo) {
   //	bool is38x) {
   
   float etamin, etamax;
-  assert(sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
+  sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
   const int neta = 8;
   const int npar = 5;
@@ -418,7 +408,7 @@ const double p_ak5jpt[8][5] =
 		      "*([3]+log(0.01*x)*[4])))", 0., 2000.);
   fref->SetParameters(1., 0., 0., 0., 0.);
   if (p) {
-    assert(fref->GetNpar()==npar);
+    fref->GetNpar(); // == npar
     for (int i = 0; i != npar; ++i) {
       fref->SetParameter(i, 0.01*p[min(ieta,neta-1)][i]);
     }
@@ -453,13 +443,17 @@ const double p_ak5jpt[8][5] =
     double djec0 = fref->Eval(xmin) - 1.;
     double djec1 = fref->Eval(xmax) - 1.;
 
-    assert(xmax!=xmin);
-    double ys = fpt->Integral(xmin/(1+djec0), xmax/(1+djec1)) / (xmax - xmin);
-    double yzr = fpt->Integral(xmin, xmax) / (xmax - xmin);
+    //    if (xmax!=xmin) {
+    if (!isnan(fpt->Eval(xmax))) {
+      double ys = fpt->Integral(xmin/(1+djec0), xmax/(1+djec1)) / (xmax - xmin);
+      double yzr = fpt->Integral(xmin, xmax) / (xmax - xmin);
 
-    if (TMath::IsNaN(yzr) || yzr<0) yzr = 0;
-    hs->SetBinContent(i, yzr ? ys / yzr - 1 : 0.);
-  } // for i
+      if (TMath::IsNaN(yzr) || yzr<0) yzr = 0;
+      hs->SetBinContent(i, yzr ? ys / yzr - 1 : 0.);
+    }
+
+
+   } // for i
 
   dzr->cd();
 
@@ -727,14 +721,14 @@ void sources(string type = "DATA") {
   TFile *fth = new TFile(Form("output-%s-5.root",t),"READ");
   assert(fth && !fth->IsZombie());
 
-  assert(fth->cd("Standard"));
+  fth->cd("Standard");
   TDirectory *dth0 = gDirectory;
 
   TFile *fout = new TFile(Form("output-%s-4.root",t), "UPDATE");
   assert(fout && !fout->IsZombie());
 
   fout->mkdir("Standard");
-  assert(fout->cd("Standard"));
+  fout->cd("Standard");
   TDirectory *dout0 = gDirectory;
 
   // Automatically go through the list of keys (directories)
@@ -749,11 +743,11 @@ void sources(string type = "DATA") {
     // Found a subdirectory
     if (obj->InheritsFrom("TDirectory")) {
 
-      assert(dth0->cd(obj->GetName()));
+      dth0->cd(obj->GetName());
       TDirectory *dth = gDirectory;
-
+      
       dout0->mkdir(obj->GetName());
-      assert(dout0->cd(obj->GetName()));
+      dout0->cd(obj->GetName());
       TDirectory *dout = gDirectory;
 
       sourceBin(dth, dout);
@@ -773,23 +767,18 @@ void sources(string type = "DATA") {
 void sourceBin(TDirectory *dth, TDirectory *dout) {
 
   float etamin, etamax;
-  assert(sscanf(dth->GetName(),"Eta_%f-%f",&etamin,&etamax)==2);
+  sscanf(dth->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
   // inclusive jets
   TH1D *hnlo = (TH1D*)dth->Get("hnlo"); assert(hnlo);
   TF1 *fnlo0 = (TF1*)dth->Get("fnlo"); assert(fnlo0); fnlo0->SetName("fnlo0");
-  TF1 *fnlo = new TF1("fnlo",
-
-		      // "[0]*exp([1]/x)*pow(x,[2])"
-		      // "*pow(1-x*cosh([4])/3500, [3])",
-
-		      "[0]*pow(x,[1])"
+  TF1 *fnlo = new TF1("fnlo","[0]*pow(x,[1])"
                       "*pow(1-x*cosh([3])/[4],[2])", //10., 1000.);
 		      
 		      jp::recopt, jp::emax);
   fnlo->SetParameters(fnlo0->GetParameter(0), fnlo0->GetParameter(1),
 		      fnlo0->GetParameter(2), fnlo0->GetParameter(3),
-		      fnlo0->GetParameter(4)); //, fnlo0->GetParamater(5));
+		      fnlo0->GetParameter(4)); 
 
   // make sure new histograms get created in the output file
   dout->cd();
@@ -843,41 +832,44 @@ void sourceBin(TDirectory *dth, TDirectory *dout) {
 	double djec0 = djec;
 	double djec1 = djec;
 
-	assert(xmax!=xmin);
-	double ypl = fnlo->Integral(xmin/(1+djec0), xmax/(1+djec1))/(xmax-xmin);
-	double ymn = fnlo->Integral(xmin*(1+djec0), xmax*(1+djec1))/(xmax-xmin);
-	double yzr = fnlo->Integral(xmin, xmax) / (xmax-xmin);
-
-	// sanity checks
-	double ymin = fnlo->Eval(xmin);
-	double ymax = fnlo->Eval(xmax);
-	if (TMath::IsNaN(yzr) || yzr<0) {
-	  cerr << Form("Warning: yzer=%1.3g for range [%3.3g, %3.3g]",
-		       yzr, xmin, xmax);
-	  yzr = 0;
+	//	assert(xmax!=xmin);
+	if (!isnan(fnlo->Eval(xmax))) {
+	  double ypl = fnlo->Integral(xmin/(1+djec0), xmax/(1+djec1))/(xmax-xmin);
+	  double ymn = fnlo->Integral(xmin*(1+djec0), xmax*(1+djec1))/(xmax-xmin);
+	  double yzr = fnlo->Integral(xmin, xmax) / (xmax-xmin);
+	
+	
+	  // sanity checks
+	  double ymin = fnlo->Eval(xmin);
+	  double ymax = fnlo->Eval(xmax);
+	  if (TMath::IsNaN(yzr) || yzr<0) {
+	    cerr << Form("Warning: yzer=%1.3g for range [%3.3g, %3.3g]",
+			 yzr, xmin, xmax);
+	    yzr = 0;
+	  }
+	  else if (yzr > ymin || yzr < ymax) {
+	    
+	    if (ymin < ymax)
+	      cerr << Form("Warning: range [%3.3g, %3.3g] is not falling,",
+			   xmin, xmax);
+	    else
+	      cerr << Form("Warning: range [%3.3g, %3.3g] may not be monotonous,",
+			   xmin, xmax);
+	    cerr << Form(" yzr=%1.3g, ymin=%1.3g, ymax=%1.3g",
+			 yzr, ymin, ymax) << endl;
+	  }
+	  
+	  hup->SetBinContent(i, yzr ? ypl / yzr - 1 : 0.);
+	  hdw->SetBinContent(i, yzr ? ymn / yzr - 1 : 0.);
+	  horig->SetBinContent(i, djec);
+	  
+	  // Add sources in quadrature
+	  double eup = (yzr ? max(ypl/yzr-1, ymn/yzr-1) : 0);
+	  double edw = (yzr ? min(ypl/yzr-1, ymn/yzr-1) : 0);
+	  hup0->SetBinContent(i, +tools::oplus(hup0->GetBinContent(i), eup));
+	  hdw0->SetBinContent(i, -tools::oplus(hdw0->GetBinContent(i), edw));
+	  horig0->SetBinContent(i, tools::oplus(horig0->GetBinContent(i), djec));
 	}
-	else if (yzr > ymin || yzr < ymax) {
-
-	  if (ymin < ymax)
-	    cerr << Form("Warning: range [%3.3g, %3.3g] is not falling,",
-			 xmin, xmax);
-	  else
-	    cerr << Form("Warning: range [%3.3g, %3.3g] may not be monotonous,",
-			 xmin, xmax);
-	  cerr << Form(" yzr=%1.3g, ymin=%1.3g, ymax=%1.3g",
-		       yzr, ymin, ymax) << endl;
-	}
-
-	hup->SetBinContent(i, yzr ? ypl / yzr - 1 : 0.);
-	hdw->SetBinContent(i, yzr ? ymn / yzr - 1 : 0.);
-	horig->SetBinContent(i, djec);
-
-	// Add sources in quadrature
-	double eup = (yzr ? max(ypl/yzr-1, ymn/yzr-1) : 0);
-	double edw = (yzr ? min(ypl/yzr-1, ymn/yzr-1) : 0);
-	hup0->SetBinContent(i, +tools::oplus(hup0->GetBinContent(i), eup));
-	hdw0->SetBinContent(i, -tools::oplus(hdw0->GetBinContent(i), edw));
-	horig0->SetBinContent(i, tools::oplus(horig0->GetBinContent(i), djec));
       }
     } // for i
   } // for isrc
