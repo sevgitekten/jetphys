@@ -75,7 +75,10 @@ bool HistosFill::Init(TChain *tree)
     PrintInfo("No tree given, processing makes no sense.",true);
     return false; // With no tree, Loop will be interrupted
   }
-  _outfile = new TFile(Form("output-%s-1.root",jp::type), "NEW");
+  string type = jp::type;
+  if (jp::pthatbins) type = "Pthat";
+  else if (jp::htbins) type = "HT";
+  _outfile = new TFile(Form("output-%s-1.root",type.c_str()), "NEW");
   if (!_outfile or _outfile->IsZombie()) {
     PrintInfo(Form("Opening the output file output-%s-1.root failed. Check if the file already exists.",jp::type),false);
     return false;
@@ -119,6 +122,7 @@ bool HistosFill::Init(TChain *tree)
   fChain->SetBranchAddress("PFMet_.et_", &PFMet__et_);
   fChain->SetBranchAddress("PFMet_.sumEt_", &PFMet__sumEt_);
   fChain->SetBranchAddress("PFMet_.phi_", &PFMet__phi_);
+  if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchAddress("FilterDecision_", &FilterDecision_);
   fChain->SetBranchAddress("TriggerDecision_", &TriggerDecision_);
   fChain->SetBranchAddress("L1Prescale_", &L1Prescale_);
   fChain->SetBranchAddress("HLTPrescale_", &HLTPrescale_);
@@ -136,9 +140,9 @@ bool HistosFill::Init(TChain *tree)
   fChain->SetBranchAddress(Form("PFJets%s_.genP4_.fCoordinates.fT",jp::chs), PFJetsCHS__genP4__fCoordinates_fT);
 #endif
 #ifdef NEWMODE
-    fChain->SetBranchAddress(Form("PFJets%s_.QGL_",jp::chs), PFJetsCHS__QGL_); // qgl
+  fChain->SetBranchAddress(Form("PFJets%s_.QGL_",jp::chs), PFJetsCHS__QGL_); // qgl
 #else
-    fChain->SetBranchAddress(Form("PFJets%s_.QGtagger_",jp::chs), PFJetsCHS__QGL_); // qgl
+  fChain->SetBranchAddress(Form("PFJets%s_.QGtagger_",jp::chs), PFJetsCHS__QGtagger_); // qgl
 #endif
   fChain->SetBranchAddress(Form("PFJets%s_",jp::chs), &PFJetsCHS__);
   fChain->SetBranchAddress(Form("PFJets%s_.P4_.fCoordinates.fX",jp::chs), PFJetsCHS__P4__fCoordinates_fX);
@@ -214,6 +218,7 @@ bool HistosFill::Init(TChain *tree)
     fChain->SetBranchStatus(Form("PFJets%s_.QGtagger_",jp::chs),1); // qgl
 #endif
     if (jp::ismc) fChain->SetBranchStatus(Form("PFJets%s_.partonFlavour_",jp::chs),1);
+    if (jp::ismc) fChain->SetBranchStatus(Form("PFJets%s_.partonFlavourPhysicsDef_",jp::chs),1);
 
     // Component fractions
     fChain->SetBranchStatus(Form("PFJets%s_.chf_",jp::chs),1); // jtchf
@@ -249,6 +254,7 @@ bool HistosFill::Init(TChain *tree)
     fChain->SetBranchStatus("PFMet_.sumEt_",1); // metsumet
 #endif
 
+    if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchStatus("FilterDecision_",1);
     fChain->SetBranchStatus("TriggerDecision_",1);
     fChain->SetBranchStatus("L1Prescale_",1);
     fChain->SetBranchStatus("HLTPrescale_",1);
@@ -391,10 +397,9 @@ void HistosFill::Loop()
 
     if (testval%hopval==repval) { // 1M report (first report timed to be early)
       // Report memory usage to avoid malloc problems when writing file
-      PrintInfo( Form("Doing Loop(), %dM events:",int(_jentry/1e6 + 0.5)) );
+      PrintInfo(Form("Doing Loop(), %dM events:",int(_jentry/1e6 + 0.5)),true);
       PrintMemInfo();
-      cout << endl << Form("Processed %lld events (%1.1f%%) in %1.0f sec.",
-                           _jentry-1, 100.*djentry/_nentries, stop.RealTime()) << endl;
+      PrintInfo(Form("\nProcessed %lld events (%1.1f%%) in %1.0f sec.",_jentry-1, 100.*djentry/_nentries, stop.RealTime()),true);
       cout << "BGN: ";
       bgn.Print();
       TDatime now;
@@ -428,7 +433,7 @@ void HistosFill::Loop()
 
     if (!AcceptEvent()) continue;
 
-    if (jp::debug) cout << "Histos are being filled!" << endl;
+    if (jp::debug) PrintInfo("Histos are being filled!",true);
     // Here can categorize events into different triggers, epochs, topologies etc.
     // Eta and pT binning are handled in the FillSingleBasic class
     if (jp::doBasicHistos) {
@@ -456,7 +461,7 @@ void HistosFill::Loop()
       FillAll("AllTrigs");
     }
   } // for jentry
-  cout << endl;
+  PrintInfo("",true);
 
   // Report memory usage to avoid malloc problems when writing file
   PrintInfo(Form("Finished processing %lld entries:",_nentries),true);
@@ -470,7 +475,7 @@ void HistosFill::Loop()
 
   Report();
 
-  cout << "Stopping processing at: ";
+  PrintInfo("Stopping processing at: ",true);
   TDatime now1;
   now1.Print();
   PrintInfo(Form("Processing used %f s CPU time (%f h)",stop.CpuTime(),stop.CpuTime()/3600.),true);
@@ -494,7 +499,7 @@ void HistosFill::Loop()
   runinfo.Write();
   _outfile->Close();
 
-  cout << "File closed, exiting at: ";
+  PrintInfo("File closed, exiting at: ",true);
   TDatime now2;
   now2.Print();
   PrintInfo(Form("Processing and logistics used %f s CPU time (%f h)",stop.CpuTime(),stop.CpuTime()/3600.),true);
@@ -517,10 +522,10 @@ bool HistosFill::PreRun()
   _rhocounter_good = _rhocounter_bad = 0;
   _trgcounter = _evtcounter = _totcounter = 0;
 
-  // Initialize _pthatweight. It will be loaded for each tree separately.
-  if (jp::pthatbins) {
-    _pthatweight = 0;
-    _pthatrepeats = 0;
+  // Initialize _binnedmcweight. It will be loaded for each tree separately.
+  if (jp::pthatbins or jp::htbins) {
+    _binnedmcweight = 0;
+    _binnedmcrepeats = 0;
   }
 
   PrintInfo("\nCONFIGURATION DUMP:");
@@ -568,13 +573,13 @@ bool HistosFill::PreRun()
     if (jp::isdt and jp::useIOV) {
       // If multiple IOV's are used, we set _JEC etc for each event separately, checking that the IOV is correct
       for (unsigned iovidx=0; iovidx<jp::IOVnames.size(); ++iovidx)
-        _iov.add(jp::IOVnames[iovidx],jp::IOVranges.at(iovidx).at(0),jp::IOVranges.at(iovidx).at(1));
+        _iov.addJEC(jp::IOVnames[iovidx],jp::IOVranges.at(iovidx).at(0),jp::IOVranges.at(iovidx).at(1));
     } else {
       // If only one great IOV is used, we can set _JEC etc. directly here.
-      _iov.add("");
-      bool setcorrection = _iov.setCorr(&_JEC,&_L1RC,&_jecUnc);
+      _iov.addJEC("");
+      bool setcorrection = _iov.setJEC(&_JEC,&_L1RC,&_jecUnc);
       if (!setcorrection or !_JEC or !_L1RC or (jp::isdt and !_jecUnc)) {
-        cout << "Issues while loading JEC; aborting..." << endl;
+        PrintInfo("Issues while loading JEC; aborting...",true);
         return false;
       }
     } // JEC redone
@@ -582,31 +587,31 @@ bool HistosFill::PreRun()
 
   // Load latest JSON selection
   if (jp::isdt and jp::dojson) {
-    if (!LoadJSON(jp::json)) {
-      cout << "Issues loading the JSON file; aborting..." << endl;
+    if (!LoadJSON()) {
+      PrintInfo("Issues loading the JSON file; aborting...",true);
       return false;
     }
   }
 
   // Load PU profiles for MC reweighing
   if (jp::ismc and jp::reweighPU) {
-    if (!LoadPuProfiles(jp::pudata, (jp::ispy ? jp::pumc : (jp::ishw ? jp::puhw : (jp::isnu ? jp::punu : ""))))) {
-      cout << "Issues loading the PU histograms for reweighting; aborting..." << endl;
+    if (!LoadPuProfiles()) {
+      PrintInfo("Issues loading the PU histograms for reweighting; aborting...",true);
       return false;
     }
   }
 
   // load luminosity tables (prescales now stored in event)
   if (jp::isdt and jp::dolumi) {
-    if (!LoadLumi(jp::lumifile)) {
-      cout << "Issues loading the Lumi file; aborting..." << endl;
+    if (!LoadLumi()) {
+      PrintInfo("Issues loading the Lumi file; aborting...",true);
       return false;
     }
   }
 
-  if (jp::ismc) cout << Form("Running on MC produced with %1.3g nb-1 (%lld evts)",
-    1000. * _ntot / jp::xsecMinBias, _ntot) << endl;
-  if (jp::isdt) cout << Form("Running on %lld events of data",_ntot) << endl;
+  if (jp::ismc) PrintInfo(Form("Running on MC produced with %1.3g nb-1 (%lld evts)",
+                          1000. * _ntot / jp::xsecMinBias, _ntot),true);
+  if (jp::isdt) PrintInfo(Form("Running on %lld events of data",_ntot),true);
 
   // Initialize histograms for different epochs and DQM selections
   if (jp::doBasicHistos) {
@@ -669,7 +674,6 @@ bool HistosFill::PreRun()
     assert(h2HotExcl and "erroneous eta-phi exclusion type");
     PrintInfo(Form("Loading hot zone corrections rootfiles/hotjets-run%s.root with h2hot %s",HotTag.c_str(),jp::HotType));
   }
-
   // Qgl: load quark/gluon probability histos (Ozlem)
   // 1. open the previous output-MC-1_iteration1.root in the beginning
   // 2. get the hqgl_q and hqgl_g for each eta bin, store in array
@@ -699,7 +703,7 @@ bool HistosFill::PreRun()
         // Gluons in the given eta/pt slice
         string sg = Form("Standard/Eta_%1.1f-%1.1f/jt%1.0f/hqgl_g",
                           veta[ieta-1], veta[ieta], vtrigpt[ipt-1]);
-        cout << sg << endl << flush;
+        PrintInfo(sg,true);
         TH1D *hqgl_g = dynamic_cast<TH1D*>(finmc->Get(sg.c_str())); assert(hqgl_g);
         hqgl_g->Scale(1./hqgl_g->Integral());
 
@@ -718,7 +722,6 @@ bool HistosFill::PreRun()
       } // for ipt
     } // for ieta
   }
-
   PrintInfo("Finished pre-run processing!",true);
   return true;
 }
@@ -743,20 +746,21 @@ bool HistosFill::AcceptEvent()
   }
 
   if (jp::debug) {
-    cout << endl << flush;
+    PrintInfo("",true);
     Show(_jentry);
-    cout << endl << endl << flush;
+    PrintInfo("",true);
+    PrintInfo("",true);
 
-    cout << "***Checking basic event variables are read out:" << endl;
-    cout << "isdata = " << jp::isdt << " / ismc = " << jp::ismc << endl;
-    cout << "trpu = " << trpu << endl;
-    cout << "pthat = " << pthat << endl;
-    cout << "weight = " << weight << endl;
-    cout << "njt = " << njt << endl;
-    cout << "idloose[0] = " << (njt>0 ? jtidloose[0] : -1) << endl;
-    cout << "idtight[0] = " << (njt>0 ? jtidtight[0] : -1) << endl;
-    cout << "***end basic event variables" << endl;
-    cout << endl << flush;
+    PrintInfo("***Checking basic event variables are read out:",true);
+    PrintInfo(Form("isdata = %d / ismc = %d",jp::isdt,jp::ismc),true);
+    PrintInfo(Form("trpu = %f",trpu),true);
+    PrintInfo(Form("pthat = %f",pthat),true);
+    PrintInfo(Form("weight = %f",weight),true);
+    PrintInfo(Form("njt = %d",njt),true);
+    PrintInfo(Form("idloose[0] = %d",njt>0 ? jtidloose[0] : -1),true);
+    PrintInfo(Form("idtight[0] = %d",njt>0 ? jtidtight[0] : -1),true);
+    PrintInfo("***end basic event variables");
+    PrintInfo("",true);
   }
 
   // Check if duplicate
@@ -815,10 +819,30 @@ bool HistosFill::AcceptEvent()
   // Reset event ID
   _pass = true;
 
-  // This is equal to the SMPJ GoodVertexFilter and is redundant
-  pvrho = tools::oplus(pvx, pvy);
-  _pass = _pass and pvndof > 4 and fabs(pvz) <= 24. and pvrho <= 2. and npvgood>0.;
-  if (_pass) ++_cnt["03vtx"];
+
+  if (jp::fetchMETFilters) {
+    if (jp::isnu or FilterDecision_.size()==0) ++_cnt["03METFlt"];
+    else {
+      // If we perform MET filtering, any filter firing will cause the event to be discarded.
+      if (jp::doMETFiltering) return false;
+      _pass = false;
+
+      // If we don't perform MET filtering, we can do something more elaborate with the filter info
+      for (unsigned FDec : FilterDecision_) {
+        assert(FDec<_availFlts.size());
+        auto &FName = _availFlts[FDec];
+
+        // TODO: Do something interesting?
+
+        if (jp::debug) PrintInfo(Form("%s %u",FName.c_str(),FDec),true);
+      } // for FDec (_FilterDecision)
+    }
+  } else {
+    // This is equal to the SMPJ GoodVertexFilter and is redundant with MET filters on
+    pvrho = tools::oplus(pvx, pvy);
+    _pass = _pass and pvndof > 4 and fabs(pvz) <= 24. and pvrho <= 2. and npvgood>0.;
+    if (_pass) ++_cnt["03vtx"];
+  }
 
   // Event cuts against beam backgrounds
   if (_pass) {
@@ -833,14 +857,14 @@ bool HistosFill::AcceptEvent()
 
   // load correct IOV for JEC
   if (jp::redojes and jp::isdt and jp::useIOV) {
-    bool setcorrection = _iov.setCorr(&_JEC,&_L1RC,&_jecUnc,run);
+    bool setcorrection = _iov.setJEC(&_JEC,&_L1RC,&_jecUnc,run);
     if (!setcorrection or !_JEC or !_L1RC or !_jecUnc) {
-      cout << "Issues while loading JEC; aborting..." << endl;
+      PrintInfo("Issues while loading JEC; aborting...",true);
       assert(false);
     }
   }
 
-  if (jp::debug) cout << "JEC and MET calculation and leading jets info!" << endl;
+  if (jp::debug) PrintInfo("JEC and MET calculation and leading jets info!",true);
   // Calculate jec and propagate jec to MET 1 and MET 2
   double mex = met * cos(metphi);
   double mey = met * sin(metphi);
@@ -852,15 +876,14 @@ bool HistosFill::AcceptEvent()
   // CAUTION: for less than 3 jets, we input -1 on the place of the index
   // NOTE: Above this we only use the initial corrections. This serves as a good approximation,
   // as the values before reapplying JEC are more like the ones we knew when collecting data.
-  for (int i = 0; i<3; ++i)
-    jt3leads[i] = -1;
+  for (int i = 0; i<3; ++i) jt3leads[i] = -1;
   ///////////////
   // Jet loop
   ///////////////
   for (int jetidx = 0; jetidx != njt; ++jetidx) {
     p4.SetPxPyPzE(jtp4x[jetidx],jtp4y[jetidx],jtp4z[jetidx],jtp4t[jetidx]);
     // Divide by the original JES
-    if (jp::debug) cout << "Entering jet loop!" << endl;
+    if (jp::debug) PrintInfo("Entering jet loop!",true);
     if (jp::undojes) p4 *= 1/jtjes[jetidx];
 
     jtptu[jetidx] = p4.Pt();
@@ -868,7 +891,7 @@ bool HistosFill::AcceptEvent()
 
     double jec_res = 1;
     if (jp::redojes) {
-      if (jp::debug) cout << "Recalculating JEC!" << endl;
+      if (jp::debug) PrintInfo("Recalculating JEC!",true);
       // Recalculate JEC
       _JEC->setRho(rho);
       _JEC->setNPV(npvgood);
@@ -897,19 +920,9 @@ bool HistosFill::AcceptEvent()
       jtjes_res[jetidx] = 1.;
     }
 
-    if (jp::debug) cout << "Reapplying JEC!" << endl;
-    if (jp::redojes) p4 *= jtjesnew[jetidx];
-
-    jte[jetidx] = p4.E();
-    jtpt[jetidx] = p4.Pt();
-    jteta[jetidx] = p4.Eta();
-    jtphi[jetidx] = p4.Phi();
-    jty[jetidx] = p4.Rapidity();
-    if (jp::doMpfHistos) jtpt_nol2l3[jetidx] = p4.Pt()/jec_res;
-
-    if (jp::debug) cout << "Gen info!" << endl;
     // Calculate gen level info
     if (jp::ismc) {
+      if (jp::debug) PrintInfo("Gen info!",true);
 #ifdef NEWMODE
       auto &gjetidx = jtgenidx[jetidx];
       if (gjetidx>=0 and gjetidx<GenJets__)
@@ -925,7 +938,32 @@ bool HistosFill::AcceptEvent()
       jtgenphi[jetidx] = gp4.Phi();
     }
 
-    if (jp::debug) cout << "Jet " << jetidx << " corrected!" << endl;
+    if (jp::debug) PrintInfo("Reapplying JEC!",true);
+    if (jp::redojes) p4 *= jtjesnew[jetidx];
+
+#if JETRESO == 1
+    // For DATA, we have redundant scale factor files, which return a "1" for SF.
+    // We save the processing time by skipping this.
+    if (jp::ismc) {
+      double genpt = gp4.Pt();
+      // We enforce the gen match, see https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetResolution
+      if (genpt>0) {
+        double genDR = p4.DeltaR(gp4);
+        // We require the match to be closer than half cone, otherwise gen Pt is worthless
+        if (genDR>0.2) genpt = -4;
+      }
+      p4 *= _iov.getJERCF(p4.Pt(),p4.Eta(),p4.E(),rho,genpt);
+    }
+#endif
+
+    jte[jetidx] = p4.E();
+    jtpt[jetidx] = p4.Pt();
+    jteta[jetidx] = p4.Eta();
+    jtphi[jetidx] = p4.Phi();
+    jty[jetidx] = p4.Rapidity();
+    if (jp::doMpfHistos) jtpt_nol2l3[jetidx] = p4.Pt()/jec_res;
+
+    if (jp::debug) PrintInfo(Form("Jet %d corrected!",jetidx),true);
 
     // Only use jets with corr. pT>recopt GeV to equalize data and MC thresholds
     if (jtpt[jetidx] > jp::recopt and fabs(jteta[jetidx])<4.7) {
@@ -999,10 +1037,7 @@ bool HistosFill::AcceptEvent()
   _pass = _pass and i0>=0;
   if (_pass) ++_cnt["05njt"];
 
-  if (jp::debug) {
-    cout << "Indices for the three leading jets: " << i0 << " " << i1 << " " << i2 << endl;
-    cout << "Gen flav calculation!" << endl;
-  }
+  if (jp::debug) PrintInfo(Form("Indices for the three leading jets: %d %d %d\nGen flav calculation!",i0,i1,i2),true);
 
   // Check rho
   if (_pass) {
@@ -1010,9 +1045,7 @@ bool HistosFill::AcceptEvent()
     //if (rho>40.) { // This was for run 1 settings
       ++_rhocounter_bad;
       _pass = false;
-      if (jp::debug)
-        cout << Form("\nrun:ev:ls %d:%d:%lld : rho=%1.1f njt=%d npv=%d jtpt0=%1.1f sumet=%1.1f met=%1.1f\n",
-                    run, lbn, evt, rho, njt, npv, (njt>0 ? jtpt[i0] :0.), metsumet, met) << flush;
+      if (jp::debug) PrintInfo(Form("\nrun:ev:ls %d:%d:%lld : rho=%1.1f njt=%d npv=%d jtpt0=%1.1f sumet=%1.1f met=%1.1f\n",run, lbn, evt, rho, njt, npv, (njt>0 ? jtpt[i0] :0.),metsumet,met),true);
     } else {
       ++_rhocounter_good;
       ++_cnt["06rho"];
@@ -1030,7 +1063,7 @@ bool HistosFill::AcceptEvent()
   // (this is slow, though)
   if (jp::ismc) {
     // Always insert the generic mc trigger
-    if (jp::debug) cout << "Entering PU weight calculation!" << endl;
+    if (jp::debug) PrintInfo("Entering PU weight calculation!",true);
 #ifdef NEWMODE
     if (_pass and (jtgenidx[i0]!=-1 or jp::isnu)) ++_cnt["07mcgenjet"];
     else return false;
@@ -1078,22 +1111,21 @@ bool HistosFill::AcceptEvent()
   } else if (jp::isdt) {
     // For data, check trigger bits
     if (jp::debug) {
-      cout << "TriggerDecision_.size()=="<<TriggerDecision_.size()<<endl<<flush;
-      cout << "_availTrigs.size()=="<<_availTrigs.size()<<endl<<flush;
-      cout << "_goodTrigs.size()=="<<_goodTrigs.size()<<endl<<flush;
+      PrintInfo(Form("TriggerDecision_.size()==%zu",TriggerDecision_.size()));
+      PrintInfo(Form("_availTrigs.size()==%zu",_availTrigs.size()));
+      PrintInfo(Form("_goodTrigs.size()==%zu",_goodTrigs.size()));
     }
     #ifndef NEWMODE
     assert(TriggerDecision_.size()==_availTrigs.size());
     #endif
 
     // New and old mode: TriggerDecision and L1/HLT Prescales have the same indexing.
-    for (auto itrg = 0u; itrg != jp::notrigs; ++itrg)
-      _wt[jp::triggers[itrg]] = 1.0;
+    for (auto itrg = 0u; itrg != jp::notrigs; ++itrg) _wt[jp::triggers[itrg]] = 1.0;
 
     #ifdef NEWMODE
     for (unsigned itrg = 0; itrg<TriggerDecision_.size(); ++itrg) {
-      assert(itrg<_availTrigs.size());
-      auto &TDec = TriggerDecision_[itrg]; // Location of the current place
+      unsigned TDec = TriggerDecision_[itrg]; // Location of the current place
+      assert(TDec<_availTrigs.size());
       auto &TName = _availTrigs[TDec];
 
       auto trgPlace = std::find(_goodTrigs.begin(),_goodTrigs.end(),TDec);
@@ -1104,6 +1136,7 @@ bool HistosFill::AcceptEvent()
       auto &itrg = _goodTrigs[goodIdx];
       auto &TDec = TriggerDecision_[itrg]; // Trigger fired or not: -1, 0, 1
       if (TDec!=1) continue;
+      assert(itrg<_availTrigs.size());
       auto &TName = _availTrigs[itrg];
     #endif // NEWMODE
 
@@ -1112,7 +1145,7 @@ bool HistosFill::AcceptEvent()
       #else
       if (jp::debug and TDec>0)
       #endif
-        cout << TName << " " << itrg << " " << TDec << " " << L1Prescale_[itrg] << " " << HLTPrescale_[itrg] << endl;
+      PrintInfo(Form("%s %d %d %d %d",TName.c_str(),itrg,TDec,L1Prescale_[itrg],HLTPrescale_[itrg]),true);
 
       // Set prescale from event for now
       //if (L1Prescale_[itrg]>0 and HLTPrescale_[itrg]>0) { There's trouble in 2017 L1, so we let it pass
@@ -1128,10 +1161,8 @@ bool HistosFill::AcceptEvent()
         if (jp::debug) { // check prescale
           double prescale = _prescales[TName][run];
           if (L1Prescale_[itrg]*HLTPrescale_[itrg]!=prescale) {
-            cout << "Trigger " << TName << ", "
-            << "Prescale (txt file) = " << prescale << endl;
-            cout << "L1 = " << L1Prescale_[itrg] << ", "
-            << "HLT = " << HLTPrescale_[itrg] << endl;
+            PrintInfo(Form("Trigger %s, Prescale (txt file) = %f",TName.c_str(),prescale),true);
+            PrintInfo(Form("L1 = %d, HLT = %d",L1Prescale_[itrg],HLTPrescale_[itrg]),true);
             assert(false);
           }
         } // debug
@@ -1145,7 +1176,7 @@ bool HistosFill::AcceptEvent()
         // Make sure all info is good! This is crucial if there is something odd with the tuples
         PrintInfo(Form("Missing prescale for %s in run %d",TName.c_str(),run),true);
       }
-    } // for itrg (_goodTrigs)
+    } // for itrg (FilterDecision or _goodTrigs)
   } // if isdt
 
   ++_totcounter;
@@ -1160,8 +1191,7 @@ bool HistosFill::AcceptEvent()
   _w0 = 1.0;
   if (jp::ismc) {
     _w0 *= weight;
-    if (jp::pthatbins)
-      _w0 *= _pthatweight;
+    if (jp::pthatbins or jp::htbins) _w0 *= _binnedmcweight;
     assert(_w0>0);
   }
   _w = _w0;
@@ -1172,12 +1202,15 @@ bool HistosFill::AcceptEvent()
     ///////////////
     // Gen Jet loop
     ///////////////
+    bool doht = jp::isnu or (jp::htbins and !jp::pthatbins);
+    double htsum = 0.0;
     for (int gjetidx = 0; gjetidx != gen_njt; ++gjetidx) {
       genp4.SetPxPyPzE(gen_jtp4x[gjetidx],gen_jtp4y[gjetidx],gen_jtp4z[gjetidx],gen_jtp4t[gjetidx]);
       gen_jtpt[gjetidx] = genp4.Pt();
       gen_jteta[gjetidx] = genp4.Eta(); // for matching
       gen_jtphi[gjetidx] = genp4.Phi(); // for matching
       gen_jty[gjetidx] = genp4.Rapidity();
+      if (doht) htsum += genp4.Pt();
 
       // Ozlem: loop for finding partonflavor by matching genjets and jets
       int ireco = -1;
@@ -1187,33 +1220,43 @@ bool HistosFill::AcceptEvent()
           ireco = j;
       } // for j
       if (ireco!=-1)
-        gen_partonflavor[gjetidx] = Int_t(partonflavor[ireco]+0.25);
+#ifdef NEWMODE
+        gen_partonflavor[gjetidx] = Int_t(partonflavorphys[ireco]+0.25); //qglokan
+#else
+        gen_partonflavor[gjetidx] = Int_t(partonflavor[ireco]+0.25); //qglokan
+#endif
       else
         gen_partonflavor[gjetidx] = -1;
     } // for gjetidx
+    // In NuGun samples, we don't have gen jets
+    for (int jetidx = 0; jetidx != njt; ++jetidx) htsum += jtpt[jetidx];
+    if (doht) pthat = htsum/2.0;
+
+    // Check if overweight PU event
+    if (_pass) {
+      if (!jp::isnu) {
+        if (jtpt[i0] < 1.5*jtgenpt[i0] or jp::isnu) ++_cnt["09ptgenlim"];
+        else _pass = false;
+      }
+
+      if (_pass) {
+        if (doht) {
+          if (jtpt[i0] < 2.0*pthat) ++_cnt["10htlim"];
+          else _pass = false;
+        } else {
+          double lim = (pthat < 100) ? 2.0 : 1.5;
+          if (jtpt[i0] < lim*pthat) ++_cnt["10pthatlim"];
+          else _pass = false;
+        }
+      }
+    }
   } // MC
 
   _jetids.resize(njt);
-  for (unsigned int jetid = 0; jetid != _jetids.size(); ++jetid)
-    _jetids[jetid] = true;
+  for (unsigned int jetid = 0; jetid != _jetids.size(); ++jetid) _jetids[jetid] = true;
   FillJetID(_jetids);
 
-
-  if (_pass) {
-    // Check if overweight PU event
-    if (jp::ismc and _pass) {
-      if (jtpt[i0] < 1.5*jtgenpt[i0] or jp::isnu) ++_cnt["09ptgenlim"];
-      else _pass = false;
-
-      if (_pass) {
-        double lim = (pthat < 100) ? 2.0 : 1.5;
-        if (jtpt[i0] < lim*pthat or jp::isnu) ++_cnt["10pthatlim"];
-        else _pass = false;
-      }
-    }
-    if (_pass and _jetids[i0]) // Non-restrictive
-      ++_cnt["11jtid"];
-  }
+  if (_pass and _jetids[i0]) ++_cnt["11jtid"]; // Non-restrictive
 #ifdef NEWMODE
   // Equipped in FillBasic and FillRun
   _pass_qcdmet = met01 < 45. or met01 < 0.3 * metsumet01; // updated 4/2018
@@ -1434,21 +1477,22 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
   if (jp::debug) {
     if (h == _histos.begin()->second[0]) {
-      cout << "Triggers size: " << _trigs.size() << endl;
-      for (auto trgit = _trigs.begin(); trgit != _trigs.end(); ++trgit)
-        cout << *trgit << ", ";
-      cout << "Current: " << "(" << h->trigname << ")" << endl;
+      PrintInfo(Form("Triggers size: %lu",_trigs.size()),true);
+      for (auto trgit = _trigs.begin(); trgit != _trigs.end(); ++trgit) cout << *trgit << ", ";
+      PrintInfo(Form("Current: (%s)",h->trigname.c_str()),true);
     }
   }
 
   // Are all of our conditions met?
   if (!_pass) return;
 
-  if (jp::debug) cout << Form("Subdirectory Eta_%1.1f-%1.1f/%s",h->etamin,h->etamax,h->trigname.c_str()) << endl;
-  if (jp::debug) cout << "Calculate and fill dijet mass" << endl << flush;
+  if (jp::debug) PrintInfo(Form("Subdirectory Eta_%1.1f-%1.1f/%s",h->etamin,h->etamax,h->trigname.c_str()),true);
+  if (jp::debug) PrintInfo("Calculate and fill dijet mass",true);
 
-  if (h->ismcdir) h->hpthat->Fill(pthat, _w);
-  if (h->ismcdir) h->hpthatnlo->Fill(pthat);
+  if (h->ismcdir) {
+    h->hpthat->Fill(pthat, _w);
+    h->hpthatnlo->Fill(pthat);
+  }
 
   //{ Pre-calculate some nice garden tools
   int i0 = jt3leads[0];
@@ -1496,7 +1540,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
       //}
 
       //{ Tag & probe hoods: Tag in barrel and fires trigger, probe in eta bin unbiased
-      if (jp::debug) cout << "Calculate and fill dijet balance" << endl << flush;
+      if (jp::debug) PrintInfo("Calculate and fill dijet balance",true);
 
       if (dphi > 2.7) { // Back-to-back condition
         for (auto itag_lead = 0u; itag_lead<2u; ++itag_lead) { // Look for both t&p combos for the leading jets
@@ -1665,9 +1709,9 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
     } // Jet quality stats
   } // First leading jet
 
-  if (jp::debug) cout << "Entering jet loop" << endl << flush;
+  if (jp::debug) PrintInfo("Entering jet loop",true);
   for (int jetidx = 0; jetidx != njt; ++jetidx) {
-    if (jp::debug) cout << "Loop over jet " << jetidx << "/" << njt << endl << flush;
+    if (jp::debug) PrintInfo(Form("Loop over jet %d/%d",jetidx,njt));
 
     // adapt variable names from different trees
     double pt = jtpt[jetidx];
@@ -1686,9 +1730,8 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
     // Check effect of ID cuts
     if (etarange) { // Jet in eta range
       if (jp::debug) {
-        cout << "..." << h->trigname << " | " << " index " << jetidx << "/" << njt
-          << " jet pt: " << pt << " eta : " << eta << " id: " << pass_id << " jec: " << jec << endl;
-        cout << "...evt id: " << _pass_qcdmet << " weight: " << _w << " met: " << met << " metsumet: " << metsumet << endl;
+        PrintInfo(Form("... %s |  index %d/%d jet pt: %f eta : %f id: %d jec: %f",h->trigname.c_str(),jetidx,njt,pt,eta,pass_id,jec),true);
+        PrintInfo(Form("...evt id: %d weight: %f met: %f metsumet: %f",_pass_qcdmet,_w,met,metsumet),true);
       }
 
       assert(h->hpt_noid); h->hpt_noid->Fill(pt, _w);
@@ -1716,7 +1759,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           h->hpt_gg->Fill(ptgen, _w);
 
         if (etarange) { // Correct jet eta range
-          if (jp::debug) cout << "..unfolding" << endl << flush;
+          if (jp::debug) PrintInfo("..unfolding",true);
           if (h->ismcdir) {
             // unfolding studies (Mikael)
             h->my->Fill(pt, _w);
@@ -1737,7 +1780,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             } // Delta r
           }
 
-          if (jp::debug) cout << "..jec uncertainty" << endl << flush;
+          if (jp::debug) PrintInfo("..jec uncertainty",true);
           // Get JEC uncertainty
           double unc = 0.01; // default for MC
           if (jp::isdt and _jecUnc) {
@@ -1747,7 +1790,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             //_jecUnc2->Rjet(pt, unc); // use Fall10 absolute scale uncertainty
           }
 
-	  /*    if (jp::dotrigeffsimple) {
+          if (jp::dotrigeffsimple) {
             // calculate and/or retrieve efficiencies
             // REMOVED: "For trigger efficiency" (only dummies left)
             double ideff = 1.;
@@ -1756,14 +1799,14 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             double trigeff = 1.;
             double eff = ideff * vtxeff * dqmeff * trigeff;
 
-            if (jp::debug) cout << "..raw spectrum" << endl << flush;
+            if (jp::debug) PrintInfo("..raw spectrum",true);
 
             // efficiencies
             assert(h->peff); h->peff->Fill(pt, eff, _w);
             assert(h->pideff); h->pideff->Fill(pt, ideff, _w);
             assert(h->pvtxeff); h->pvtxeff->Fill(pt, vtxeff, _w);
             assert(h->pdqmeff); h->pdqmeff->Fill(pt, dqmeff, _w);
-	    } */
+          }
 
           // raw spectrum
           assert(h->hpt); h->hpt->Fill(pt,_w);
@@ -1786,7 +1829,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             h->hptevt->Fill(pt, _w);
           h->hpttmp->Fill(pt);
 
-          if (jp::debug) cout << "..basic properties" << endl << flush;
+          if (jp::debug) PrintInfo("..basic properties",true);
 
           // basic properties
           assert(h->ppt); h->ppt->Fill(pt, pt, _w);
@@ -1799,7 +1842,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           assert(h->pjec_l2l3); h->pjec_l2l3->Fill(pt, jtjes_l2l3[jetidx], _w);
           assert(h->pjec_res); h->pjec_res->Fill(pt, jtjes_res[jetidx], _w);
 
-          if (jp::debug) cout << "..control plots of components" << endl << flush;
+          if (jp::debug) PrintInfo("..control plots of components",true);
 
           // Composition stuff without T&P (according to triggers)
           assert(h->pncand); h->pncand->Fill(pt, jtn[jetidx], _w);
@@ -1826,7 +1869,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           h->prho->Fill(pt, rho, _w);
           h->pnpv->Fill(pt, npvgood, _w);
           h->pnpvall->Fill(pt, npv, _w);
-          if (pt >= h->ptmin && pt < h->ptmax) { // Trigger pt range
+          if (pt >= h->ptmin and pt < h->ptmax) { // Trigger pt range
             h->htrpu2->Fill(trpu, _w);
             //
             h->pnpvvsrho->Fill(rho, npvgood, _w);
@@ -1840,7 +1883,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             h->pitpuvstrpu->Fill(trpu, itpu, _w);
             h->hjet_vstrpu->Fill(trpu, _w);
 
-            if (jp::debug) cout << "..control plots for topology" << endl << flush;
+            if (jp::debug) PrintInfo("..control plots for topology",true);
 
             h->htrpu->Fill(trpu, _w);
             if (h->ismcdir) {
@@ -1912,15 +1955,21 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           if (probg>=0 and probg<=1) {
             assert(h->hgpt);  h->hgpt->Fill(pt,_w*probg);
             assert(h->hgpt0); h->hgpt0->Fill(pt, _w*probg);
-
             assert(h->hqgl);  h->hqgl->Fill(qgl[jetidx], _w);
             assert(h->hqgl2); h->hqgl2->Fill(pt, qgl[jetidx], _w);
             if (jp::ismc) {
               assert(h->hqgl_g);
               assert(h->hqgl_q);
-              bool isgluon = (fabs(partonflavor[jetidx]-21)<0.5);
-              bool isquark = (fabs(partonflavor[jetidx])<7);
-              assert(isgluon || isquark);
+#ifdef NEWMODE
+              bool isgluon = (fabs(partonflavorphys[jetidx]-21)<0.5); //qglokan
+              bool isquark = (fabs(partonflavorphys[jetidx])<6 and partonflavorphys[jetidx]!=0); //qglokan why we are ingnoring t(6) b'(7) t'(8)
+              bool isunmatch=((fabs(partonflavorphys[jetidx])>=6 and partonflavorphys[jetidx]!=21) || partonflavorphys[jetidx]==0);
+#else
+              bool isgluon = (fabs(partonflavor[jetidx]-21)<0.5); //qglokan
+              bool isquark = (fabs(partonflavor[jetidx])<6 and partonflavor[jetidx]!=0); //qglokan why we are ingnoring t(6) b'(7) t'(8)
+              bool isunmatch=(fabs(partonflavor[jetidx])<7); //qglokan
+#endif
+              assert(isgluon or isquark or isunmatch);
 
               // For data templates from scaling Pythia (wq & wg), see instructions at
               // https://twiki.cern.ch/twiki/bin/viewauth/CMS/QuarkGluonLikelihood#Systematics
@@ -1939,15 +1988,21 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                 assert(wq>0);
                 h->hqgl_dq->Fill(x, _w*wq);
                 h->hqgl2_dq->Fill(pt, x, _w*wq);
-              } else {
+              } else if(isunmatch){
+                h->hqgl_u->Fill(x, _w);
+                h->hqgl2_u->Fill(pt, x, _w);
+                double wg = 1;//-55.7067*pow(x,7) + 113.218*pow(x,6) -21.1421*pow(x,5) -99.927*pow(x,4) + 92.8668*pow(x,3) -34.3663*x*x + 6.27*x + 0.612992;
+                assert(wg>0);
+                h->hqgl_du->Fill(x, _w*wg);
+                h->hqgl2_du->Fill(pt, x, _w*wg);
+              }else {
                 PrintInfo("Quark/Gluon status missing from partonflavor");
               }
             }
           } // probg quark/gluon
 
           if (h->ismcdir and mcgendr) { // MC extras
-            if (jp::debug)
-              cout << "genmatch " << jetidx << " ptg="<<ptgen << " yg="<<jtgeny[jetidx] << " yr="<< y << endl;
+            if (jp::debug) PrintInfo(Form("genmatch %d ptg=%f yg=%f yr=%f",jetidx,ptgen,jtgeny[jetidx],y),true);
 
             double r = (ptgen ? pt/ptgen : 0);
             //double resp = (jtjesnew[jetidx] ? r / jtjesnew[jetidx] : 0);
@@ -1957,8 +2012,15 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
             h->hpt_gtw->Fill(ptgen, _w);
             // Ozlem: (gluon vs quark)
-            if (partonflavor[jetidx]==21) h->hgpt_g->Fill(ptgen, _w);
-            else h->hqpt_g->Fill(ptgen, _w);
+#ifdef NEWMODE
+            if (partonflavorphys[jetidx]==21) h->hgpt_g->Fill(ptgen, _w); //qglokan we need unmatched ones
+            else if (abs(partonflavorphys[jetidx])<6 and partonflavorphys[jetidx]!=0) h->hqpt_g->Fill(ptgen, _w);
+            else h->hupt_g->Fill(ptgen, _w);
+#else
+            if (partonflavor[jetidx]==21) h->hgpt_g->Fill(ptgen, _w); //qglokan
+            else if (abs(partonflavor[jetidx])<6 and partonflavor[jetidx]!=0) h->hqpt_g->Fill(ptgen, _w);
+            else h->hupt_g->Fill(ptgen, _w);
+#endif
 
             h->ppt_r->Fill(pt, pt, _w);
             h->ppt_g->Fill(ptgen, ptgen, _w);
@@ -2003,19 +2065,19 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
   } // for xidx
 
   if (jp::ismc) {
-    if (jp::debug) cout << "Truth loop:" << endl;
+    if (jp::debug) PrintInfo("Truth loop:",true);
     for (int gjetidx = 0; gjetidx != gen_njt; ++gjetidx) { // Unbiased gen spectrum (for each trigger)
       double etagen = gen_jteta[gjetidx];
       double ptgen = gen_jtpt[gjetidx];
 
       if (fabs(etagen) >= h->etamin and fabs(etagen) < h->etamax) {
-        if (jp::debug)
-          cout << "genjet " << gjetidx << "/" << gen_njt << " ptg="<<ptgen << " etag="<<etagen << endl;
+        if (jp::debug) PrintInfo(Form("genjet %d/%d ptg=%f etag=%f",gjetidx,gen_njt,ptgen,etagen),true);
 
         h->hpt_g0tw->Fill(ptgen, _w);
         // Ozlem: (gluon vs quark)
-        if (gen_partonflavor[gjetidx]==21) h->hgpt_g0tw->Fill(ptgen, _w);
-        else h->hqpt_g0tw->Fill(ptgen, _w);
+        if (gen_partonflavor[gjetidx]==21) h->hgpt_g0tw->Fill(ptgen, _w); //qglokan
+        else if(abs(gen_partonflavor[gjetidx])<6 and gen_partonflavor[gjetidx]!=0) h->hqpt_g0tw->Fill(ptgen, _w);
+        else h->hupt_g0tw->Fill(ptgen, _w);
 
         // unfolding studies (Mikael)
         if (h->ismcdir) { // Only the 'mc' trigger
@@ -2028,8 +2090,9 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
           h->hpt_g0->Fill(gen_jtpt[gjetidx], _w);
           // Ozlem: (gluon vs quark)
-          if (gen_partonflavor[gjetidx]==21) h->hgpt_g0->Fill(gen_jtpt[gjetidx], _w);
-          else h->hqpt_g0->Fill(gen_jtpt[gjetidx], _w);
+          if (gen_partonflavor[gjetidx]==21) h->hgpt_g0->Fill(gen_jtpt[gjetidx], _w); //qglokan
+          else if(abs(gen_partonflavor[gjetidx])<6 and gen_partonflavor[gjetidx]!=0) h->hqpt_g0->Fill(gen_jtpt[gjetidx], _w);
+          else h->hupt_g0->Fill(gen_jtpt[gjetidx], _w);
 
           assert(h->hpt_g0_tmp); h->hpt_g0_tmp->Fill(gen_jtpt[gjetidx]);
         } // mcdir (a subset of jp::ismc)
@@ -2153,10 +2216,9 @@ void HistosFill::FillSingleEta(HistosEta *h, Float_t* _pt, Float_t* _eta, Float_
 
   if (jp::debug) {
     if (h == _etahistos.begin()->second[0]) {
-      cout << "Triggers size: " << _trigs.size() << endl;
-      for (auto trgit = _trigs.begin(); trgit != _trigs.end(); ++trgit)
-        cout << *trgit << ", ";
-      cout << "(" << h->trigname << ")" << endl;
+      PrintInfo(Form("Triggers size: %lu",_trigs.size()),true);
+      for (auto trgit = _trigs.begin(); trgit != _trigs.end(); ++trgit) cout << *trgit << ", ";
+      PrintInfo(Form("(%s)",h->trigname.c_str()),true);
     }
   }
 
@@ -2352,10 +2414,9 @@ void HistosFill::FillSingleMC(HistosMC *h,  Float_t* _recopt,  Float_t* _genpt,
 
   if (jp::debug) {
     if (h == _mchistos.begin()->second[0]) {
-      cout << "Triggers size: " << _trigs.size() << endl;
-      for (auto trgit = _trigs.begin(); trgit != _trigs.end(); ++trgit)
-        cout << *trgit << ", ";
-      cout << "(" << h->trigname << ")" << endl;
+      PrintInfo(Form("Triggers size: %lu",_trigs.size()));
+      for (auto trgit = _trigs.begin(); trgit != _trigs.end(); ++trgit) cout << *trgit << ", ";
+      PrintInfo(Form("(%s)",h->trigname.c_str()));
     }
   }
 
@@ -2828,7 +2889,7 @@ void HistosFill::FillJetID(vector<bool> &id)
       if (etabs<=2.7 and (jtcef[jetidx]>=0.80 or jtmuf[jetidx]>=0.80)) id[jetidx] = false;
     }
 
-    if (jp::isdt and jp::doVetoHot) {
+    if (jp::doVetoHot) {
       // Abort if one of the leading jets is in a difficult zone
       assert(h2HotExcl);
       bool good = h2HotExcl->GetBinContent(h2HotExcl->FindBin(jteta[jetidx],jtphi[jetidx])) <= 0;
@@ -2839,10 +2900,10 @@ void HistosFill::FillJetID(vector<bool> &id)
 
 
 // Load good run and LS information
-bool HistosFill::LoadJSON(const char* filename)
+bool HistosFill::LoadJSON()
 {
-  cout << "Processing LoadJSON(\"" << filename << "\"..." << endl;
-  ifstream file(filename, ios::in);
+  PrintInfo(string("Processing LoadJSON() with ") + jp::json + " ...",true);
+  ifstream file(jp::json, ios::in);
   if (!file.is_open()) return false;
   char c;
   string s, s2;
@@ -2850,18 +2911,16 @@ bool HistosFill::LoadJSON(const char* filename)
   int rn(0), ls1(0), ls2(0), nrun(0), nls(0);
   file.get(c);
   if (c!='{') return false;
-  while (file >> s && sscanf(s.c_str(),"\"%d\":",&rn)==1) {
-    if (jp::debug)
-      cout << "\"" << rn << "\": " << flush;
+  while (file >> s and sscanf(s.c_str(),"\"%d\":",&rn)==1) {
+    if (jp::debug) PrintInfo(Form("\"%d\": ",rn),true);
 
-    while (file.get(c) && c==' ') {};
-    if (jp::debug) { cout << c << flush; assert(c=='['); }
+    while (file.get(c) and c==' ') {};
+    if (jp::debug) { PrintInfo(Form("%c",c),true); assert(c=='['); }
     ++nrun;
 
     bool endrun = false;
-    while (!endrun && file >> s >> s2 && sscanf((s+s2).c_str(),"[%d,%d]%s",&ls1,&ls2,s1)==3) {
-      if (jp::debug)
-        cout << "["<<ls1<<","<<ls2<<"]"<<s1 << flush;
+    while (!endrun and file >> s >> s2 and sscanf((s+s2).c_str(),"[%d,%d]%s",&ls1,&ls2,s1)==3) {
+      if (jp::debug) PrintInfo(Form("[%d,%d,%s]",ls1,ls2,s1),true);
 
       for (int ls = ls1; ls != ls2+1; ++ls) {
         _json[rn][ls] = 1;
@@ -2870,31 +2929,25 @@ bool HistosFill::LoadJSON(const char* filename)
 
       s2 = s1;
       endrun = (s2=="]," || s2=="]}");
-      if (!endrun && s2!=",") {
-        if (jp::debug) { cout<<"s1: "<<s2<<endl<<flush; assert(s2==","); }
-      }
+      if (jp::debug and !endrun and s2!=",") { PrintInfo(string("s1: ")+s2,true); assert(s2==","); }
     } // while ls
-    if (jp::debug)
-      cout << endl;
+    if (jp::debug) PrintInfo("",true);
 
     if (s2=="]}") continue;
-    else if (s2!="],") {
-      if (jp::debug) { cout<<"s2: "<<s2<<endl<<flush; assert(s2=="],"); }
-    }
+    else if (jp::debug and s2!="],") PrintInfo(string("s2: ")+s2,true); assert(s2=="],");
   } // while run
-  if (s2!="]}") { cout<<"s3: "<<s2<<endl<<flush; return false; }
+  if (s2!="]}") { PrintInfo(string("s3: ")+s2,true); return false; }
 
-  cout << "Called LoadJSON(\"" << filename << "\"):" << endl;
-  cout << "Loaded " << nrun << " good runs and " << nls
-       << " good lumi sections" << endl;
+  PrintInfo(string("Called LoadJSON() with ") + jp::json + ":",true);
+  PrintInfo(Form("Loaded %d good runs and %d good lumi sections",nrun,nls));
   return true;
 } // LoadJSON
 
 
 // Load luminosity information
-bool HistosFill::LoadLumi(const char* filename)
+bool HistosFill::LoadLumi()
 {
-  cout << "Processing LoadLumi(\"" << filename << "\")..." << endl;
+  PrintInfo(string("Processing LoadLumi() with ") + jp::lumifile + "...",true);
 
   // Check lumi against the list of good runs
   const int a_goodruns[] = {};
@@ -2904,13 +2957,12 @@ bool HistosFill::LoadLumi(const char* filename)
     for (int runidx = 0; runidx != ngoodruns; ++runidx)
       goodruns.insert(a_goodruns[runidx]);
 
-    for (auto runit = goodruns.begin(); runit != goodruns.end(); ++runit)
-      cout << *runit << ", ";
+    for (auto runit = goodruns.begin(); runit != goodruns.end(); ++runit) cout << *runit << ", ";
     cout << endl;
   }
   set<pair<int, int> > nolums;
 
-  ifstream f(filename, ios::in);
+  ifstream f(jp::lumifile, ios::in);
   if (!f.is_open()) return false;
   float secLS = 2.3310e+01;
   string s;
@@ -2919,14 +2971,14 @@ bool HistosFill::LoadLumi(const char* filename)
   char sfoo[512];
   bool getsuccess1 = static_cast<bool>(getline(f, s, '\n'));
   if (!getsuccess1) return false;
-  cout << endl << "string: " << s << " !" << endl << flush;
+  PrintInfo(string("\nstring: ") + s + " !",true);
 
   // HOX: the lumi file format has been changing. Change the conditions when needed.
-  if (s!="#Data tag : v2 , Norm tag: None") return false;
+  if (s!="#Data tag : 19v2 , Norm tag: None") return false;
 
   bool getsuccess2 = static_cast<bool>(getline(f, s, '\n'));
   if (!getsuccess2) return false;
-  cout << endl << "string: " << s << " !" << endl << flush;
+  PrintInfo(string("\nstring: ") + s + " !",true);
   if (s!="#run:fill,ls,time,beamstatus,E(GeV),delivered(/ub),recorded(/ub),avgpu,source") return false;
 
   int nls(0);
@@ -2941,11 +2993,10 @@ bool HistosFill::LoadLumi(const char* filename)
         &rn,&fill,&ls,&ifoo, &ifoo,&ifoo,&ifoo,&ifoo,&ifoo,&ifoo, &energy,&del,&rec,&avgpu,sfoo)!=15)
       skip=true;
 
-    if (jp::debug)
-      cout << "Run " << rn << " ls " << ls << " lumi " << rec*1e-6 << "/pb" << endl;
+    if (jp::debug) PrintInfo(Form("Run %d ls %d lumi %f/pb",rn,ls,rec*1e-6),true);
 
     if (skip) { // The user should know if this happens, since we can choose to use only STABLE BEAMS
-      if (skip) cout << "Skipping line (effects the recorded lumi):\n" << s << endl;
+      if (skip) PrintInfo(string("Skipping line (effects the recorded lumi):\n")+s,true);
       skip = false;
       continue;
     }
@@ -2970,32 +3021,22 @@ bool HistosFill::LoadLumi(const char* filename)
     if (nls>100000000) return false;
   }
 
-  cout << "Called LoadLumi(\"" << filename << "\"):" << endl;
-  cout << "Loaded " << _lums.size() << " runs with "
-       << nls << " lumi sections containing "
-       << lumsum << " pb-1 of data,\n of which "
-       << lumsum_good << " pb-1 is in good runs ("
-       << 100.*lumsum_good/lumsum << "%)"<< endl;
-  cout << "This corresponds to " << nls*secLS/3600
-       << " hours of data-taking" << endl;
-  cout << "The JSON file contains "
-       << lumsum_json << " pb-1 ("
-       << 100.*lumsum_json/lumsum << "%)"<< endl;
+  PrintInfo(Form("Called LoadLumi() with %s:\nLoaded %lu runs with %d lumi sections containing %f"
+                 " pb-1 of data,\n of which %f pb-1 is in good runs (%f%%)\nThis corresponds to %f"
+                 " hours of data-taking\nThe JSON file contains %f pb-1 (%f%%)",
+                 jp::lumifile,_lums.size(),nls,lumsum,lumsum_good,
+                 100.*lumsum_good/lumsum,nls*secLS/3600,lumsum_json,100.*lumsum_json/lumsum),true);
 
   // Report any empty lumi section
   if (nolums.size()!=0) {
-    cout << "Warning, found " << nolums.size() << " non-normalizable LS:";
-    for (auto lumit = nolums.begin();
-         lumit != nolums.end(); ++lumit) {
-
+    PrintInfo(Form("Warning, found %lu non-normalizable LS:",nolums.size()),true);
+    for (auto lumit = nolums.begin(); lumit != nolums.end(); ++lumit) {
       cout << " ["<<lumit->first<<","<<lumit->second;
       auto lumit2 = lumit;
       ++lumit2;
-      if (lumit2->first!=lumit->first or lumit2->second!=lumit->second+1)
-        cout << "]";
+      if (lumit2->first!=lumit->first or lumit2->second!=lumit->second+1) cout << "]";
       else {
-        for (int lumadd = 0; lumit2!=nolums.end() and
-                             lumit2->first==lumit->first and
+        for (int lumadd = 0; lumit2!=nolums.end() and lumit2->first==lumit->first and
                              lumit2->second==lumit->second+lumadd+1; ++lumadd, ++lumit2) {};
         lumit = --lumit2;
         cout << "-" << lumit->second << "]";
@@ -3007,17 +3048,33 @@ bool HistosFill::LoadLumi(const char* filename)
 } // LoadLumi
 
 
-bool HistosFill::LoadPuProfiles(const char *datafile, const char *mcfile)
+bool HistosFill::LoadPuProfiles()
 {
-  cout << "Processing LoadPuProfiles(\"" << datafile << "\",\"" << mcfile << "\")..." << endl;
+  if (jp::PUIOVidx>=jp::PUIOVs.size()) {
+    PrintInfo(Form("Selected PU IOV too great (%u vs. %zu), check the value of jp::PUIOVidx!",jp::PUIOVidx,jp::PUIOVs.size()));
+    return false;
+  }
+  string datafile = jp::pudtpath + jp::PUIOVs[jp::PUIOVidx] + "pileup_DT.root";
+  string mcfile   = jp::pumcpath;
+  if (jp::isnu)      mcfile += "pileup_NU.root";
+  else if (jp::ishw) mcfile += jp::puhwfile;
+  else if (jp::ispy) {
+    if (jp::pthatbins)   mcfile += "pileup_Pthat.root";
+    else if (jp::htbins) mcfile += "pileup_P8MG.root";
+    else                 mcfile += jp::pup8file;
+  } else {
+    PrintInfo("Problems with PU file types!",true);
+    return false;
+  }
+
+  PrintInfo(Form("Processing LoadPuProfiles() using %s and %s ...",datafile.c_str(),mcfile.c_str()),true);
 
   TDirectory *curdir = gDirectory;
-
   // Load pile-up files and hists from them
-  TFile *f_pudist = new TFile(datafile, "READ");
-  if (!f_pudist or f_pudist->IsZombie()) return false;
-  TFile *fpumc = new TFile(mcfile,"READ");
-  if (!fpumc or fpumc->IsZombie()) return false;
+  TFile *f_pudist = new TFile(datafile.c_str(), "READ");
+  if (!f_pudist or f_pudist->IsZombie()) { PrintInfo(string("Unable to read PU data file")+datafile,true); return false; }
+  TFile *fpumc = new TFile(mcfile.c_str(),"READ");
+  if (!fpumc or fpumc->IsZombie()) { PrintInfo(string("Unable to read PU MC file")+mcfile,true); return false; }
 
   _pumc = dynamic_cast<TH1D*>(fpumc->Get("pileupmc")->Clone("pumchelp"));
   if (!_pumc) return false;
@@ -3040,15 +3097,15 @@ bool HistosFill::LoadPuProfiles(const char *datafile, const char *mcfile)
   for (auto &t : jp::triggers) {
     _pudist[t] = dynamic_cast<TH1D*>(f_pudist->Get(t));
     if (!_pudist[t]) {
-      cout << "The trigger " << t << " was not found in the DT pileup file!" << endl;
+      PrintInfo(Form("The trigger %s was not found in the DT pileup file!",t),true);
       return false;
     }
     int nbinsdt = _pudist[t]->GetNbinsX();
     int kdt = _pudist[t]->FindBin(33);
     if (kdt!=kmc or nbinsdt!=nbinsmc) {
-      cout << "The pileup histogram dt vs mc binning or range do not match (dt left mc right):" << endl;
-      cout << " Bins: " << nbinsdt << " " << nbinsmc << endl;
-      cout << " Pu=33 bin: " << kdt << " " << kmc << endl;
+      PrintInfo("The pileup histogram dt vs mc binning or range do not match (dt left mc right):",true);
+      PrintInfo(Form(" Bins: dt:%d mc:%d",nbinsdt,nbinsmc),true);
+      PrintInfo(Form(" Pu=33 bin: dt:%d mc:%d",kdt,kmc),true);
       return false;
     }
     double maxdtpu = _pudist[t]->GetMaximum();
@@ -3069,18 +3126,30 @@ bool HistosFill::LoadPuProfiles(const char *datafile, const char *mcfile)
 } // LoadPuProfiles
 
 
-Int_t HistosFill::FindPthatIdx(string filename)
+Int_t HistosFill::FindMCSliceIdx(string filename)
 {
   int sliceIdx = 0;
   bool sliceFound = false;
-  for (auto &fname : jp::pthatfiles) {
-    regex rfile(fname);
-    std::cmatch mfile;
-    if (std::regex_search(filename.c_str(),mfile,rfile)) {
-      sliceFound = true;
-      break;
+  if (jp::pthatbins) {
+    for (auto &fname : jp::pthatfiles) {
+      regex rfile(fname);
+      std::cmatch mfile;
+      if (std::regex_search(filename.c_str(),mfile,rfile)) {
+        sliceFound = true;
+        break;
+      }
+      ++sliceIdx;
     }
-    ++sliceIdx;
+  } else if (jp::htbins) {
+    for (auto &fname : jp::htfiles) {
+      regex rfile(fname);
+      std::cmatch mfile;
+      if (std::regex_search(filename.c_str(),mfile,rfile)) {
+        sliceFound = true;
+        break;
+      }
+      ++sliceIdx;
+    }
   }
   if (sliceFound) return sliceIdx;
   return -1;
@@ -3090,17 +3159,25 @@ Int_t HistosFill::FindPthatIdx(string filename)
 // Check that the correct tree is open in the chain
 Long64_t HistosFill::LoadTree(Long64_t entry)
 {
-  if (!fChain)
-    return -5;
+  if (!fChain) return -5;
   Long64_t centry = fChain->LoadTree(entry);
-  if (centry < 0)
-    return centry;
+  if (centry < 0) return centry;
 
   // A new tree is opened
   if (fChain->GetTreeNumber() != fCurrent) {
 
     fCurrent = fChain->GetTreeNumber();
     PrintInfo(Form("Opening tree number %d", fChain->GetTreeNumber()));
+
+    if (jp::fetchMETFilters) {
+      // Reload the MET filters and print them
+      if (!GetFilters()) {
+        PrintInfo("Failed to load DT filters. Check that the SMPJ tuple has the required histograms. Aborting...");
+        return -4;
+      }
+      PrintInfo(Form("Tree %d MET filters:",fCurrent),true);
+      for (auto &flt : _availFlts) PrintInfo(flt,true);
+    }
 
     if (jp::isdt) {
       // Reload the triggers and print them
@@ -3118,25 +3195,26 @@ Long64_t HistosFill::LoadTree(Long64_t entry)
         if (trigi%(jp::notrigs+1)==jp::notrigs) *ferr << endl;
       }
       *ferr << endl << flush;
-    } else if (jp::pthatbins) {
+    } else if (jp::pthatbins or jp::htbins) {
       // If there are two pthat files with the same pthat range, we convey this information through "prevweight"
+      bool htmode = !jp::pthatbins;
+      const char* bintag = htmode ? "HT" : "Pthat";
       Long64_t noevts = fChain->GetTree()->GetEntries();
-      if (_pthatrepeats<=0) {
-        string filename = fChain->GetCurrentFile()->GetName();
+      if (_binnedmcrepeats<=0) {
+        const char* fname = fChain->GetCurrentFile()->GetName();
         // Check the position of the current file in the list of file names
-        int sliceIdx = FindPthatIdx(filename);
+        int sliceIdx = FindMCSliceIdx(fname);
         if (sliceIdx<0) {
-          PrintInfo(Form("Pthat slice file name contradictory %s. Aborting...",filename.c_str()));
+          PrintInfo(Form("%s slice file name contradictory %s. Aborting...",bintag,fname));
           return -3;
         }
-        if (jp::pthatsigmas[sliceIdx]<=0) {
-          PrintInfo(Form("Suspicious pthat slice information for file %s. Aborting...",filename.c_str()));
+        if ((!htmode and jp::pthatsigmas[sliceIdx]<=0) or (htmode and jp::htsigmas[sliceIdx]<=0)) {
+          PrintInfo(Form("Suspicious %s information for file %s. Aborting...",bintag,fname));
           return -3;
         }
-        PrintInfo(Form("Pthat bin changing.\nFile %d %s, position %lld with %lld events.",
-                       sliceIdx,filename.c_str(),centry,noevts),true);
+        PrintInfo(Form("%s bin changing.\nFile %d %s, position %lld with %lld events.",bintag,sliceIdx,fname,centry,noevts),true);
 
-        _pthatrepeats = 0;
+        _binnedmcrepeats = 0;
         // We have a look if the next tree in the chain has the same range
         Long64_t next = entry-centry;
         while (fChain->GetTreeNumber()<fChain->GetNtrees()-1) {
@@ -3145,35 +3223,75 @@ Long64_t HistosFill::LoadTree(Long64_t entry)
           Long64_t nentry = fChain->LoadTree(next);
           if (nentry < 0) break;
           Long64_t nextevts = fChain->GetTree()->GetEntries();
-          string nextname = fChain->GetCurrentFile()->GetName();
-          int nextIdx = FindPthatIdx(nextname);
+          const char* nextname = fChain->GetCurrentFile()->GetName();
+          int nextIdx = FindMCSliceIdx(nextname);
           if (nextIdx<0) {
-            PrintInfo(Form("Pthat slice file name contradictory %s. Aborting...",nextname.c_str()));
+            PrintInfo(Form("%s slice file name contradictory %s. Aborting...",bintag,nextname));
             return -3;
           }
           if (sliceIdx!=nextIdx) break;
-          PrintInfo(Form("File extension %d %s, position %lld with %lld events",
-                         nextIdx,nextname.c_str(),nentry,nextevts),true);
+          PrintInfo(Form("File extension %d %s, position %lld with %lld events",nextIdx,nextname,nentry,nextevts),true);
           noevts += nextevts;
-          ++_pthatrepeats;
+          ++_binnedmcrepeats;
         }
         // Normalization with the amount of entries within the current tree
-        _pthatweight = jp::pthatsigmas[sliceIdx]/noevts;
-        // This is a normalization procedure by the luminosity of the furthest pthat bin. In practice, it does not hurt if the normalevts number is arbitrary.
-        _pthatweight /= (jp::pthatsigmas.back()/jp::pthatnormalevts); // Normalize
-        PrintInfo(Form("The given slice has the pthat range [%f,%f]\nWeight: %f, with a total of %lld events.",
-                       jp::pthatranges[sliceIdx],jp::pthatranges[sliceIdx+1],_pthatweight,noevts),true);
+        double sigmacurr = htmode ? jp::htsigmas[sliceIdx  ] : jp::pthatsigmas[sliceIdx  ];
+        double slicecurr = htmode ? jp::htranges[sliceIdx  ] : jp::pthatranges[sliceIdx  ];
+        double slicenext = htmode ? jp::htranges[sliceIdx+1] : jp::pthatranges[sliceIdx+1];
+        _binnedmcweight  = sigmacurr/noevts;
+        // This is a normalization procedure by the luminosity of the furthest PtHat/HT bin.
+        // In practice, it does not hurt if the normalevts number is arbitrary.
+        _binnedmcweight /= (htmode ? (jp::htsigmas.back()/jp::htnormalevts) : (jp::pthatsigmas.back()/jp::pthatnormalevts));
+        PrintInfo(Form("The given slice has the %s range [%f,%f]\nWeight: %f, with a total x-sec %f pb and %lld events.",
+                  bintag,slicecurr,slicenext,_binnedmcweight,sigmacurr,noevts),true);
       } else {
-        --_pthatrepeats;
-        PrintInfo(Form("Pthat bin remains the same while file is changing.\nFile %s\nWeight: %f",
-                       fChain->GetCurrentFile()->GetName(),_pthatweight),true);
+        --_binnedmcrepeats;
+        PrintInfo(Form("%s bin remains the same while file is changing.\nFile %s\nWeight: %f",
+                  bintag,fChain->GetCurrentFile()->GetName(),_binnedmcweight),true);
       }
     }
-    // slices with pthat bins
+    // slices with PtHat/HT bins
   }
   return centry;
 }
 
+
+// Update the available MET filter types for each new tree
+bool HistosFill::GetFilters()
+{
+  TH1F *filters = dynamic_cast<TH1F*>(fChain->GetCurrentFile()->Get("ak4/FilterActive")); assert(filters);
+  TAxis *xax = filters->GetXaxis();
+  regex filter("Flag_([a-zA-Z0-9]+)");
+
+  _availFlts.clear();
+  bool empty  = false;
+  bool passall = false;
+  for (int fltidx = xax->GetFirst(); fltidx <= xax->GetLast(); ++fltidx) {
+    string fltName = xax->GetBinLabel(fltidx);
+
+    if (fltName=="") {
+      empty = true;
+    } else if (fltName=="PassAll") {
+      if (empty) {
+        PrintInfo("PassAll MET filter in the wrong position!",true);
+        return false;
+      }
+      passall = true;
+    } else if (std::regex_match(fltName,filter)) {
+      if (empty or passall) {
+        PrintInfo(Form("MET filter %s in the wrong position!",fltName.c_str()),true);
+        return false;
+      }
+      string stripName = std::regex_replace(fltName, filter, "$1", std::regex_constants::format_no_copy);
+      _availFlts.push_back(stripName);
+    } else {
+      PrintInfo(Form("Unknown filter type %s",fltName.c_str()),true);
+      return false;
+    }
+  }
+
+  return _availFlts.size()>0;
+}
 
 // Update the available trigger types for each new tree
 bool HistosFill::GetTriggers()
