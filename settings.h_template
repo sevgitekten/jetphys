@@ -114,6 +114,7 @@ namespace jp {
   // Toggle development histos
   constexpr bool doMpfHistos = false;
 
+
   // In the newest ntuples (mid 2019 onwards), MET filters may be saved separately, as before these
   constexpr bool fetchMETFilters = true;
   constexpr bool doMETFiltering = true;
@@ -129,7 +130,10 @@ namespace jp {
   constexpr bool checkduplicates = false;
   //} END Special analyses that are not typically needed
 
-  // QGL studies by Ozlem (use an external file for qgl studies)
+  // QGL studies (use quark and gluon switches for unfolding study)
+  constexpr bool isgluon = false;  
+  constexpr bool isquark = false;
+  // QGL studies (use an external file for qgl studies)
   constexpr bool doqglfile = false;
   constexpr const char qglfile[] = "output-DATA_RunGfullpart-1.root";
 

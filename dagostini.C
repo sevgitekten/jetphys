@@ -49,6 +49,10 @@ Double_t fPtRes(Double_t *x, Double_t *p) { return ptresolution(x[0], p[0]);}
 int cnt_a = 0;
 const int nk = 3; // number of kernel parameters (excluding pt, eta)
 
+//quark and gluon response fit which is normilized to inc jets
+TF1 *RNF_g=0;
+TF1 *RNF_q=0;
+
 Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
 
   if (++cnt_a%1000000==0) cout << "+" << flush;
@@ -57,8 +61,25 @@ Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
   const double ptmeas = p[0]; // measured pT
   const double eta = p[1]; // rapidity
 
+  
+  double mean=0;
+  if(jp::isgluon && !jp::isquark){
+      if (!RNF_g) RNF_g=new TF1("RNF_g","([0]+[1]*pow(x,[2]))/(0.997212+0.568271*pow(x,-1.16785))", 1,5000);
+      RNF_g->SetParameters(0.984455,0.0953105,-0.493221);
+      mean = RNF_g->Eval(pt)*pt;
+  }else if(jp::isquark && !jp::isgluon){
+      if (!RNF_q) RNF_q=new TF1("RNF_q","([0]+[1]*pow(x,[2]))/(0.997212+0.568271*pow(x,-1.16785))", 1,5000);
+      RNF_q->SetParameters(0.989670,0.150814,-0.331038);
+      mean = RNF_q->Eval(pt)*pt;
+  }else{
+      mean = pt;
+}
+
+  
   double res = ptresolution(pt, eta+1e-3) * pt;
-  const double s = TMath::Gaus(ptmeas, pt, res, kTRUE);
+  const double s = TMath::Gaus(ptmeas, mean, res, kTRUE);
+  double scale = 1;
+  //const double s = TMath::Gaus(ptmeas, pt*scale, res, kTRUE);
   const double f = p[2] * pow(pt, p[3]) * pow(1 - pt*cosh(eta) / jp::emax, p[4]);
   
   return (f * s);
@@ -101,15 +122,22 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hpt2, TDirectory *outdir,
 
 void dagostiniUnfold(string type) {
 
-  TFile *fin = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
+  //TFile *fin = new TFile(Form("../ROOTFiles_of_Laura_for_test/output-%s-2b.root",type.c_str()),"READ");
+  //TFile *fin = new TFile(Form("output-%s-1.root","DATA"),"READ");
+  TFile *fin = new TFile(Form("output-%s-QGUL.root",type.c_str()),"READ");
   assert(fin && !fin->IsZombie());
 
   // TFile *fin2 = new TFile(Form("output-%s-2c.root",type.c_str()),"READ");
   // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
-  // TFile *fin2 = new TFile(Form("output-%s-2c.root","MC"),"READ");
-  TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
-
-  TFile *fout = new TFile(Form("output-%s-3.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());
+  TFile *fin2 = new TFile(Form("output-%s-QGUL.root","MC"),"READ");
+  //TFile *fin2 = new TFile("../ROOTFiles_of_Laura_for_test/output-MC-2b.root","READ");
+  //TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "../ROOTFiles_of_Laura_for_test/output-MC-2b.root","READ");
+  assert(fin2 && !fin2->IsZombie());
+  
+  TFile *fout;
+  if(jp::isgluon && !jp::isquark){ fout = new TFile(Form("output-%s-3_gluon.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());}
+  else if(jp::isquark && !jp::isgluon){ fout = new TFile(Form("output-%s-3_quark.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());}
+  else{ fout = new TFile(Form("output-%s-3.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());}
 
   bool ismc = jp::ismc;
 
@@ -160,21 +188,48 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
       }
     } // inherits from TDirectory
 
-    // Found hpt plot: call unfolding routine
-    if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hpt" || string(obj->GetName())=="hpt_jet" )) {
-      cout << "+" << flush;
-
-      _jet = TString(obj->GetName()).Contains("hpt_jet");
-
-      TH1D *hpt = (TH1D*)obj;
-      //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
-      //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
-        TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
-
-       if (hpt2)
-        dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
-
-    } // hpt
+    // Found hpt plots: call unfolding routine
+    if(jp::isgluon && !jp::isquark){
+        cout << "gluon unfolding routine"<<endl;
+        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hgpt" || string(obj->GetName())=="hpt_jet" )) {
+            cout << "+" << flush;
+            
+            _jet = TString(obj->GetName()).Contains("hpt_jet");
+            TH1D *hpt = (TH1D*)obj;
+            //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
+            //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
+            TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hgpt_g" : "hgpt"); assert(hpt2);
+            if (hpt2)
+                dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
+        } //hgpt plots
+    }else if(jp::isquark && !jp::isgluon){
+        cout << "quark unfolding routine"<<endl;
+        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hqpt" || string(obj->GetName())=="hpt_jet" )) {
+            cout << "+" << flush;
+            
+            _jet = TString(obj->GetName()).Contains("hpt_jet");
+            TH1D *hpt = (TH1D*)obj;
+            //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
+            //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
+            TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hqpt_g" : "hqpt"); assert(hpt2);
+            if (hpt2)
+                dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
+        } //hqpt plots
+    }else{
+        cout << "all unfolding routine"<<endl;
+        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hpt" || string(obj->GetName())=="hpt_jet" )) {
+            cout << "+" << flush;
+            
+            _jet = TString(obj->GetName()).Contains("hpt_jet");
+            TH1D *hpt = (TH1D*)obj;
+            //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
+            //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
+            TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
+            if (hpt2)
+                dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
+            } //hpt for inclusive for other cases 
+        
+    } // hpt plots
 
   } // while key
 
