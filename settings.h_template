@@ -44,8 +44,11 @@ namespace jp {
   constexpr bool debug = false;
  
   // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
-  constexpr bool dagfile1 = false; // true;
- 
+  constexpr bool dagfile1 = false;
+
+  // Do ECAL prefire correction for 2016 and 2017 data (eta 2.0-2.5 and 2.5-3.0)
+  constexpr bool doECALprefire = true;
+  
   // Save git version info (recommended)
   constexpr bool gitinfo = true;
 
@@ -274,7 +277,7 @@ namespace jp {
   // https://github.com/cms-jet/JECDatabase/tree/master/tarballs
   const array<string,yrs> jecgt_ = {
     "Summer16_07Aug2017",
-    "Fall17_17Nov2017_V32_MC/Fall17_17Nov2017", 
+    "Fall17_17Nov2017B_V32_DATA/Fall17_17Nov2017", 
     "Fall17_17Nov2017",
     "Autumn18_RunB_V10_DATA/Autumn18_Run"
   };
@@ -478,13 +481,15 @@ namespace jp {
   constexpr double xminpas = 114;//56;
   
   constexpr double xmin = 15;//20.;
-  constexpr double xmax = 4037;//TEMP PATCH for partial data //1999.;
+  constexpr double xmax = 4037;
   //} END limits
 
   // pT limits for unfolding
-  constexpr double unfptminreco = 60; // recopt; //40; recopt needs to be bigger than genpt
-  constexpr double unfptmingen = 40;
-  constexpr double unfptminnlo = 15;
+  constexpr double unfptminreco = 30; // recopt; //40; recopt needs to be bigger than genpt
+  constexpr double unfptmingen = 15;
+  constexpr double unfptminnlo = 20;
+  constexpr double fitmin = 60;
+  
   
   //{ BEGIN Binnings
   // Binning agreed within JTF: pT>100 GeV from CaloJet resolutions,
