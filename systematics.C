@@ -23,61 +23,12 @@
 #include "CondFormats/JetMETObjects/interface/SimpleJetCorrectionUncertainty.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 
+#include "ansatz.h"
+
+double _epsilon = 1e-12;
+
 // Resolution function
 Double_t fPtRes(Double_t *x, Double_t *p) { return ptresolution(x[0], p[0]);}
-
-// Ansatz Kernel 
-int cnt_a = 0;
-const int nk = 3; // number of kernel parameters (excluding pt, eta)
-
-Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
-
-  if (++cnt_a%1000000==0) cout << "+" << flush;
-
-  const double pt = x[0]; // true pT
-  const double ptmeas = p[0]; // measured pT
-  const double eta = p[1]; // rapidity
-
-  double res = ptresolution(pt, eta+1e-3) * pt;
-  
-  const double s = TMath::Gaus(ptmeas, pt, res, kTRUE);
-  const double f = p[2] * pow(pt, p[3]) * pow(1 - pt*cosh(eta) / jp::emax, p[4]);
-  
-  return (f * s);
-}
-
-
-// Smeared Ansatz
-double _epsilon = 1e-8;
-TF1 *_kernel = 0; // global variable, not pretty but works
-Double_t smearedAnsatz(Double_t *x, Double_t *p) {
-
-  const double pt = x[0];
-  const double eta = p[0];
-  
-  if (!_kernel) _kernel = new TF1("_kernel", smearedAnsatzKernel, 1., jp::emax/cosh(eta), nk+2);
-
-  double res = ptresolution(pt, eta+1e-3); // * pt;
-  //  const double sigma = max(0.10, min(res, 0.30)); // was max
-  const double sigma = min(res, 0.30); // was max
-
-  double ptmin = pt /(1. + 4.*sigma); // xmin*(1+4*sigma)=x
-  ptmin = max(1.,ptmin); // safety check
-  double ptmax = pt /(1. - 3.*sigma); // xmax*(1-3*sigma)=x
-  
-  //  cout << Form("1pt %10.5f sigma %10.5f ptmin %10.5f ptmax %10.5f eta %10.5f",pt, sigma, ptmin, ptmax, eta) << endl << flush;
-  ptmax = min(jp::emax/cosh(eta), ptmax); // safety check
-  //  cout << Form("2pt %10.5f sigma %10.5f ptmin %10.5f ptmax %10.5f eta %10.5f",pt, sigma, ptmin, ptmax, eta) << endl << flush;
-  
-  const double par[nk+2] = {pt, eta, p[1], p[2], p[3]};
-  _kernel->SetParameters(&par[0]);
-
-  // Set pT bin limits needed in smearing matrix generation
-  if (p[4]>0 && p[4]<jp::emax/cosh(eta)) ptmin = p[4];
-  if (p[5]>0 && p[5]<jp::emax/cosh(eta)) ptmax = p[5];
-
-  return ( _kernel->Integral(ptmin, ptmax, _epsilon) );
-}
 
 // systematics container for calculating total
 struct sysc {
@@ -215,13 +166,15 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
   float etamin, etamax;
   sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
 
-  // Load the uncertainty
-  //TH1D *hunc = (TH1D*)dunc->Get("punc"); assert(hunc);
-  //JetCorrectionUncertainty *func = new JetCorrectionUncertainty(Form("CondFormats/JetMETObjects/data/GR_R_42_V23_Uncertainty_%sPF.txt",jp::algo));
+  string JECSourceFile = "/home/local/lmartika/Jets/JECDatabase/textFiles/Fall17_17Nov2017B_V32_DATA/Fall17_17Nov2017B_V32_DATA_UncertaintySources_AK4PFchs.txt";
+  // TODO: Use settings.h for finding correct file
+  // -> Need to merge first with the new main jetphys!
+  
+  string JECsrc = "TotalNoTime"; // TODO: All sources from systematics-loop
+  
+  JetCorrectorParameters *JECparams = new JetCorrectorParameters(JECSourceFile.c_str(), JECsrc);
+  JetCorrectionUncertainty *func = new JetCorrectionUncertainty(*JECparams);
 
-  string s = "/home/local/lmartika/Jets/JECDatabase/textFiles/Fall17_17Nov2017B_V32_DATA/Fall17_17Nov2017B_V32_DATA_Uncertainty_AK4PFchs.txt";
-
-  JetCorrectionUncertainty *func = new JetCorrectionUncertainty(s.c_str());
   const char *jt = jectype.c_str();
 
   // inclusive jets
@@ -241,20 +194,23 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 		     fpt0->GetParameter(2), fpt0->GetParameter(3),
 		     fpt0->GetParameter(4));
 
-  // first estimate is just ratio of histograms with shifted JEC
+  // first estimate is just ratio of histograms with shifted JEC - do not have JEC_minus/_plus histos in run2 results (yet)
+  // These used to be total shift
+  
   // inclusive jets
-  TH1D *hjpl0 = (TH1D*)hpl->Clone(Form("hjec_%s_pl0", jt));
+  /*  TH1D *hjpl0 = (TH1D*)hpl->Clone(Form("hjec_%s_pl0", jt));
   hjpl0->Divide(hzr);
   TH1D *hjmn0 = (TH1D*)hmn->Clone(Form("hjec_%s_mn0", jt));
   hjmn0->Divide(hzr);
   TH1D *hjav0 = (TH1D*)hzr->Clone(Form("hjec_%s_av0", jt));
   hjav0->Reset();
+  
   // Center around zero, calculate average uncertainty
   for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
 
     if (hzr->GetBinContent(i)!=0) {
 
-      double pl = hjpl0->GetBinContent(i)-1;
+      double pl = hjpl0->GetBinContent(i)-1;   
       double epl = hjpl0->GetBinError(i);
       hjpl0->SetBinContent(i, pl);
       double mn = hjmn0->GetBinContent(i)-1;
@@ -268,7 +224,7 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
       hjav0->SetBinContent(i, av);
       hjav0->SetBinError(i, eav);
     }
-  }
+    } */
 
   // for second estimate calculate ratio of Ansatzes with shifted pT
   TH1D *hjpl = (TH1D*)hzr->Clone(Form("hjec_%s_pl", jt));
@@ -281,8 +237,7 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
   //string s2 = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt",
   //	   jp::jecgt.c_str(), jp::type, jp::algo);
   string s2 = s;
-  //cout << "s2: " << s2 << endl << flush;
-
+ 
   JetCorrectionUncertainty *rjet = new JetCorrectionUncertainty(s2.c_str());
 
   for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
@@ -297,14 +252,14 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 	  double eta = 0.5*(etamin+etamax);
 	  func->setJetPt(hzr->GetBinCenter(i));
 	  func->setJetEta(eta);
-	  double u1 = func->getUncertainty(true);
+  	  double u1 = func->getUncertainty(true);
 	  func->setJetPt(hzr->GetBinCenter(i));
 	  func->setJetEta(-eta);
 	  double u2 = func->getUncertainty(true);
 	  unc = 0.5*(u1+u2);
 	}
 
-	// Estimate the JEC uncertainty
+	// Estimate the JEC uncertainty - old
 	assert(jectype=="tot" || jectype=="abs" || jectype=="rel" ||
 	       jectype=="bjt" || jectype=="pt");
 	double djec = 0.;
