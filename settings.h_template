@@ -47,7 +47,13 @@ using std::regex;
 
 namespace jp {
   // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
-  constexpr bool dagfile1 = false; // true;
+  constexpr bool dagfile1 = false;
+
+  // Do ECAL prefire correction for 2016 and 2017 data (eta 2.0-2.5 and 2.5-3.0)
+  constexpr bool doECALprefire = true;
+  
+  // Save git version info (recommended)
+  constexpr bool gitinfo = true;
 
   //{ BEGIN fundamental file settings
   // Data type "DATA"/"MC"/"HW"/"NU".
@@ -298,7 +304,7 @@ namespace jp {
 
   const array<string,yrs> jecgt_ = {
     "Summer16_07Aug2017",
-    "Fall17_17Nov2017",
+    "Fall17_17Nov2017B_V32_DATA/Fall17_17Nov2017", 
     //"Fall17_09May2018"
     "Fall17_17Nov2017",
     "Autumn18"
