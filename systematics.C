@@ -157,15 +157,12 @@ void systematics(string type) {
       for (int i = 0; i<nsrc; ++i) {
 	JECSystematics[i] = jec_ansatz_systematics(dzr, dout, srcnames[i]);
       }
-
-      // Need to rewrite/update function for total systematics
-      
       
       // sysc *cjer1 = jer_systematics(dzr, dout, type, "inc");
       //sysc *cjer2 = jer_systematics(dzr, dout, type, "bjt");
- 
       sysc *clum = lum_systematics(dzr, dout);
-      
+
+      // Need to rewrite/update function for total systematics    
       // tot_systematics(dzr, dout, cjec1, cjec2, cjec3, cjer1, cjer2, clum);
       statistics(dzr, dout);
 
@@ -185,12 +182,7 @@ void systematics(string type) {
 
 
 // JEC systematics
-sysc *jec_ansatz_systematics(TDirectory *dzr,
-		      //TDirectory *dunc,
-		      //TDirectory *dpl, TDirectory *dmn,
-		      TDirectory *dout,
-		      //string type, // DATA/MC/HW/TH
-		      string JECsrc) {
+sysc *jec_ansatz_systematics(TDirectory *dzr, TDirectory *dout, string JECsrc) {
 
   float etamin, etamax;
   sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
