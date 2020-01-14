@@ -16,6 +16,8 @@
 #include "tools.h"
 #include "settings.h"
 
+#include <vector>
+
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/SimpleJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
@@ -41,11 +43,16 @@ struct sysc {
     plus(pl), minus(mn), av(avg) { };
 };
 
-sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
-		      TDirectory *dpl, TDirectory *dmn,
-		      TDirectory *dout, string type,
-		      string jectype = "abs");
+// Separate Ansatz method and JEC shifting method?
+// Ansatz needs JECsrc
+sysc *jec_ansatz_systematics(TDirectory *dzr,
+		      TDirectory *dout,
+		      string JECsrc);
 
+sysc *jec_systematics_total_shifts(TDirectory *dzr, TDirectory *dunc,
+		      TDirectory *dpl, TDirectory *dmn,
+				   TDirectory *dout, string type);
+		      
 void jec_shifts(TDirectory *dzr, TDirectory *dout, string type,
 		string algo = "jpt");
 
@@ -127,20 +134,33 @@ void systematics(string type) {
       dout0->cd(obj->GetName());
       TDirectory *dout = gDirectory;
 
+      const int nsrc = 3;
+      const char* srcnames[nsrc] =
+	{"AbsoluteStat", "AbsoluteScale",  "AbsoluteMPFBias"
+	};
+  
+      std::vector<sysc *> JECSystematics(nsrc);
+
       // Process subdirectory
-      sysc *cjec  = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "tot");
-     //  if(cjec)  //;
-      sysc *cjec1 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "abs");
-      sysc *cjec2 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "rel");
-      sysc *cjec3 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "bjt");
-      sysc *cjec4 = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "pt");
-      sysc *cjer1 = jer_systematics(dzr, dout, type, "inc");
-      sysc *cjer2 = jer_systematics(dzr, dout, type, "bjt");
-      //      sysc *cjer1 = cjec1;
-      //      sysc *cjer2 = cjec2;
+      //       sysc *cjec  = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "TotalNoTime");
+      sysc *cjec  = jec_ansatz_systematics(dzr, dout,"TotalNoTime");
+
+      //      sysc *AbsoluteStat = jec_systematics(dzr,dunc,dpl,dmn, dout, type, "AbsoluteStat");
+
+      for (int i = 0; i<nsrc; ++i) {
+	JECSystematics[i] = jec_ansatz_systematics(dzr, dout, srcnames[i]);
+      }
+
+      // Need to rewrite/update function for total systematics
+      
+      
+      // sysc *cjer1 = jer_systematics(dzr, dout, type, "inc");
+      //sysc *cjer2 = jer_systematics(dzr, dout, type, "bjt");
+ 
       sysc *clum = lum_systematics(dzr, dout);
-      tot_systematics(dzr, dout, cjec1, cjec2, cjec3, cjer1, cjer2, clum);
-       statistics(dzr, dout);
+      
+      // tot_systematics(dzr, dout, cjec1, cjec2, cjec3, cjer1, cjer2, clum);
+      statistics(dzr, dout);
 
       jec_shifts(dzr, dout, type, "pf");
     } // inherits TDirectory
@@ -158,10 +178,12 @@ void systematics(string type) {
 
 
 // JEC systematics
-sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
-		      TDirectory *dpl, TDirectory *dmn,
-		      TDirectory *dout, string type,
-		      string jectype) {
+sysc *jec_ansatz_systematics(TDirectory *dzr,
+		      //TDirectory *dunc,
+		      //TDirectory *dpl, TDirectory *dmn,
+		      TDirectory *dout,
+		      //string type, // DATA/MC/HW/TH
+		      string JECsrc) {
 
   float etamin, etamax;
   sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
@@ -169,18 +191,12 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
   string JECSourceFile = "/home/local/lmartika/Jets/JECDatabase/textFiles/Fall17_17Nov2017B_V32_DATA/Fall17_17Nov2017B_V32_DATA_UncertaintySources_AK4PFchs.txt";
   // TODO: Use settings.h for finding correct file
   // -> Need to merge first with the new main jetphys!
-  
-  string JECsrc = "TotalNoTime"; // TODO: All sources from systematics-loop
-  
+
   JetCorrectorParameters *JECparams = new JetCorrectorParameters(JECSourceFile.c_str(), JECsrc);
   JetCorrectionUncertainty *func = new JetCorrectionUncertainty(*JECparams);
 
-  const char *jt = jectype.c_str();
-
   // inclusive jets
   TH1D *hzr = (TH1D*)dzr->Get("hpt"); assert(hzr);
-  TH1D *hpl = (TH1D*)dpl->Get("hpt"); assert(hpl);
-  TH1D *hmn = (TH1D*)dmn->Get("hpt"); assert(hmn);
 
   // make sure new histograms get created in the output file
   dout->cd();
@@ -194,60 +210,24 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 		     fpt0->GetParameter(2), fpt0->GetParameter(3),
 		     fpt0->GetParameter(4));
 
-  // first estimate is just ratio of histograms with shifted JEC - do not have JEC_minus/_plus histos in run2 results (yet)
-  // These used to be total shift
-  
-  // inclusive jets
-  /*  TH1D *hjpl0 = (TH1D*)hpl->Clone(Form("hjec_%s_pl0", jt));
-  hjpl0->Divide(hzr);
-  TH1D *hjmn0 = (TH1D*)hmn->Clone(Form("hjec_%s_mn0", jt));
-  hjmn0->Divide(hzr);
-  TH1D *hjav0 = (TH1D*)hzr->Clone(Form("hjec_%s_av0", jt));
-  hjav0->Reset();
-  
-  // Center around zero, calculate average uncertainty
-  for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
-
-    if (hzr->GetBinContent(i)!=0) {
-
-      double pl = hjpl0->GetBinContent(i)-1;   
-      double epl = hjpl0->GetBinError(i);
-      hjpl0->SetBinContent(i, pl);
-      double mn = hjmn0->GetBinContent(i)-1;
-      double emn = hjmn0->GetBinError(i);
-      hjmn0->SetBinContent(i, mn);
-
-      // Average error should be weighted by statistics
-      double av = (epl&&emn ? (pl+mn*epl*epl/(emn*emn)) / (1+(epl*epl)/(emn*emn))
-		   : 0.);
-      double eav = (epl&&emn ? epl / sqrt(1.+epl*epl/(emn*emn)) : 0.);
-      hjav0->SetBinContent(i, av);
-      hjav0->SetBinError(i, eav);
-    }
-    } */
-
-  // for second estimate calculate ratio of Ansatzes with shifted pT
-  TH1D *hjpl = (TH1D*)hzr->Clone(Form("hjec_%s_pl", jt));
+  // Calculate ratio of Ansatzes with shifted pT
+  TH1D *hjpl = (TH1D*)hzr->Clone(Form("hjec_%s_pl", JECsrc.c_str()));
   hjpl->Reset();
-  TH1D *hjmn = (TH1D*)hzr->Clone(Form("hjec_%s_mn", jt));
+  TH1D *hjmn = (TH1D*)hzr->Clone(Form("hjec_%s_mn", JECsrc.c_str()));
   hjmn->Reset();
-  TH1D *hjav = (TH1D*)hzr->Clone(Form("hjec_%s_av", jt));
+  TH1D *hjav = (TH1D*)hzr->Clone(Form("hjec_%s_av", JECsrc.c_str()));
   hjav->Reset();
 
-  //string s2 = Form("CondFormats/JetMETObjects/data/%s_%s_Uncertainty_%sPF.txt",
-  //	   jp::jecgt.c_str(), jp::type, jp::algo);
-  string s2 = s;
- 
-  JetCorrectionUncertainty *rjet = new JetCorrectionUncertainty(s2.c_str());
+  JetCorrectionUncertainty *rjet = new JetCorrectionUncertainty(*JECparams); // = func
 
+  // Check whether uncertainty handling looks ok!
   for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
 
     if (hzr->GetBinContent(i)!=0) {
 
 	double xmin = hzr->GetBinLowEdge(i);
 	double xmax = hzr->GetBinLowEdge(i+1);
-
-	double unc = 0;//hunc->GetBinContent(i);
+	double unc = 0;
 	{
 	  double eta = 0.5*(etamin+etamax);
 	  func->setJetPt(hzr->GetBinCenter(i));
@@ -256,29 +236,29 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 	  func->setJetPt(hzr->GetBinCenter(i));
 	  func->setJetEta(-eta);
 	  double u2 = func->getUncertainty(true);
-	  unc = 0.5*(u1+u2);
+	  unc = 0.5*(u1+u2);  // so unc is the average uncertainty in eta and -eta
 	}
 
-	// Estimate the JEC uncertainty - old
-	assert(jectype=="tot" || jectype=="abs" || jectype=="rel" ||
-	       jectype=="bjt" || jectype=="pt");
+	// Estimate the JEC uncertainty
 	double djec = 0.;
-	if (jectype=="abs") djec = unc;//(_ismc ? 0.01 : unc);
-	if (jectype=="rel") djec = unc;//(_ismc ? 0.00 : 0.00);
-	if (jectype=="tot") djec = unc;//(_ismc ? 0.01 : unc);
-	if (jectype=="pt") {
-	  rjet->setJetPt(hzr->GetBinCenter(i));
-	  rjet->setJetEta(0.);
-	  djec = rjet->getUncertainty(true);
-	}
-	// Add low pt uncertainty for MC
-	if (_ismc && (jectype=="abs" || jectype=="tot")) {
+
+	// if (jectype=="abs") djec = unc;//(_ismc ? 0.01 : unc);
+	// if (jectype=="rel") djec = unc;//(_ismc ? 0.00 : 0.00);
+	// if (jectype=="tot") djec = unc;//(_ismc ? 0.01 : unc);
+	// if (jectype=="pt") {
+	rjet->setJetPt(hzr->GetBinCenter(i));
+	rjet->setJetEta(0.);
+	djec = rjet->getUncertainty(true);
+	  // }
+	
+	// Add low pt uncertainty for MC - old
+	// if (_ismc && (jectype=="abs" || jectype=="tot")) {
+	if (_ismc) {
 	  djec = tools::oplus(djec, 0.04*pow(hzr->GetBinCenter(i)/10.,-2));
 	}
-
+   
 	double djec0 = djec;
 	double djec1 = djec;
-	//	if (type==""); // suppress warning
 
 	//        if (xmax!=xmin) {
 
@@ -306,6 +286,7 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
 	}
 
 	if (TMath::IsNaN(yzr) || yzr<0) yzr = 0;
+	
 	hjpl->SetBinContent(i, yzr ? ypl / yzr - 1 : 0.);
 	hjmn->SetBinContent(i, yzr ? ymn / yzr - 1 : 0.);
 	hjav->SetBinContent(i, yzr ? 0.5*(fabs(ypl/yzr-1)+fabs(ymn/yzr-1)) : 0.);
@@ -317,7 +298,69 @@ sysc *jec_systematics(TDirectory *dzr, TDirectory *dunc,
   dzr->cd();
 
   return ( new sysc(hjpl, hjmn, hjav) );
-} // jec_systematics
+} // jec_systematics (ansatz)
+
+sysc *jec_systematics_total_shifts(TDirectory *dzr, TDirectory *dunc,
+		      TDirectory *dpl, TDirectory *dmn,
+		      TDirectory *dout, string type // DATA/MC/HW/TH
+		       ) {
+
+
+  float etamin, etamax;
+  sscanf(dzr->GetName(),"Eta_%f-%f",&etamin,&etamax);
+
+  const char *jt = "total";
+
+  // inclusive jets
+  TH1D *hzr = (TH1D*)dzr->Get("hpt"); assert(hzr);
+  TH1D *hpl = (TH1D*)dpl->Get("hpt"); assert(hpl);
+  TH1D *hmn = (TH1D*)dmn->Get("hpt"); assert(hmn);
+
+  // make sure new histograms get created in the output file
+  dout->cd();
+
+  // inclusive jets
+  TF1 *fpt0 = (TF1*)dzr->Get("fus"); assert(fpt0); fpt0->SetName("fpt0");
+  TF1 *fpt = new TF1("fpt1","[0]*pow(x,[1])*pow(1-x*cosh([3])/[4],[2])",
+		     jp::recopt, jp::emax/cosh(etamin));
+  
+  fpt->SetParameters(fpt0->GetParameter(0), fpt0->GetParameter(1),
+		     fpt0->GetParameter(2), fpt0->GetParameter(3),
+		     fpt0->GetParameter(4));
+
+  // Ratio of histograms with shifted JEC - do not have JEC_minus/_plus histos in run2 results (yet)
+  // inclusive jets
+  TH1D *hjpl0 = (TH1D*)hpl->Clone(Form("hjec_%s_pl0", jt));
+  hjpl0->Divide(hzr);
+  TH1D *hjmn0 = (TH1D*)hmn->Clone(Form("hjec_%s_mn0", jt));
+  hjmn0->Divide(hzr);
+  TH1D *hjav0 = (TH1D*)hzr->Clone(Form("hjec_%s_av0", jt));
+  hjav0->Reset();
+  
+  // Center around zero, calculate average uncertainty
+  for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
+
+    if (hzr->GetBinContent(i)!=0) {
+
+      double pl = hjpl0->GetBinContent(i)-1;   
+      double epl = hjpl0->GetBinError(i);
+      hjpl0->SetBinContent(i, pl);
+      double mn = hjmn0->GetBinContent(i)-1;
+      double emn = hjmn0->GetBinError(i);
+      hjmn0->SetBinContent(i, mn);
+
+      // Average error should be weighted by statistics
+      double av = (epl&&emn ? (pl+mn*epl*epl/(emn*emn)) / (1+(epl*epl)/(emn*emn))
+		   : 0.);
+      double eav = (epl&&emn ? epl / sqrt(1.+epl*epl/(emn*emn)) : 0.);
+      hjav0->SetBinContent(i, av);
+      hjav0->SetBinError(i, eav);
+    }
+    }  
+
+  return ( new sysc(hjpl0, hjmn0, hjav0) );
+} // jec_systematics (shifts)
+
 
 
 // Estimate impact of know JEC shifts (from MC truth, jet matching)
@@ -414,7 +457,7 @@ const double p_ak5jpt[8][5] =
   dzr->cd();
 
   return;
-} // jec_hifts
+} // jec_shifts
 
 
 sysc *jer_systematics(TDirectory *din, TDirectory *dout,
@@ -525,7 +568,7 @@ sysc *lum_systematics(TDirectory *din, TDirectory *dout) {
 
   for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
 
-    double lumsys = (_ismc ? 0. : 0.022);
+    double lumsys = (_ismc ? 0. : 0.022); // Old value! 
     if (hzr->GetBinContent(i)!=0) {
       hlpl->SetBinContent(i, +lumsys);
       hlmn->SetBinContent(i, -lumsys);
