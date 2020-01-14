@@ -134,9 +134,16 @@ void systematics(string type) {
       dout0->cd(obj->GetName());
       TDirectory *dout = gDirectory;
 
-      const int nsrc = 3;
+      const int nsrc = 26;
       const char* srcnames[nsrc] =
-	{"AbsoluteStat", "AbsoluteScale",  "AbsoluteMPFBias"
+	{"AbsoluteStat", "AbsoluteScale",  "AbsoluteMPFBias",
+	 "Fragmentation",
+	 "SinglePionECAL", "SinglePionHCAL",
+	 "FlavorQCD",
+	 "RelativeJEREC1", "RelativeJEREC2", "RelativeJERHF",
+	 "RelativePtBB", "RelativePtEC1", "RelativePtEC2", "RelativePtHF",
+	 "RelativeBal", "RelativeSample", "RelativeFSR", "RelativeStatFSR", "RelativeStatEC", "RelativeStatHF",
+	 "PileUpDataMC", "PileUpPtRef", "PileUpPtBB", "PileUpPtEC1", "PileUpPtEC2", "PileUpPtHF"
 	};
   
       std::vector<sysc *> JECSystematics(nsrc);
