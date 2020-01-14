@@ -43,8 +43,6 @@ struct sysc {
     plus(pl), minus(mn), av(avg) { };
 };
 
-// Separate Ansatz method and JEC shifting method?
-// Ansatz needs JECsrc
 sysc *jec_ansatz_systematics(TDirectory *dzr,
 		      TDirectory *dout,
 		      string JECsrc);
@@ -580,6 +578,8 @@ sysc *lum_systematics(TDirectory *din, TDirectory *dout) {
   return ( new sysc(hlpl, hlmn, hlav) );
 } // lum_systematics
 
+
+// Needs to be updated to handle all the sources
 void tot_systematics(TDirectory *din, TDirectory *dout,
 		     sysc *cjec1, sysc *cjec2, sysc *cjec3,
 		     sysc *cjer1, sysc *cjer2,
