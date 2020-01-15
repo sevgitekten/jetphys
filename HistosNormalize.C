@@ -63,6 +63,8 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt,
 
 // Use this to fix luminosity
 std::map<std::string, double> triglumi;
+int eraIdx = -1;
+int eraNo = 0;
 
 void HistosNormalize(string type = "")
 {
@@ -77,9 +79,9 @@ void HistosNormalize(string type = "")
 
   if (isdt and jp::usetriglumi) { // Setting up lumis
     cout << "Reading trigger luminosity from settings.h" << endl;
-    int eraIdx = -1;
-    if (jp::usetriglumiera) {
-      int eraNo = 0;
+    eraIdx = -1;
+    //    if (jp::usetriglumiera) { // Fix for including luminosity normalization for inclusive jets
+    eraNo = 0;
       for (auto &eraMatch : jp::eras) {
         if (std::regex_search(jp::run,eraMatch)) {
           eraIdx = eraNo;
@@ -89,7 +91,7 @@ void HistosNormalize(string type = "")
       }
       if (eraIdx!=-1) cout << "Using weights according to the run era!" << endl;
       else cout << "Could not locate the given era! :(" << endl;
-    }
+      //  } // Fix for including luminosity normalization for inclusive jets
     for (unsigned int i = 0; i < jp::notrigs; ++i) {
       double lumi = (jp::usetriglumiera ? jp::triglumiera[eraIdx][i]/1e6 : jp::triglumi[i]/1e6); // /ub to /pb
       cout << Form(" *%s: %1.3f /pb", jp::triggers[i],lumi) << endl;
@@ -224,8 +226,16 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double et
 
         // Normalization for luminosity
         if (isdt and lumiref>0) {
+
+	  int refidx = 0; // For luminosity normalization of inclusive jet spectra
+	  if (jp::yid==0) refidx = 9;
+	  else refidx = 10;
+	  
           if (TString(obj2->GetName()).Contains("_pre")) norm0 *= lumiref;
-          else if (lumi>0)                               norm0 *= lumi/lumiref;
+          else if (lumi>0) {
+	    norm0 *= lumi/lumiref;
+	    norm0 *= jp::triglumiera[eraIdx][refidx]/1e6; // For luminosity normalization of inclusive jet spectra
+	  }
         }
 
         // Scale normalization for jackknife (but why?)
