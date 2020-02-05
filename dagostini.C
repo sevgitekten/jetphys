@@ -42,6 +42,7 @@
 using namespace std;
 
 bool _jet = false;
+double _epsilon = 1e-12;
 
 // Resolution function
 Double_t fPtRes(Double_t *x, Double_t *p) { return ptresolution(x[0], p[0]);}
@@ -313,7 +314,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   cout << "Generating smearing matrix T..." << endl << flush;
 
   double tmp_eps = _epsilon;
-  _epsilon = 1e-6; // speed up calculations with acceptable loss of precision
+  //  _epsilon = 1e-6; // speed up calculations with acceptable loss of precision
 
   outdir->cd();
 
