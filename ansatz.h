@@ -27,7 +27,7 @@ TF1 *_kernel = 0; // global variable, not pretty but works
 
 Double_t smearedAnsatz(Double_t *x, Double_t *p) {
 
-  double _epsilon = 1e-8;
+  double _epsilon = 1e-12;
   
   const double pt = x[0];
   const double eta = p[0];
