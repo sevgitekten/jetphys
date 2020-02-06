@@ -1,10 +1,9 @@
 // Purpose: Fill jet physics analysis histograms
-// Author:  mikko.voutilainen@cern.ch
+// Author:    mikko.voutilainen@cern.ch
+// Co-author: hannu.siikonen@cern.ch
 // Created: March 20, 2010
-// Updated: June 27, 2018
 
 #include "CondFormats/JetMETObjects/src/Utilities.cc"
-
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/SimpleJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
@@ -12,6 +11,7 @@
 #include "CondFormats/JetMETObjects/interface/SimpleJetCorrectionUncertainty.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 
+#include "settings.h"
 #include "tools.h"
 #include "HistosRun.h"
 #include "HistosBasic.h"
@@ -25,6 +25,10 @@ R__LOAD_LIBRARY(CondFormats/JetMETObjects/src/SimpleJetCorrector.cc+)
 R__LOAD_LIBRARY(CondFormats/JetMETObjects/src/FactorizedJetCorrector.cc+)
 R__LOAD_LIBRARY(CondFormats/JetMETObjects/src/SimpleJetCorrectionUncertainty.cc+)
 R__LOAD_LIBRARY(CondFormats/JetMETObjects/src/JetCorrectionUncertainty.cc+)
+#if JETRESO == 1
+R__LOAD_LIBRARY(CondFormats/JetMETObjects/src/JetResolutionObject.cc+)
+R__LOAD_LIBRARY(JetMETCorrections/Modules/src/JetResolution.cc+)
+#endif
 #ifdef USEASSERT
 R__LOAD_LIBRARY(tools.C+g)
 R__LOAD_LIBRARY(HistosRun.C+g)
@@ -81,17 +85,31 @@ void mk_HistosFill() {
       }
     }
   }
-  // Check that pthat file dimensions are ok
-  if (jp::ispy and jp::pthatbins) {
-    if (jp::pthatfiles.size()<jp::npthatbins) {
-      cout << "The pthat info dimensions don't match! jp::pthatfiles vs jp::npthatbins" << endl;
-      fail = true;
-    } else if (jp::pthatsigmas.size()!=jp::npthatbins) {
-      cout << "The pthat info dimensions don't match! jp::pthatsigmas vs jp::npthatbins" << endl;
-      fail = true;
-    } else if (jp::pthatranges.size()!=jp::npthatbins+1) {
-      cout << "The pthat info dimensions don't match! jp::pthatranges vs jp::npthatbins" << endl;
-      fail = true;
+  if (jp::ispy) {
+    if (jp::pthatbins) {
+      // Check that pthat file dimensions are ok
+      if (jp::pthatfiles.size()<jp::npthatbins) {
+        cout << "The pthat info dimensions don't match! jp::pthatfiles vs jp::npthatbins" << endl;
+        fail = true;
+      } else if (jp::pthatsigmas.size()!=jp::npthatbins) {
+        cout << "The pthat info dimensions don't match! jp::pthatsigmas vs jp::npthatbins" << endl;
+        fail = true;
+      } else if (jp::pthatranges.size()!=jp::npthatbins+1) {
+        cout << "The pthat info dimensions don't match! jp::pthatranges vs jp::npthatbins" << endl;
+        fail = true;
+      }
+    } else if (jp::htbins) {
+      // Check that ht file dimensions are ok
+      if (jp::htfiles.size()<jp::nhtbins) {
+        cout << "The ht info dimensions don't match! jp::htfiles vs jp::nhtbins" << endl;
+        fail = true;
+      } else if (jp::htsigmas.size()!=jp::nhtbins) {
+        cout << "The ht info dimensions don't match! jp::htsigmas vs jp::nhtbins" << endl;
+        fail = true;
+      } else if (jp::htranges.size()!=jp::nhtbins+1) {
+        cout << "The ht info dimensions don't match! jp::htranges vs jp::nhtbins" << endl;
+        fail = true;
+      }
     }
   }
   if (fail) return;
@@ -125,10 +143,22 @@ void mk_HistosFill() {
         const char *name2 = Form("%s%s%s_ext.root",p,ps,fname);
         std::ifstream stream1(name1);
         std::ifstream stream2(name2);
-        if (stream1.good())
-          files.push_back(name1);
-        if (stream2.good())
-          files.push_back(name2);
+        if (stream1.good()) files.push_back(name1);
+        if (stream2.good()) files.push_back(name2);
+      }
+    } else if (jp::htbins) {
+      cout << "Running over ht binned files in pythia8" << endl;
+      cout << "Load trees..." << endl;
+
+      const char *ps = jp::htpath;
+
+      for (auto &fname : jp::htfiles) {
+        const char *name1 = Form("%s%s%s.root",p,ps,fname);
+        const char *name2 = Form("%s%s%s_ext.root",p,ps,fname);
+        std::ifstream stream1(name1);
+        std::ifstream stream2(name2);
+        if (stream1.good()) files.push_back(name1);
+        if (stream2.good()) files.push_back(name2);
       }
     } else {
       cout << "Running over pythia flat sample" << endl;
@@ -138,18 +168,18 @@ void mk_HistosFill() {
     }
   } else if (jp::ishw) {
     if (jp::pthatbins) cout << "No pthat binned files exist for Herwig!" << endl;
+    else if (jp::htbins) cout << "No ht binned files exist for Herwig!" << endl;
 
     cout << "Running over Herwig flat sample" << endl;
 
-    for (auto &fname : jp::mcfiles.at(jp::hwfile))
-      files.push_back(Form("%s%s",p,fname));
+    for (auto &fname : jp::mcfiles.at(jp::hwfile)) files.push_back(Form("%s%s",p,fname));
   } else if (jp::isnu) {
     if (jp::pthatbins) cout << "No pthat binned files exist for Neutrino Gun!" << endl;
+    else if (jp::htbins) cout << "No ht binned files exist for Neutrino Gun!" << endl;
 
     cout << "Running over HSingle Neutrino sample" << endl;
 
-    for (auto &fname : jp::mcfiles.at(jp::nufile))
-      files.push_back(Form("%s%s",p,fname));
+    for (auto &fname : jp::mcfiles.at(jp::nufile)) files.push_back(Form("%s%s",p,fname));
   } else {
     cout << "Enter a proper type!!" << endl;
   }
@@ -163,6 +193,8 @@ void mk_HistosFill() {
     } else if (jp::ispy or jp::ishw or jp::isnu) {
       if (jp::pthatbins) {
         cout << "Problems with pthat file logic!" << endl;
+      } else if (jp::htbins) {
+        cout << "Problems with ht file logic!" << endl;
       } else {
         cout << "Enter a proper value for MC tag!" << endl;
         cout << "Entered: " << jp::mcfile << endl << "Options:";

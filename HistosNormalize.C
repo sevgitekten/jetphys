@@ -58,28 +58,29 @@ vector<string> hptlike = {"hpt",
                           "hdjmass",
                           "hdjmass0"};
 
-void recurseFile(TDirectory *indir, TDirectory *outdir,
+void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt,
                  double etawid = 1., double etamid = 0., int lvl = 0);
 
 // Use this to fix luminosity
 std::map<std::string, double> triglumi;
-
-
 int eraIdx = -1;
 int eraNo = 0;
 
-void HistosNormalize()
+void HistosNormalize(string type = "")
 {
-  TFile *fin = new TFile(Form("output-%s-1.root",jp::type),"READ");
-  assert(fin && !fin->IsZombie());
+  bool isdt = jp::isdt;
+  if (type=="") type = jp::type;
+  else          isdt = (type=="DATA");
+  TFile *fin = new TFile(Form("output-%s-1.root",type.c_str()),"READ");
+  assert(fin and !fin->IsZombie());
 
-  TFile *fout = new TFile(Form("output-%s-2a.root",jp::type),"RECREATE");
+  TFile *fout = new TFile(Form("output-%s-2a.root",type.c_str()),"RECREATE");
   assert(fout and !fout->IsZombie());
 
-  if (jp::isdt and jp::usetriglumi) { // Setting up lumis
+  if (isdt and jp::usetriglumi) { // Setting up lumis
     cout << "Reading trigger luminosity from settings.h" << endl;
     eraIdx = -1;
-    //   if (jp::usetriglumiera) {
+    //    if (jp::usetriglumiera) { // Fix for including luminosity normalization for inclusive jets
     eraNo = 0;
       for (auto &eraMatch : jp::eras) {
         if (std::regex_search(jp::run,eraMatch)) {
@@ -90,7 +91,7 @@ void HistosNormalize()
       }
       if (eraIdx!=-1) cout << "Using weights according to the run era!" << endl;
       else cout << "Could not locate the given era! :(" << endl;
-      //  }
+      //  } // Fix for including luminosity normalization for inclusive jets
     for (unsigned int i = 0; i < jp::notrigs; ++i) {
       double lumi = (jp::usetriglumiera ? jp::triglumiera[eraIdx][i]/1e6 : jp::triglumi[i]/1e6); // /ub to /pb
       cout << Form(" *%s: %1.3f /pb", jp::triggers[i],lumi) << endl;
@@ -98,15 +99,13 @@ void HistosNormalize()
     }
   }
 
-  
-  cout << "Calling HistosNormalize("<<jp::type<<");" << endl;
+  cout << "Calling HistosNormalize("<<type<<");" << endl;
   cout << "Input file " << fin->GetName() << endl;
   cout << "Output file " << fout->GetName() << endl;
   cout << "Starting recursive loop. This may take a minute" << endl << flush;
 
- 
   // Loop over all the directories recursively
-  recurseFile(fin, fout);
+  recurseNormFile(fin, fout, isdt);
 
   cout << endl;
   cout << "Recursive loop done." << endl;
@@ -121,7 +120,7 @@ void HistosNormalize()
 } // HistosNormalize
 
 
-void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double etamid, int lvl) {
+void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double etawid, double etamid, int lvl) {
   TDirectory *curdir = gDirectory;
 
   // Automatically go through the list of keys (directories)
@@ -162,7 +161,7 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
       }
       if (loclvl==1) cout << endl << "Entering: " << indir2->GetName();
 
-      recurseFile(indir2, outdir2, etawid, etamid, loclvl);
+      recurseNormFile(indir2, outdir2, isdt, etawid, etamid, loclvl);
       // inherits from TDirectory
     } else if (obj->InheritsFrom("TH1")) { // Normalize (or just pass on) histogrammish objects
       outdir->cd();
@@ -174,7 +173,7 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
       double lumi = 1;
       double lumiref = 1;
 
-      if (jp::isdt) {
+      if (isdt) {
         if (jp::usetriglumi) { // Use lumi info from settings.h
           if (name=="hlumi") {
             // Overwrite hlumi
@@ -215,7 +214,7 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
         double norm0 = etawid;
 
         // Let's divide by a magical number. This is totally OK (disabled).
-        // if (jp::ismc and !jp::pthatbins) norm0 /= 2500.; //(xsecw / (sumw * adhocw) ); // equals 2551.;
+        // if (!isdt and !jp::pthatbins) norm0 /= 2500.; //(xsecw / (sumw * adhocw) ); // equals 2551.;
 
         bool isgen = TString(obj2->GetName()).Contains("pt_g");
         bool isoth = (TString(obj2->GetName()).Contains("pt_no") ||
@@ -226,32 +225,27 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
         bool hptstuff = (string(obj2->GetName())=="hpt") or isjk or isjet;
 
         // Normalization for luminosity
-        if (jp::isdt and lumiref>0) {
-	  
-	  int refidx=0;
-	  if (jp::yid==0) {
-	    refidx = 9;
-	  }
-	  else refidx = 10;
+        if (isdt and lumiref>0) {
 
+	  int refidx = 0; // For luminosity normalization of inclusive jet spectra
+	  if (jp::yid==0) refidx = 9;
+	  else refidx = 10;
 	  
-	  bool ispre = (TString(obj2->GetName()).Contains("_pre"));
-	  if (ispre)
-	    norm0 *= lumiref;
-	  else if (lumi>0) {
+          if (TString(obj2->GetName()).Contains("_pre")) norm0 *= lumiref;
+          else if (lumi>0) {
 	    norm0 *= lumi/lumiref;
-	    norm0 *= jp::triglumiera[eraIdx][refidx]/1e6; // triglumiera for normalizating a single lumi era correctly
+	    norm0 *= jp::triglumiera[eraIdx][refidx]/1e6; // For luminosity normalization of inclusive jet spectra
 	  }
         }
-	
+
         // Scale normalization for jackknife (but why?)
         if (isjk) norm0 *= 0.9;
 
         TProfile *peff;
-	/*  if (jp::dotrigeffsimple) {
+        if (jp::dotrigeffsimple) {
           peff = dynamic_cast<TProfile*>(indir->Get("peff"));
           assert(peff);
-	  } */
+        }
 
         //// Test MC-based normalization for trigger efficiency
         TH1D *htrigeff = dynamic_cast<TH1D*>(outdir->FindObject("htrigeff"));
@@ -290,7 +284,7 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
             }
 
             // Add data/MC scale factor for trigger efficiency
-            if (jp::isdt and !htrigeffsf) {
+            if (isdt and !htrigeffsf) {
               bool enterdir = dmc->cd(indir->GetName());
               assert(enterdir);
               TDirectory *dirmc = dmc->GetDirectory(indir->GetName());
@@ -309,8 +303,8 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
             if (htrigeffmc) { // not available for 'mc' directory
               outdir->cd();
               htrigeff = dynamic_cast<TH1D*>(htrigeffmc->Clone("htrigeff"));
-              assert(jp::ismc || htrigeffsf);
-              if (jp::isdt) htrigeff->Multiply(htrigeffsf);
+              assert(!isdt or htrigeffsf);
+              if (isdt) htrigeff->Multiply(htrigeffsf);
 
               TH1D *h = dynamic_cast<TH1D*>(indir->Get("hpt"));
               assert(outdir->FindObject("hpt_notrigeff")==0);
@@ -411,7 +405,7 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
           } // timedep only for some histos
         } // jp::dotimedep
 
-	//  if (jp::dotrigeffsimple) assert(hpt->GetNbinsX()==peff->GetNbinsX() or isoth);
+        if (jp::dotrigeffsimple) assert(hpt->GetNbinsX()==peff->GetNbinsX() or isoth);
 
         // Lumi weighting checked in each bin separately
         for (int binidx = 1; binidx != hpt->GetNbinsX()+1; ++binidx) {
@@ -419,9 +413,8 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
           double norm = hpt->GetBinWidth(binidx) * norm0;
           double trigeff = 1.;
           double pt = hpt->GetBinCenter(binidx);
-          // Normalization for all the common efficiencies
-	  // if (jp::dotrigeffsimple and !isgen and peff->GetBinContent(binidx)!=0)
-          //  norm *= peff->GetBinContent(binidx);
+          // Normalization for all the common efficiencies (by default, off)
+          if (jp::dotrigeffsimple and !isgen and peff->GetBinContent(binidx)!=0) norm *= peff->GetBinContent(binidx);
 
           // Test MC-based normalization for trigger efficiency
           if (htrigeff) {
@@ -453,14 +446,11 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
             hpt_withtimedep->SetBinError(binidx, hpt_withtimedep->GetBinError(binidx)/ norm_notime);
           }
 
-	  /*  if (jp::dotrigeffsimple and !isgen and !isoth) {
-            if (peff->GetBinContent(binidx)==0 and hpt->GetBinContent(binidx)!=0) { // Zero peff but non-zero hpt
-              if (hpt->GetBinCenter(binidx)>jp::recopt and hpt->GetBinCenter(binidx)*cosh(etamid)<3500.) // Good pt and eta region
-                cerr << "Hist " << hpt->GetName() << " " << indir->GetName() << " pt=" << hpt->GetBinCenter(binidx) << " etamid = " << etamid << endl << flush;
-		}
-		} */
+          // By default off, done for some data histos, require Zero peff but non-zero hpt and a good pt & eta region
+          if (jp::dotrigeffsimple and !isgen and !isoth and peff->GetBinContent(binidx)==0 and hpt->GetBinContent(binidx)!=0 and hpt->GetBinCenter(binidx)>jp::recopt and hpt->GetBinCenter(binidx)*cosh(etamid)<3500.)
+            cerr << "Hist " << hpt->GetName() << " " << indir->GetName() << " pt=" << hpt->GetBinCenter(binidx) << " etamid = " << etamid << endl << flush;
         } // for binidx
-      } else if (jp::isdt) { // TH3, TH2 and TH1 that is not a hpt object
+      } else if (isdt) { // TH3, TH2 and TH1 that is not a hpt object
         // This we do only for data - there are no lumi weights to be applied for MC
         TString namehandle(name);
         TRegexp re_profile("^p");
@@ -503,4 +493,4 @@ void recurseFile(TDirectory *indir, TDirectory *outdir, double etawid, double et
   } // while key
 
   curdir->cd();
-} // recurseFile
+} // recurseNormFile

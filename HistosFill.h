@@ -46,6 +46,10 @@
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#if JETRESO == 1
+#include "CondFormats/JetMETObjects/interface/JetResolutionObject.h"
+#include "JetMETCorrections/Modules/interface/JetResolution.h"
+#endif
 
 class HistosFill {
 public :
@@ -90,6 +94,7 @@ public :
   Float_t         PFMetT0T1__sumEt_;
   Float_t         PFMetT0T1__phi_;
 #endif
+  vector<int>     FilterDecision_;
   vector<int>     TriggerDecision_;
   vector<int>     L1Prescale_;
   vector<int>     HLTPrescale_;
@@ -167,14 +172,12 @@ public :
     fChain->Show(entry);
   }
   virtual Long64_t LoadTree(Long64_t entry);
-  virtual Int_t    FindPthatIdx(string filename);
+  virtual Int_t    FindMCSliceIdx(string filename);
   virtual void     PrintInfo(string info, bool printcout = false);
   virtual void     PrintMemInfo(bool printcout = false);
 
   // We don't delete that much stuff here, since ROOT takes care of garbage collection (and gets very easily angry!!!)
-  ~HistosFill() {
-    //if (ferr) delete ferr;
-  }
+  ~HistosFill() {}
   HistosFill(TChain *tree);
   virtual bool     Init(TChain *tree); // custom
 
@@ -184,11 +187,12 @@ public :
   virtual void     Report();
 
   void             FillJetID(vector<bool> &id);
+  bool             GetFilters();
   bool             GetTriggers();
 
-  bool             LoadJSON(const char* filename);
-  bool             LoadLumi(const char* filename);
-  bool             LoadPuProfiles(const char* datafile, const char* mcfile);
+  bool             LoadJSON();
+  bool             LoadLumi();
+  bool             LoadPuProfiles();
 
   void             InitBasic(string name);
   void             FillBasic(string name);
@@ -243,9 +247,10 @@ private:
   Long64_t _nskip;;
   double _xsecMinBias;
   double _w, _w0;
-  double _pthatweight;
-  int    _pthatrepeats;
+  double _binnedmcweight;
+  int    _binnedmcrepeats;
 
+  vector<string> _availFlts;
   vector<string> _availTrigs;
   vector<unsigned int> _goodTrigs;
   vector<double> _goodWgts;
@@ -284,7 +289,7 @@ private:
   TFile *fHotExcl;
 
   TLorentzVector p4, gp4, genp4, _j1, _j2;
-  jec::IOV _iov;
+  IOV _iov;
   FactorizedJetCorrector *_JEC, *_L1RC;
   JetCorrectionUncertainty *_jecUnc;
 

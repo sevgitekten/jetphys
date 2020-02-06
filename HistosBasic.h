@@ -78,22 +78,30 @@ class HistosBasic {
 
   TH1D *hgpt_g0tw;
   TH1D *hqpt_g0tw;
+  TH1D *hupt_g0tw; // unmatched
   TH1D *hgpt_g0;
   TH1D *hqpt_g0;
-  TH1D *hgpt_g;
+  TH1D *hupt_g0; // unmatched 
+  TH1D *hgpt_g; // gluons vs get pT
   TH1D *hqpt_g;
+  TH1D *hupt_g; // unmatched vs gen pT
   //
   TH1D *hqgl;
   TH1D *hqgl_q;
   TH1D *hqgl_g;
+  TH1D *hqgl_u;
   TH1D *hqgl_dq;
   TH1D *hqgl_dg;
+  TH1D *hqgl_du;
   //
   TH2D *hqgl2;
   TH2D *hqgl2_g;
   TH2D *hqgl2_q;
-  TH2D *hqgl2_dg;
-  TH2D *hqgl2_dq;
+  TH2D *hqgl2_u;
+  TH2D *hqgl2_gen;
+  TH2D *hqgl2_g_g;
+  TH2D *hqgl2_q_g;
+  TH2D *hqgl2_u_g;
 
   // basic properties
   TProfile *ppt;
@@ -376,6 +384,8 @@ class HistosBasic {
   TProfile *ppt_g;
 
   TProfile *ppt_probepertag;
+  TProfile *ppt_probepertag_g;//qgl okan follow up later
+  TProfile *ppt_probepertag_q;//qgl okan follow up later
 
   // Response closure
   TProfile2D *p2rvsnpv;
@@ -385,7 +395,28 @@ class HistosBasic {
   TProfile *p2r_g;
   TProfile *p2r_ruw;
   TProfile *p2r_guw;
-
+  
+  TH2D     *h2r_g_r;
+  TH2D     *h2r_g_g;
+  TProfile *p2r_g_r;
+  TProfile *p2r_g_g;
+  TProfile *p2r_g_ruw;
+  TProfile *p2r_g_guw;
+  
+  TH2D     *h2r_q_r;
+  TH2D     *h2r_q_g;
+  TProfile *p2r_q_r;
+  TProfile *p2r_q_g;
+  TProfile *p2r_q_ruw;
+  TProfile *p2r_q_guw;
+  
+  TH2D     *h2r_u_r;
+  TH2D     *h2r_u_g;
+  TProfile *p2r_u_r;
+  TProfile *p2r_u_g;
+  TProfile *p2r_u_ruw;
+  TProfile *p2r_u_guw;
+  
   //Rapidity closure
   TH2D *h2dy_r;
   TH2D *h2dy_g;

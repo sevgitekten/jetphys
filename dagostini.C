@@ -45,7 +45,6 @@ using namespace std;
 
 bool _jet = false;
 bool _doTUnfold = false;
-
 double _epsilon = 1e-12;
 
 // Resolution function
@@ -59,14 +58,26 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hpt2, TDirectory *outdir,
 
 void dagostiniUnfold(string type) {
 
-  TFile *fin = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
-  assert(fin && !fin->IsZombie());
+   TFile *fin = new TFile(Form("output-%s-2b.root","DATA"),"READ");
+   assert(fin && !fin->IsZombie());
 
-  // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
-  // TFile *fin2 = new TFile(Form("output-%s-2c.root","MC"),"READ");
-  TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
+   // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
+   // TFile *fin2 = new TFile(Form("output-%s-2c.root","MC"),"READ");
+   TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
 
-  TFile *fout = new TFile(Form("output-%s-3.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());
+  assert(fin2 && !fin2->IsZombie());
+  
+  TFile *fout;
+  
+  if (jp::isgluon && !jp::isquark) {
+    fout = new TFile(Form("output-%s-3_gluon.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());
+  }
+  else if (jp::isquark && !jp::isgluon) {
+    fout = new TFile(Form("output-%s-3_quark.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());
+  }
+  else {
+    fout = new TFile(Form("output-%s-3.root",type.c_str()),"RECREATE"); assert(fout && !fout->IsZombie());
+  }
 
   bool ismc = jp::ismc;
 
@@ -117,26 +128,47 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
       }
     } // inherits from TDirectory
 
-    // Found hpt plot: call unfolding routine
-    // if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hpt" || string(obj->GetName())=="hpt_jet" )) {
-    //    if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hpt" || string(obj->GetName())=="hpt0")) {
-      if (obj->InheritsFrom("TH1") && string(obj->GetName())=="hpt") {
-      cout << "+" << flush;
+    // Found hpt plots: call unfolding routine
+    if(jp::isgluon && !jp::isquark){
+        cout << "gluon unfolding routine"<<endl;
+        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hgpt" || string(obj->GetName())=="hpt_jet" )) {
+            cout << "+" << flush;
+            
+            _jet = TString(obj->GetName()).Contains("hpt_jet");
+            TH1D *hpt = (TH1D*)obj;
+            //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
+            //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
+            TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hgpt_g" : "hgpt"); assert(hpt2);
+            if (hpt2)
+                dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
+        } //hgpt plots
+    }else if(jp::isquark && !jp::isgluon){
+        cout << "quark unfolding routine"<<endl;
+        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hqpt" || string(obj->GetName())=="hpt_jet" )) {
+            cout << "+" << flush;
+            
+            _jet = TString(obj->GetName()).Contains("hpt_jet");
+            TH1D *hpt = (TH1D*)obj;
+            //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
+            //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
+            TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hqpt_g" : "hqpt"); assert(hpt2);
+            if (hpt2)
+                dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
+        } //hqpt plots
+    } else {
+      // cout << "Inclusive jet unfolding routine"<<endl;
+	if (obj->InheritsFrom("TH1") && string(obj->GetName())=="hpt") {
 
-      _jet = TString(obj->GetName()).Contains("hpt_jet");
-
-      _doTUnfold = TString(obj->GetName()).Contains("hpt0");
-      
-      TH1D *hpt = (TH1D*)obj;
-
-      
-      //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
-      TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
-
-       if (hpt2)
-        dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
-
-    } // hpt
+            cout << "+" << flush;
+            
+            _jet = TString(obj->GetName()).Contains("hpt_jet");
+            TH1D *hpt = (TH1D*)obj;
+	    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
+            if (hpt2)
+                dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
+            } // hpt for inclusive for other cases 
+        
+    } // hpt plots
 
   } // while key
 
