@@ -132,7 +132,7 @@ void systematics(string type) {
       dout0->cd(obj->GetName());
       TDirectory *dout = gDirectory;
 
-      const int nsrc = 26;
+      /*      const int nsrc = 26;
       const char* srcnames[nsrc] =
 	{"AbsoluteStat", "AbsoluteScale",  "AbsoluteMPFBias",
 	 "Fragmentation",
@@ -142,7 +142,12 @@ void systematics(string type) {
 	 "RelativePtBB", "RelativePtEC1", "RelativePtEC2", "RelativePtHF",
 	 "RelativeBal", "RelativeSample", "RelativeFSR", "RelativeStatFSR", "RelativeStatEC", "RelativeStatHF",
 	 "PileUpDataMC", "PileUpPtRef", "PileUpPtBB", "PileUpPtEC1", "PileUpPtEC2", "PileUpPtHF"
-	};
+	 }; */
+
+
+       const int nsrc = 1;
+       const char* srcnames[nsrc] = {"FlavorQCD"};
+ 
   
       std::vector<sysc *> JECSystematics(nsrc);
 
@@ -187,7 +192,6 @@ sysc *jec_ansatz_systematics(TDirectory *dzr, TDirectory *dout, string JECsrc) {
 
   string JECSourceFile = "/home/local/lmartika/Jets/JECDatabase/textFiles/Fall17_17Nov2017B_V32_DATA/Fall17_17Nov2017B_V32_DATA_UncertaintySources_AK4PFchs.txt";
   // TODO: Use settings.h for finding correct file
-  // -> Need to merge first with the new main jetphys!
 
   JetCorrectorParameters *JECparams = new JetCorrectorParameters(JECSourceFile.c_str(), JECsrc);
   JetCorrectionUncertainty *func = new JetCorrectionUncertainty(*JECparams);
@@ -555,6 +559,12 @@ sysc *jer_systematics(TDirectory *din, TDirectory *dout,
 
 sysc *lum_systematics(TDirectory *din, TDirectory *dout) {
 
+  double lumval = 0;
+   // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  if (jp::yid == 0) lumval = 0.025; // CMS-PAS-LUM-17-001
+  else if (jp::yid == 1) lumval = 0.023; // CMS-PAS-LUM-17-004
+  else if (jp::yid == 3) lumval = 0.021; // CMS-PAS-LUM-18-002
+  
   TH1D *hzr = (TH1D*)din->Get("hpt"); assert(hzr);
 
   // make sure new histograms get created in the output file
@@ -565,7 +575,7 @@ sysc *lum_systematics(TDirectory *din, TDirectory *dout) {
 
   for (int i = 1; i != hzr->GetNbinsX()+1; ++i) {
 
-    double lumsys = (_ismc ? 0. : 0.022); // Old value! 
+    double lumsys = (_ismc ? 0. : lumval); 
     if (hzr->GetBinContent(i)!=0) {
       hlpl->SetBinContent(i, +lumsys);
       hlmn->SetBinContent(i, -lumsys);
