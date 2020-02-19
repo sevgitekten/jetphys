@@ -75,15 +75,11 @@ public:
   unsigned                  mNPts;
   unsigned                  mNEtas;
   unsigned                  mNFullEtas;
-  //TMatrixD *mSquare;
-  //TMatrixD *mColumn;
-  //TMatrixD *mSingle;
-  //TMatrixD *mSquareT;
-  //TMatrixD *mColumnT;
-  //TMatrixD *mTSquare;
-  //TMatrixD *mTColumn;
-  //TMatrixD *mTSquareT;
-  //TMatrixD *mTColumnT;
+  TMatrixD *mSquare;
+  TMatrixD *mColumn;
+  TMatrixD *mSingle;
+  TMatrixD *mTSquare;
+  TMatrixD *mTColumn;
 
   HistosAll() {}
   HistosAll(TDirectory *dir);

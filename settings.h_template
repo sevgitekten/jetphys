@@ -52,24 +52,24 @@ namespace jp {
   //{ BEGIN fundamental file settings
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
-  constexpr const char* type = "DATA";
+  constexpr const char* type = "MC";
   // In case of DATA, choose run (all options given in dtfiles).
   // This also affects the hot zone cuts done in MC.
   // The naming format is "RunX...", where X should be chosen correctly.
-  constexpr const char* run = "RunA";
+  constexpr const char* run = "RunG";
   // The base location of files that are to be used. The user should check that the listings under "*path_" and "*files_" are found
   // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
   constexpr const char* filepath = "/work/jet_tuples/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
 
   // Which run year are we analyzing?
-  const unsigned int   yid = 3; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int   yid = 0; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   const unsigned int   yrs = 4; // Number of supported Run years
 
   // Choose DT pileup era to be used with MC
   // 16: 0=BCD, 1=EF, 2=GH, 3=BCDEFGH
   // 17: 0=B, 1=C, 2=DE, 3=F, 4=BCDEF
   // 18: 0=A, 1=B, 2=C, 3=D, 4=ABCD, 5=ABC
-  const unsigned int PUIOVidx = 5;
+  const unsigned int PUIOVidx = 4;
   // Do we use pthat binned MC (if not, we use flat or htbinned)
   constexpr bool pthatbins = false;
   // Do we use ht binned MC (if not, we use flat; if yes pthatbins must be set to false)
@@ -79,10 +79,10 @@ namespace jp {
   //{ BEGIN run settings
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
-  //-1; // all
+  -1; // all
   //10; // debug
   //100; //debug
-  1000;
+  //1000;
   //10000; // shorter test run
   //100000; // short test run
   //1000000; // shortish test run
@@ -114,7 +114,6 @@ namespace jp {
   // Toggle development histos
   constexpr bool doMpfHistos = true;
 
-
   // In the newest ntuples (mid 2019 onwards), MET filters may be saved separately, as before these
   constexpr bool fetchMETFilters = false;
   constexpr bool doMETFiltering = false;
@@ -124,14 +123,14 @@ namespace jp {
   // Note: the output-*.root files are originally used for the production of the exclusion zones.
   // Hence, the user should no whether she/he is producing or applying the hot zone vetos.
   constexpr bool doVetoHot = false;
-  const constexpr char HotType[] = ""; // h2hotr (Robert) or h2hotm (Mikko)
+  const constexpr char HotType[] = "filter"; // h2hotr (Robert) or h2hotm (Mikko)
 
   // Check for duplicates (warning: takes a lot of memory!)
   constexpr bool checkduplicates = false;
   //} END Special analyses that are not typically needed
 
   // QGL studies (use quark and gluon switches for unfolding study)
-  constexpr bool isgluon = false;  
+  constexpr bool isgluon = false;
   constexpr bool isquark = false;
   // QGL studies (use an external file for qgl studies)
   constexpr bool doqglfile = false;

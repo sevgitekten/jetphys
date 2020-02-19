@@ -1,9 +1,7 @@
 // Fill jet physics analysis histograms
 // Author:  mikko.voutilainen@cern.ch
 // Created: April 19, 2010
-// Updated: June 2, 2015
-// Updated: Aug 31, 2016
-// Further updates: see git log
+// Updated: Continuously, see git
 
 #define HistosFill_cxx
 #include "HistosFill.h"
@@ -30,16 +28,16 @@ HistosFill::HistosFill(TChain *tree) :
   njt(PFJetsCHS__),
   gen_njt(GenJets__),
   rho(EvtHdr__mPFRho),
-#ifdef NEWMODE
-  met(PFMetT0__et_),
-  metphi(PFMetT0__phi_),
-  metsumet(PFMetT0__sumEt_),
-  met01(PFMetT0T1__et_),
-  metsumet01(PFMetT0T1__sumEt_)
-#else
   met(PFMet__et_),
   metphi(PFMet__phi_),
-  metsumet(PFMet__sumEt_)
+  metsumet(PFMet__sumEt_),
+#ifdef NEWMODE
+  met0(PFMetT0__et_),
+  metphi0(PFMetT0__phi_),
+  metsumet0(PFMetT0__sumEt_),
+  met01(PFMetT0T1__et_),
+  metphi01(PFMetT0T1__phi_),
+  metsumet01(PFMetT0T1__sumEt_)
 #endif
 {
   assert(tree);
@@ -241,6 +239,9 @@ bool HistosFill::Init(TChain *tree)
     fChain->SetBranchStatus(Form("PFJets%s_.looseID_",jp::chs),1); // jtidloose
 
     //fChain->SetBranchStatus("rho",1);
+    fChain->SetBranchStatus("PFMet_.et_",1); // met
+    fChain->SetBranchStatus("PFMet_.phi_",1); // metphi
+    fChain->SetBranchStatus("PFMet_.sumEt_",1); // metsumet
 #ifdef NEWMODE
     fChain->SetBranchStatus("PFMetT0_.et_",1); // met
     fChain->SetBranchStatus("PFMetT0_.phi_",1); // metphi
@@ -248,10 +249,6 @@ bool HistosFill::Init(TChain *tree)
     fChain->SetBranchStatus("PFMetT0T1_.et_",1); // met
     fChain->SetBranchStatus("PFMetT0T1_.phi_",1); // metphi
     fChain->SetBranchStatus("PFMetT0T1_.sumEt_",1); // metsumet
-#else
-    fChain->SetBranchStatus("PFMet_.et_",1); // met
-    fChain->SetBranchStatus("PFMet_.phi_",1); // metphi
-    fChain->SetBranchStatus("PFMet_.sumEt_",1); // metsumet
 #endif
 
     if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchStatus("FilterDecision_",1);
@@ -645,8 +642,7 @@ bool HistosFill::PreRun()
     _outfile->cd();
     _outfile->mkdir("puwgt");
     _outfile->cd("puwgt");
-    for (auto &puprof : _pudist)
-      puprof.second->Write();
+    for (auto &puprof : _pudist) puprof.second->Write();
   }
 
   if (jp::doVetoHot) {
@@ -659,13 +655,19 @@ bool HistosFill::PreRun()
       else if (std::regex_search(jp::run,regex("^RunFe")))    HotTag = "EF";
       else if (std::regex_search(jp::run,regex("^RunFl")))    HotTag = "GH";
       else if (std::regex_search(jp::run,regex("^Run[GH]")))  HotTag = "GH";
-    } else if (jp::yid==1) {
+    } else if (jp::yid==1 or jp::yid==2) {
       HotYr = "17";
       if      (std::regex_search(jp::run,regex("^RunB"))) HotTag = "B";
       else if (std::regex_search(jp::run,regex("^RunC"))) HotTag = "C";
       else if (std::regex_search(jp::run,regex("^RunD"))) HotTag = "D";
       else if (std::regex_search(jp::run,regex("^RunE"))) HotTag = "E";
       else if (std::regex_search(jp::run,regex("^RunF"))) HotTag = "F";
+    } else if (jp::yid==3) {
+      HotYr = "18";
+      if      (std::regex_search(jp::run,regex("^RunA"))) HotTag = "A";
+      else if (std::regex_search(jp::run,regex("^RunB"))) HotTag = "B";
+      else if (std::regex_search(jp::run,regex("^RunC"))) HotTag = "C";
+      else if (std::regex_search(jp::run,regex("^RunD"))) HotTag = "D";
     }
     assert(HotTag!="");
     fHotExcl = new TFile(Form("rootfiles/hotjets-%srun%s.root",HotYr.c_str(),HotTag.c_str()),"READ");
@@ -865,11 +867,19 @@ bool HistosFill::AcceptEvent()
   }
 
   if (jp::debug) PrintInfo("JEC and MET calculation and leading jets info!",true);
-  // Calculate jec and propagate jec to MET 1 and MET 2
-  double mex = met * cos(metphi);
-  double mey = met * sin(metphi);
+  // Calculate jec.
+  // Recalculate new met1 from the old met1 (met)
+  // Attempt to calculate met2.
+  // Estimate raw hadronic recoil from Raw chs met (here, type0).
+  metsumet1 = metsumet;
+  double mex = met*cos(metphi);
+  double mey = met*sin(metphi);
   double mex_nol2l3 = mex;
   double mey_nol2l3 = mey;
+  double htx = -met0*cos(metphi0);
+  double hty = -met0*sin(metphi0);
+  double htx0 = 0;
+  double hty0 = 0;
   double ucx = mex;
   double ucy = mey;
   // Find leading jets (residual JEC may change ordering)
@@ -884,6 +894,7 @@ bool HistosFill::AcceptEvent()
     p4.SetPxPyPzE(jtp4x[jetidx],jtp4y[jetidx],jtp4z[jetidx],jtp4t[jetidx]);
     // Divide by the original JES
     if (jp::debug) PrintInfo("Entering jet loop!",true);
+    double jtptold = p4.Pt();
     if (jp::undojes) p4 *= 1/jtjes[jetidx];
 
     jtptu[jetidx] = p4.Pt();
@@ -966,37 +977,55 @@ bool HistosFill::AcceptEvent()
     if (jp::debug) PrintInfo(Form("Jet %d corrected!",jetidx),true);
 
     // Only use jets with corr. pT>recopt GeV to equalize data and MC thresholds
-    if (jtpt[jetidx] > jp::recopt and fabs(jteta[jetidx])<4.7) {
-      // MET 1: the one where JEC is applied. MET1 needs to be recalculated as JEC changes.
-      // Subtract uncorrected jet pT from met, put back corrected & add L1RC offset to keep PU isotropic.
-      double l1corr = 1.;
-      if (jp::redojes) {
-        _L1RC->setRho(rho);
-        _L1RC->setJetA(jta[jetidx]);
-        _L1RC->setJetPt(jtptu[jetidx]);
-        _L1RC->setJetE(jteu[jetidx]);
-        _L1RC->setJetEta(jteta[jetidx]);
-        l1corr = _L1RC->getCorrection();
-      } else {
-        l1corr = jtjes[jetidx];
+    if (fabs(jteta[jetidx])<4.7) {
+      if (jtptold > jp::recopt) {
+        // oldish: double dpt = - jtpt[jetidx] + l1corr*jtptu[jetidx]; // old: + (l1chs - l1pf + l1corr)*jtptu[jetidx];
+        // Instead of the old routines, we perform a simple shift for the T1 MET
+        double dpt = -jtpt[jetidx] + jtptold;
+        mex += dpt * cos(jtphi[jetidx]);
+        mey += dpt * sin(jtphi[jetidx]);
+        metsumet1 += jtpt[jetidx] - jtptold;
       }
-      double dpt = - jtpt[jetidx] + l1corr*jtptu[jetidx]; // old: + (l1chs - l1pf + l1corr)*jtptu[jetidx];
+      if (jtpt[jetidx] > jp::recopt) {
+        // MET 1: the one where JEC is applied. MET1 needs to be recalculated as JEC changes.
+        // Subtract uncorrected jet pT from met, put back corrected & add L1RC offset to keep PU isotropic.
+        double l1corr = 1.;
+        if (jp::redojes) {
+          _L1RC->setRho(rho);
+          _L1RC->setJetA(jta[jetidx]);
+          _L1RC->setJetPt(jtptu[jetidx]);
+          _L1RC->setJetE(jteu[jetidx]);
+          _L1RC->setJetEta(jteta[jetidx]);
+          l1corr = _L1RC->getCorrection();
+        } else {
+          l1corr = jtjes[jetidx];
+        }
 
-      mex += dpt * cos(jtphi[jetidx]);
-      mey += dpt * sin(jtphi[jetidx]);
-      if (jp::doMpfHistos) {
-        double dpt_nol2l3 = - jtpt_nol2l3[jetidx] + l1corr*jtptu[jetidx];
-        mex_nol2l3 += dpt_nol2l3 * cos(jtphi[jetidx]);
-        mey_nol2l3 += dpt_nol2l3 * sin(jtphi[jetidx]);
+        if (jp::doMpfHistos) {
+          double dpt_nol2l3 = - jtpt_nol2l3[jetidx] + l1corr*jtptu[jetidx];
+          mex_nol2l3 += dpt_nol2l3 * cos(jtphi[jetidx]);
+          mey_nol2l3 += dpt_nol2l3 * sin(jtphi[jetidx]);
+        }
+
+        // MET 2: record unclustered energy (more or less deprecated).
+        // Keep track of remaining pT in unclustered energy, add to MET l1corr jets, from which ue is substracted.
+        // Effectively this means substracting jets (without their PU and UE) from MET (=> homogeneous background).
+        double ue = 1.068 * jta[jetidx]; // CAUTION: One should check this magical coefficient is good.
+        double dptu = -ue + l1corr*jtptu[jetidx];
+        ucx += dptu * cos(jtphi[jetidx]);
+        ucy += dptu * sin(jtphi[jetidx]);
       }
-
-      // MET 2: record unclustered energy.
-      // Keep track of remaining pT in unclustered energy, add to MET l1corr jets, from which ue is substracted.
-      // Effectively this means substracting jets (without their PU and UE) from MET (=> homogeneous background).
-      double ue = 1.068 * jta[jetidx]; // CAUTION: One should check that the magical coefficient here is good.
-      double dptu = -ue + l1corr*jtptu[jetidx];
-      ucx += dptu * cos(jtphi[jetidx]);
-      ucy += dptu * sin(jtphi[jetidx]);
+    }
+    double jtux = jtptu[jetidx]*cos(jtphi[jetidx]);
+    double jtuy = jtptu[jetidx]*sin(jtphi[jetidx]);
+    if (fabs(jteta[jetidx])<4.7 and jtpt[jetidx] > jp::recopt) {
+      // Collect the raw hadronic recoil (on the level of jets that we see).
+      htx -= jtux;
+      hty -= jtuy;
+    } else {
+      // Check the potential to improve the recoil.
+      htx0 -= jtux;
+      hty0 -= jtuy;
     }
 
     if (jt3leads[0]==-1 or jtpt[jt3leads[0]]<jtpt[jetidx]) {
@@ -1011,19 +1040,22 @@ bool HistosFill::AcceptEvent()
     }
   } // for jetidx
 
-  // Type I MET (this is the best one we've got; works optimally if we keep T0Txy MET as the raw MET and apply here the newest JEC)
-  met1 = tools::oplus(mex, mey); // met1 = -jtpt[jetidx]+l1corr*jtptu[jetidx]+metraw
-  metphi1 = atan2(mey, mex);
+  // Type I MET (this is the best one we've got).
+  // Works optimally if we keep T0Txy MET as the raw MET and apply here the newest JEC)
+  met1 = tools::oplus(mex,mey);
+  metphi1 = atan2(mey,mex);
   if (jp::doMpfHistos) {
     met1_nol2l3 = tools::oplus(mex_nol2l3,mey_nol2l3);
     metphi1_nol2l3 = atan2(mey_nol2l3, mex_nol2l3);
   }
+  mht = tools::oplus(htx,hty);
+  mhtphi = atan2(hty,htx);
 
   // Correct unclustered energy; jec for 10 GeV jets varies between 1.1-1.22 at |y|<2.5,
   // 2.5-3.0 even goes up to 1.35 => assume 1.15  => try 1.5 => to 1.25 (high pT threshold on jets)
   mex += 0.25*ucx;
   mey += 0.25*ucy;
-  // Type II MET witch C = 1.25 (This is not recommended for pfJets.
+  // Type II MET witch C = 1.25 (This is not recommended for pfJets).
   // met2 = met1 - C*uncl.ptsum = met1 + 0.25*(l1corr*jtptu[jetidx]-ue[jetidx]) = 1.25*metraw + 1.25*l1corr*jtptu[jetidx] - jtpt[jetidx] - 0.25ue[jetidx]
   met2 = tools::oplus(mex, mey);
   metphi2 = atan2(mey, mex);
@@ -1171,7 +1203,7 @@ bool HistosFill::AcceptEvent()
       if (_prescales[TName][run]>0) {
         // Set trigger only if prescale information is known
         _trigs.insert(TName);
-        _wt[TName] = _goodWgts[goodIdx];
+        _wt[TName] = 1.0;
       } else {
         // Make sure all info is good! This is crucial if there is something odd with the tuples
         PrintInfo(Form("Missing prescale for %s in run %d",TName.c_str(),run),true);
@@ -1259,7 +1291,7 @@ bool HistosFill::AcceptEvent()
   if (_pass and _jetids[i0]) ++_cnt["11jtid"]; // Non-restrictive
 #ifdef NEWMODE
   // Equipped in FillBasic and FillRun
-  _pass_qcdmet = met01 < 45. or met01 < 0.3 * metsumet01; // updated 4/2018
+  _pass_qcdmet = met1 < 45. or met1 < 0.3 * metsumet1; // updated 4/2018
 #else
   _pass_qcdmet = met < 45. or met < 0.3 * metsumet;
 #endif
@@ -1904,9 +1936,9 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             h->hphi->Fill(phi, _w);
             h->hdphi->Fill(dphi, _w);
             h->hdpt->Fill(dpt, _w);
-            h->hjet->Fill(pt / metsumet, _w);
-            h->hmet->Fill(met / metsumet, _w);
-            h->hmetphi->Fill(DPhi(metphi, phi), _w);
+            h->hjet->Fill(pt   / metsumet1, _w);
+            h->hmet->Fill(met1 / metsumet1, _w);
+            h->hmetphi->Fill(DPhi(metphi1, phi), _w);
             // control plots for vertex
             h->hpvndof->Fill(pvndof);
             h->hpvx->Fill(pvx-bsx);
@@ -1915,7 +1947,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             h->hpvr->Fill(tools::oplus(pvx-bsx, pvy-bsy));
             h->hpvrho->Fill(pvrho-tools::oplus(bsx, bsy));
             // closure plots for JEC
-            h->hmpf->Fill(1 + met * cos(DPhi(metphi, phi)) / pt, _w);
+            h->hmpf ->Fill(1 + met  * cos(DPhi(metphi,  phi)) / pt, _w);
             h->hmpf1->Fill(1 + met1 * cos(DPhi(metphi1, phi)) / pt, _w);
             h->hmpf2->Fill(1 + met2 * cos(DPhi(metphi2, phi)) / pt, _w);
             // Component fractions
@@ -1941,8 +1973,8 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           } // within trigger pT range
 
           // closure plots for JEC
-          h->pdpt->Fill(pt, dpt, _w);
-          h->pmpf->Fill(pt, 1 + met * cos(DPhi(metphi, phi)) / pt, _w);
+          h->pdpt ->Fill(pt, dpt, _w);
+          h->pmpf ->Fill(pt, 1 + met  * cos(DPhi(metphi,  phi)) / pt, _w);
           h->pmpf1->Fill(pt, 1 + met1 * cos(DPhi(metphi1, phi)) / pt, _w);
           h->pmpf2->Fill(pt, 1 + met2 * cos(DPhi(metphi2, phi)) / pt, _w);
 
@@ -1987,7 +2019,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                 h->hqgl_u->Fill(x, _w);
                 h->hqgl2_u->Fill(pt, x, _w);
                 h->hqgl2_u_g->Fill(ptgen, x, _w);
-              }else {
+              } else {
                 PrintInfo("Quark/Gluon status missing from partonflavor");
               }
             }
@@ -2020,14 +2052,14 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             if (r) {
               // Response closure vs NPV
               h->p2rvsnpv->Fill(ptgen, npvgood, r, _w);
-              
+
               h->h2r_r->Fill(pt, r, _w);
               h->h2r_g->Fill(ptgen, r, _w);
               h->p2r_r->Fill(pt, r, _w);
               h->p2r_g->Fill(ptgen, r, _w);
               h->p2r_ruw->Fill(pt, r); // unweighted!
               h->p2r_guw->Fill(ptgen, r); // unweighted!
-              
+
               if(fabs(partonflavorphys[jetidx]-21)<0.5){
                   h->h2r_g_r->Fill(pt, r, _w);
                   h->h2r_g_g->Fill(ptgen, r, _w);
@@ -2057,10 +2089,10 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                    h->p2r_g_g->Fill(ptgen, r, _w);
                    h->p2r_g_ruw->Fill(pt, r); // unweighted!
                    h->p2r_g_guw->Fill(ptgen, r); // unweighted!
-                   
+
               }
-              
-              
+
+
 
               // Rapidity closure
               h->h2dy_r->Fill(pt, dy, _w);
@@ -2707,104 +2739,222 @@ void HistosFill::FillAll(string name)
     mCorrs = {1.1593752033412614, 1.174409920384245, 1.1425432203220922, 1.1267041666636013, 1.1000125977531978, 1.0770150787286128, 1.0668512025167671, 1.0588303052191164, 1.056353440245032, 1.0548241625463668, 1.0521249969158633, 1.05150594897517, 1.050813242769078, 1.0507805884867627, 1.0509416004380872, 1.0510043928443304, 1.0507235408572968, 1.0506838107841294, 1.050005725851059, 1.0488906886119305, 1.048804104377535, 1.2218205174585604, 1.2213563192731656, 1.1609561028625675, 1.121700508998555, 1.0920212253075883, 1.0823938594987712, 1.064917105781416, 1.0612918455142244, 1.0558185272306344, 1.0529062194258725, 1.0514118797083873, 1.0495097747626176, 1.049565575165245, 1.0497286361231386, 1.0493384633115683, 1.049320436004567, 1.0494434473968957, 1.0498460012512172, 1.0487862566423456, 1.0481593632194084, 1.0464456319410929, 1.2918933202941627, 1.2371761522098652, 1.1744800219647904, 1.1413521941236058, 1.1044307487165717, 1.0823851545254206, 1.0722765108066281, 1.058690731032912, 1.0551223192766281, 1.049940353256494, 1.0518284281197121, 1.0508886257052372, 1.0493055179793633, 1.0498222703465778, 1.049999627951009, 1.0495751910526059, 1.0490285005353337, 1.0479342249237686, 1.0481644068153326, 1.0444929960801403, 1.031707697574082, 1.336698943623505, 1.2238388684009691, 1.1551399694807636, 1.1197109282959243, 1.0935199654969294, 1.072747650162195, 1.0572097839157508, 1.0510888542886847, 1.0462392685187272, 1.044470821563622, 1.0419236462208314, 1.0435084742505667, 1.043689697333746, 1.042761534731986, 1.0414488826324828, 1.0419337549320038, 1.0404871818279007, 1.0397093591579445, 1.0412073986199994, 1.0401008047264657, -2.755755987385992e-13, 1.3979159621356239, 1.2580284562776505, 1.1968177607170163, 1.127030695853882, 1.0847882337866819, 1.0565970764093349, 1.0500905803874783, 1.0439928956356608, 1.0397186820308608, 1.0381101181806782, 1.0398307310360693, 1.0364270477467126, 1.0358865106098756, 1.0358910367407022, 1.0348445378688436, 1.0321758750075034, 1.0300022021860402, 1.0315398369003548, 1.0380260292703336, 5.975671427889212e-13, 1.642896176458933e-13, 1.7013283017557628, 1.2907060989245778, 1.181721841410788, 1.1172705755620156, 1.089516715101907, 1.0586597968425868, 1.047937602358068, 1.0401491790112218, 1.0353744220677839, 1.0320879577738928, 1.0307490622999362, 1.029443413256755, 1.0269892282105932, 1.0247938370690175, 1.0262544566754395, 1.0258194613329856, 1.0493815746997737, 4.678103250334358e-13, 3.5492689961596216e-14, -2.0569691014181548e-14, -2.369933748372051e-15, 1.739111987432882, 1.4001080334297715, 1.2341177450412755, 1.127682072546822, 1.105015806750636, 1.0665522994229815, 1.0434740598852743, 1.0534441757104533, 1.0322109550042669, 1.0261223361430432, 0.9492317672339609, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
   }
 
-  if (_pass_qcdmet and njt>1 and _jetids[0]) {
+  // Pass basic quality checks, at least two jets, jet ids ok for these two.
+  if (_pass and _pass_qcdmet and njt>1 and _jetids[0] and _jetids[1]) {
+    int idx = -1;
+    vector<int> tfired;
+    for (auto &trg : _trigs) {
+      idx = -1;
+      for (unsigned i = 0; i < jp::triggers.size(); ++i) if (string(jp::triggers[i])==trg) { idx = i; break; }
+      if (idx!=-1) tfired.push_back(idx);
+    }
     // Tag & probes method
     // We do implicit binning or histogramming by tag pt, so no need to look at firing triggers.
-    double tagpt = jtpt[0];
-    double tageta = jteta[0];
-    //if (fabs(etatag)<1.3 and pttag>jp::wwptrange[0]) {
-    if (fabs(tageta)<1.3 and tagpt>28) {
-      // We cannot use the indices i0, i1 and i2 here due to general mapping issues #SAD
-      // That is, even if the ordering of jets might be different in the original scheme (0,1,2,...),
-      // the final scheme (i1,i2,i3) and the nol2l3 scheme, the most straightforward method (and a
-      // good approximation) is to assume that the original ordering is conserved.
-
-      double tagfx = TMath::Cos(jtphi[0]), tagfy = TMath::Sin(jtphi[0]);
+    double metfx = cos(metphi1), metfy = sin(metphi1);
+    double metpx = met1*metfx, metpy = met1*metfy;
+    bool trigfire = false;
+    for (unsigned tagi = 0; tagi<2; ++tagi) {
+      double tagpt = jtpt[tagi];
+      // We do not bin below 28 GeV.
+      if (tagpt<28) continue;
+      // We want the tag trigger to have fired
+      if (jp::isdt) {
+        bool fired = false;
+        for (auto &tf : tfired) {
+          auto &rang = jp::trigranges[tf];
+          if (tagpt>rang[0] and tagpt<rang[1]) {
+            fired = true;
+            break;
+          }
+        }
+        if (!fired) continue;
+      }
+      trigfire = true;
+      // We setup the probe
+      unsigned pr1i = tagi==0 ? 1 : 0;
+      double pr1pt = jtpt[pr1i];
+      // We want a strong, independent tag.
+      if (tagpt/pr1pt<0.7) continue;
+      // Remaining tag info
+      double tagphi = jtphi[tagi];
+      double tagfx = cos(tagphi), tagfy = sin(tagphi);
       double tagpx = tagpt*tagfx, tagpy = tagpt*tagfy;
+      double tageta = jteta[tagi];
+      double atageta = fabs(tageta);
+      // Remaining probe info
+      double pr1phi = jtphi[pr1i];
+      double pr1fx = cos(pr1phi), pr1fy = sin(pr1phi);
+      double pr1px = pr1pt*pr1fx, pr1py = pr1pt*pr1fy;
+      double pr1eta = jteta[pr1i];
 
-      unsigned ntot = (h->mNPts)*(h->mNEtas);
-      vector<double> tmpVec (ntot,0.0);
-      vector<double> tmpVecT(ntot,0.0);
-      //vector<double> tmpVecQG (3*ntot,0.0);
-      //vector<double> tmpVecQGT(3*ntot,0.0);
-      double tagSum = 0.0;
-      double tagSumU = 0.0;
-      double collector = -1.0;
-      int tagbin = h->PhaseBin(tagpt,tageta);
-      for (int jidx = 1; jidx < njt; ++jidx) {
-        double ctag = mCorrs[tagbin];
-        // Only take the good jets.
-        //if (!_jetids[jidx]) continue;
-        double jpt = jtpt[jidx];
-        double jpx = jpt*TMath::Cos(jtphi[jidx]), jpy = jpt*TMath::Sin(jtphi[jidx]);
-        double jfx = jpx/tagpt, jfy = jpy/tagpt;
-        double proj  = tagfx*jfx+tagfy*jfy;
-        double projT = tagfy*jfx-tagfx*jfy;
+      // We calculate and fill MPF values.
+      double metproj = tagfx*metpx+tagfy*metpy;
+      double MPF  = 1 + metproj/tagpt;
+      double MPF2 = MPF*MPF;
+      h->p2mpf->Fill(tagpt,atageta,MPF);
+      h->p2mpf2->Fill(tagpt,atageta,MPF2);
+      h->p2mpf_fe->Fill(tagpt,tageta,MPF);
+      h->p2mpf2_fe->Fill(tagpt,tageta,MPF2);
+      h->h3mpf->Fill(tagpt,tageta,MPF);
 
-        collector -= proj;
-        int pbin = h->PhaseBin(jpt,jteta[jidx]);
-        if (pbin>=0) {
-          tagSum += proj*mCorrs[pbin];
-          tagSumU += proj;
-          tmpVec [pbin] += proj/ctag;
-          tmpVecT[pbin] += projT/ctag;
-          //double qglV = qgl[jidx];
-          //if (qglV>0.85) {
-          //  // Values for quarks
-          //  tmpVecQG [pbin] += proj;
-          //  tmpVecQGT[pbin] += projT;
-          //} else if (qglV<0.3 and qglV>=0) {
-          //  // Values for quarks
-          //  tmpVecQG [pbin+ntot] += proj;
-          //  tmpVecQGT[pbin+ntot] += projT;
-          //} else {
-          //  // Values for gluons and untagged
-          //  tmpVecQG [pbin+2*ntot] += proj;
-          //  tmpVecQGT[pbin+2*ntot] += projT;
-          //}
-        }
-      }
-      if (tagbin>=0) {
-        (*(h->mColumn)) [tagbin][2] += tagSum;
-        (*(h->mColumn)) [tagbin][3] += tagSumU;
-        (*(h->mColumn)) [tagbin][4] += 1;
-        (*(h->mSquare)) [tagbin][tagbin+ntot] += 1;
-      }
-      (*(h->mSingle))[0][0] += 1.0;
-      (*(h->mSingle))[0][1] += collector;
-      for (unsigned i = 0; i < ntot; ++i) {
-        double tval  = tmpVec [i];
-        double tvalT = tmpVecT[i];
-        (*(h->mColumn)) [i][0] += tval;
-        (*(h->mColumn)) [i][1] += tval*collector;
-        (*(h->mSquare)) [i][i] += tval*tval;
-        (*(h->mColumnT))[i][0] += tvalT;
-        (*(h->mSquareT))[i][i] += tvalT*tvalT;
-        for (unsigned j = i+1; j < ntot; ++j) {
-          double tval2  = tval *tmpVec [j];
-          double tvalT2 = tvalT*tmpVecT[j];
-          (*(h->mSquare)) [i][j] += tval2;
-          (*(h->mSquare)) [j][i] += tval2;
-          (*(h->mSquareT))[i][j] += tvalT2;
-          (*(h->mSquareT))[j][i] += tvalT2;
-        }
-      }
-      //for (unsigned i = 0; i < 3*ntot; ++i) {
-      //  double tval  = tmpVecQG [i];
-      //  double tvalT = tmpVecQGT[i];
-      //  (*(h->mTColumn))[i][0]      += tval;
-      //  (*(h->mTSquare))[i][i]      += tval*tval;
-      //  (*(h->mTSquare))[i][i+3*ntot] += tvalT*tvalT;
-      //  for (unsigned j = i+1; j < 3*ntot; ++j) {
-      //    double tval2  = tval *tmpVecQG [j];
-      //    double tvalT2 = tvalT*tmpVecQGT[j];
-      //    (*(h->mTSquare))[i][j]        += tval2;
-      //    (*(h->mTSquare))[j][i]        += tval2;
-      //    (*(h->mTSquare))[i][j+3*ntot] += tvalT2;
-      //    (*(h->mTSquare))[j][i+3*ntot] += tvalT2;
-      //  }
+      // We calculate and fill HT sum values.
+      // We need to add the leading probe manually.
+      //double HTproj = 0.0;
+      //HTproj += tagfx*pr1px + tagfy*pr1py;
+      //for (int jidx = 2; jidx < njt; ++jidx) {
+      //  double jpt = jtpt[jidx];
+      //  double jfx = TMath::Cos(jtphi[jidx]), jfy = TMath::Sin(jtphi[jidx]);
+      //  double jpx = jpt*jfx, jpy = jpt*jfy;
+      //  HTproj += tagfx*jpx+tagfy*jpy;
       //}
+      //double HTF  = -HTproj/tagpt;
+      //double HTF2 = HTF*HTF;
+      //h->p2htf->Fill(tagpt,atageta,HTF);
+      //h->p2htf2->Fill(tagpt,atageta,HTF2);
+      //h->p2htf_fe->Fill(tagpt,tageta,HTF);
+      //h->p2htf2_fe->Fill(tagpt,tageta,HTF2);
+      //h->h3htf->Fill(tagpt,tageta,HTF);
+    }
 
+    //if (trigfire) {
+    if (true) {
+      for (unsigned tagi = 0; tagi<1; ++tagi) {
+        // We setup the tag
+        double tagpt = jtpt[tagi];
+        double tageta = jteta[tagi];
+        double atageta = fabs(tageta);
+        if (tagpt<28 or atageta>1.3) continue;
+        // Require a trigger fire for tag.
+        if (jp::isdt) {
+          bool fired = false;
+          for (auto &tf : tfired) {
+            auto &rang = jp::trigranges[tf];
+            if (tagpt>rang[0] and tagpt<rang[1]) {
+              fired = true;
+              break;
+            }
+          }
+          if (!fired) continue;
+        }
+        // We setup the probe
+        unsigned pr1i = tagi==0 ? 1 : 0;
+        double pr1pt = jtpt[pr1i];
+        double pr1eta = jteta[pr1i];
+        double ptfrac = pr1pt/tagpt;
+        if (tagpt/pr1pt<0.7) continue;
+        int tagbin = h->PhaseBin(tagpt,tageta);
+        int pr1bin = h->PhaseBin(pr1pt,pr1eta);
+        if (tagbin<0 or pr1bin<0) continue;
+        // We want a strong, independent tag.
+        // Remaining tag info
+        double tagphi = jtphi[tagi];
+        double tagfx = cos(tagphi), tagfy = sin(tagphi);
+        double tagpx = tagpt*tagfx, tagpy = tagpt*tagfy;
+        // Remaining probe info
+        double pr1phi = jtphi[pr1i];
+        double pr1fx = cos(pr1phi), pr1fy = sin(pr1phi);
+        double pr1px = pr1pt*pr1fx, pr1py = pr1pt*pr1fy;
+          // We use the tag and probe inherited from above.
+        double refpt = tagpt;
+
+        unsigned ntot = (h->mNPts)*(h->mNEtas)+1;
+        vector<double> tmpVec (ntot,0.0);
+        vector<double> tmpVecT(ntot,0.0);
+        //vector<double> tmpVecQG (3*ntot,0.0);
+        //vector<double> tmpVecQGT(3*ntot,0.0);
+        // Tag jet informatics
+        double tagSum = 0.0;
+        double tagSumU = 0.0;
+        double collector = -1.0;
+        double ctag = 1.0;
+        //double ctag = mCorrs[tagbin];
+        // Special handling of the missing hadronic recoil
+        double htx = -met0*cos(metphi0)-jtptu[tagi]*tagfx-jtptu[pr1i]*pr1fx;
+        double hty = -met0*sin(metphi0)-jtptu[tagi]*tagfy-jtptu[pr1i]*pr1fy;
+        tmpVec [pr1bin] += (tagfx*pr1px+tagfy*pr1py)/refpt;
+        tmpVecT[pr1bin] += (tagfy*pr1px-tagfx*pr1py)/refpt;
+        // We need to start with the third jet, as we don't know which is the tag.
+        for (int jidx = 2; jidx < njt; ++jidx) {
+          // Only take the good jets.
+          //if (!_jetids[jidx]) continue;
+          double jpt = jtpt[jidx];
+          double jpx = jpt*cos(jtphi[jidx]), jpy = jpt*sin(jtphi[jidx]);
+          double jptu = jtptu[jidx];
+          double proj  = (tagfx*jpx+tagfy*jpy)/refpt;
+          double projT = (tagfy*jpx-tagfx*jpy)/refpt;
+
+          collector -= proj;
+          int pbin = h->PhaseBin(jpt,jteta[jidx]);
+          if (pbin>=0) {
+            tagSum  += proj*mCorrs[pbin];
+            tagSumU += proj;
+            tmpVec [pbin] += proj/ctag;
+            tmpVecT[pbin] += projT/ctag;
+            htx -= jptu*cos(jtphi[jidx]);
+            hty -= jptu*sin(jtphi[jidx]);
+
+            //double qglV = qgl[jidx];
+            //if (qglV>0.85) {
+            //  // Values for quarks
+            //  tmpVecQG [pbin] += proj;
+            //  tmpVecQGT[pbin] += projT;
+            //} else if (qglV<0.3 and qglV>=0) {
+            //  // Values for quarks
+            //  tmpVecQG [pbin+ntot] += proj;
+            //  tmpVecQGT[pbin+ntot] += projT;
+            //} else {
+            //  // Values for gluons and untagged
+            //  tmpVecQG [pbin+2*ntot] += proj;
+            //  tmpVecQGT[pbin+2*ntot] += projT;
+            //}
+          }
+        }
+        tmpVec .back() = (tagfx*htx+tagfy*hty)/refpt;
+        tmpVecT.back() = (tagfy*htx-tagfx*hty)/refpt;
+        if (tagbin>=0) {
+          (*(h->mColumn)) [tagbin][2] += tagSum;
+          (*(h->mColumn)) [tagbin][3] += tagSumU;
+          (*(h->mColumn)) [tagbin][4] += 1;
+          (*(h->mSquare)) [tagbin][tagbin+2*ntot] += 1;
+        }
+        (*(h->mSingle))[0][0] += 1.0;
+        (*(h->mSingle))[0][1] += collector;
+        for (unsigned i = 0; i < ntot; ++i) {
+          double tval  = tmpVec [i];
+          double tvalT = tmpVecT[i];
+          (*(h->mColumn))[i][0]      += tval;
+          (*(h->mColumn))[i][1]      += tval*collector;
+          (*(h->mSquare))[i][i]      += tval*tval;
+          (*(h->mColumn))[i][2     ] += tvalT;
+          (*(h->mSquare))[i][i+ntot] += tvalT*tvalT;
+          for (unsigned j = i+1; j < ntot; ++j) {
+            double tval2  = tval *tmpVec [j];
+            double tvalT2 = tvalT*tmpVecT[j];
+            (*(h->mSquare))[i][j     ] += tval2;
+            (*(h->mSquare))[j][i     ] += tval2;
+            (*(h->mSquare))[i][j+ntot] += tvalT2;
+            (*(h->mSquare))[j][i+ntot] += tvalT2;
+          }
+        }
+        //for (unsigned i = 0; i < 3*ntot; ++i) {
+        //  double tval  = tmpVecQG [i];
+        //  double tvalT = tmpVecQGT[i];
+        //  (*(h->mTColumn))[i][0]      += tval;
+        //  (*(h->mTSquare))[i][i]      += tval*tval;
+        //  (*(h->mTSquare))[i][i+3*ntot] += tvalT*tvalT;
+        //  for (unsigned j = i+1; j < 3*ntot; ++j) {
+        //    double tval2  = tval *tmpVecQG [j];
+        //    double tvalT2 = tvalT*tmpVecQGT[j];
+        //    (*(h->mTSquare))[i][j]        += tval2;
+        //    (*(h->mTSquare))[j][i]        += tval2;
+        //    (*(h->mTSquare))[i][j+3*ntot] += tvalT2;
+        //    (*(h->mTSquare))[j][i+3*ntot] += tvalT2;
+        //  }
+        //}
+      }
+    }
+
+    //if (fabs(etatag)<1.3 and pttag>jp::wwptrange[0]) {
       //int ptbin = -1;
       //for (unsigned ptloc = 0; ptloc < jp::nwwpts; ++ptloc) {
       //  if (pttag < jp::wwptrange[ptloc+1]) {
@@ -2918,7 +3068,7 @@ void HistosFill::FillAll(string name)
       //    } // 4th jet & friends jet loop
       //  } // 4th jet & friends
       //}
-    } // Tag within barrel and the pt range
+    //} // Tag within barrel and the pt range
   } // Basic sanity checks
 } // FillAll
 
@@ -3311,7 +3461,7 @@ Long64_t HistosFill::LoadTree(Long64_t entry)
         auto str = _availTrigs[trigi];
         *ferr << str;
         auto trgplace = std::find(_goodTrigs.begin(),_goodTrigs.end(),trigi);
-        if (trgplace!=_goodTrigs.end()) *ferr << "_y (" << _goodWgts[trgplace-_goodTrigs.begin()] << ") ";
+        if (trgplace!=_goodTrigs.end()) *ferr << "_y ";
         else *ferr << "_n ";
         if (trigi%(jp::notrigs+1)==jp::notrigs) *ferr << endl;
       }
@@ -3441,11 +3591,8 @@ bool HistosFill::GetTriggers()
     if (std::regex_match(trgName,zbs)) zbcase = true;
   }
 
-  auto &eraLumis  = jp::triglumiera[_eraIdx];
-  assert(eraLumis.size()==jp::notrigs);
   _availTrigs.clear();
   _goodTrigs.clear();
-  _goodWgts.clear();
   for (int trgidx = xax->GetFirst(); trgidx <= xax->GetLast(); ++trgidx) {
     string trgName = xax->GetBinLabel(trgidx);
     if (trgName.compare("")==0) continue; // Ignore empty places on x-axis
@@ -3457,18 +3604,7 @@ bool HistosFill::GetTriggers()
         unsigned thrplace = 0;
         if (thrplace < jp::notrigs) {
           _goodTrigs.push_back(_availTrigs.size());
-          if (jp::useeraweights) {
-            // Get a weight for the current trig version normalized with the average of all triggers
-            double eraLumiWgt  =     eraLumis.back()/    eraLumis[thrplace];
-            double yearLumiWgt = jp::triglumi.back()/jp::triglumi[thrplace];
-            // Ideally this is a constant common for all triggers.
-            // Sadly, this is not true and thus this takes into account the time dependence of
-            _goodWgts.push_back(eraLumiWgt/yearLumiWgt);
-            PrintInfo(Form("Trigger %s responding loud and clear with %u events and relative weight %f!",trgName.c_str(),utrigs[trgName],_goodWgts.back()),true);
-          } else {
-            _goodWgts.push_back(1.0);
-            PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
-          }
+          PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
         } else { // No trig era weighting: no relative weights
           PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
         }
@@ -3485,7 +3621,6 @@ bool HistosFill::GetTriggers()
         if (thrplace < jp::notrigs) {
           _goodTrigs.push_back(_availTrigs.size());
           PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
-          _goodWgts.push_back(1.0);
         } else {
           PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
         }
@@ -3498,7 +3633,6 @@ bool HistosFill::GetTriggers()
         if (thrplace < jp::notrigs) {
           _goodTrigs.push_back(_availTrigs.size());
           PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
-          _goodWgts.push_back(1.0);
         } else {
           PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
         }
@@ -3510,18 +3644,7 @@ bool HistosFill::GetTriggers()
         unsigned thrplace = static_cast<unsigned>(std::find(jp::trigthr.begin()+1,jp::trigthr.end(),trigthr)-jp::trigthr.begin());
         if (thrplace < jp::notrigs) {
           _goodTrigs.push_back(_availTrigs.size());
-          if (jp::useeraweights) {
-            // Get a weight for the current trig version normalized with the average of all triggers
-            double eraLumiWgt  =     eraLumis.back()/    eraLumis[thrplace];
-            double yearLumiWgt = jp::triglumi.back()/jp::triglumi[thrplace];
-            // Ideally this is a constant common for all triggers.
-            // Sadly, this is not true and thus this takes into account the time dependence of
-            _goodWgts.push_back(eraLumiWgt/yearLumiWgt);
-            PrintInfo(Form("Trigger %s responding loud and clear with %u events and relative weight %f!",trgName.c_str(),utrigs[trgName],_goodWgts.back()),true);
-          } else {
-            PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
-            _goodWgts.push_back(1.0);
-          }
+          PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
         } else { // No trig era weighting: no relative weights
           PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
         }

@@ -46,8 +46,6 @@ HistosAll::HistosAll(TDirectory *dir) {
   //h2ptjet3_nol2l3     = vector<TH2D*>(jp::nwwpts,0);
   //h2ptjet4plus_nol2l3 = vector<TH2D*>(jp::nwwpts,0);
 
-  //mPts = {15, 21, 28, 37, 49, 64, 84, 114, 153, 196, 272, 330, 395, 468, 548, 686, 846, 1032, 1248, 1588, 2500, 100000};
-  //mEtas = {0.0,0.5,1.0,1.5,2.0,2.5,3.5,5.0};
   mPts = {30, 45, 65, 85, 105, 130, 175, 230, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1600, 2500};
   mEtas = {0,0.522,0.783,1.131,1.74,1.93,2.043,2.322,2.5,2.65,2.853,2.964,3.139,5.191};
   for (unsigned i = mEtas.size()-1; i>0; --i) mFullEtas.push_back(-mEtas[i]);
@@ -71,18 +69,23 @@ HistosAll::HistosAll(TDirectory *dir) {
   p2htf2_fe = new TProfile2D("p2htf2_fe",";p_{T};#eta;",mNPts,pth,mNFullEtas,fetah);
   h3mpf = new TH3D("h3mpf",";p_{T};#eta;MPF",mNPts,pth,mNFullEtas,fetah,100,fracs);
   h3htf = new TH3D("h3htf",";p_{T};#eta;HTF",mNPts,pth,mNFullEtas,fetah,100,fracs);
-  //int ntot = mNPts*mNEtas;
-  //mSquare = new TMatrixD(ntot,2*ntot);
-  //mColumn = new TMatrixD(ntot,5);
-  //mSingle = new TMatrixD(1,2);
+
+  mPts = {15, 21, 28, 37, 49, 64, 84, 114, 153, 196, 272, 330, 395, 468, 548, 686, 846, 1032, 1248, 1588, 2500, 100000};
+  mEtas = {0.0,0.5,1.0,1.5,2.0,2.5,3.5,5.0};
+  mNPts = mPts.size()-1;
+  mNEtas = mEtas.size()-1;
+  int ntot = mNPts*mNEtas+1;
+  mSquare = new TMatrixD(ntot,3*ntot);
+  mColumn = new TMatrixD(ntot,8);
+  mSingle = new TMatrixD(1,2);
   //mTSquare = new TMatrixD(3*ntot,6*ntot);
   //mTColumn = new TMatrixD(3*ntot,2);
-  ////mTSquare = new TMatrixD(4*ntot,4*ntot);
-  ////mTColumn = new TMatrixD(4*ntot,2);
+  //mTSquare = new TMatrixD(4*ntot,4*ntot);
+  //mTColumn = new TMatrixD(4*ntot,2);
   //mSquareT = new TMatrixD(ntot,3*ntot);
   //mColumnT = new TMatrixD(ntot,3);
-  ////mTSquareT = new TMatrixD(4*ntot,4*ntot);
-  ////mTColumnT = new TMatrixD(4*ntot,1);
+  //mTSquareT = new TMatrixD(4*ntot,4*ntot);
+  //mTColumnT = new TMatrixD(4*ntot,1);
 
   curdir->cd();
 }
@@ -111,15 +114,11 @@ int HistosAll::PhaseBin(double pt, double eta) {
 void HistosAll::Write() {
   dir->cd();
   dir->Write();
-  //mSquare->Write();
-  //mColumn->Write();
-  //mSingle->Write();
+  mSquare->Write();
+  mColumn->Write();
+  mSingle->Write();
   //mTSquare->Write();
   //mTColumn->Write();
-  //mSquareT->Write();
-  //mColumnT->Write();
-  //mTSquareT->Write();
-  //mTColumnT->Write();
 }
 
 HistosAll::~HistosAll() {
