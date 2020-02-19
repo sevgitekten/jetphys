@@ -79,10 +79,10 @@ namespace jp {
   //{ BEGIN run settings
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
-  -1; // all
+  //-1; // all
   //10; // debug
   //100; //debug
-  //1000;
+  1000;
   //10000; // shorter test run
   //100000; // short test run
   //1000000; // shortish test run
@@ -108,11 +108,11 @@ namespace jp {
   // Special reco/gen histos in mc
   constexpr bool doEtaHistosMcResponse = false; // Special studies
   // Toggle 3D asymmetry and mpf histos off, if too much space is consumed
-  constexpr bool do3dHistos = true;
+  constexpr bool do3dHistos = false;
   // Toggle phi histograms
   constexpr bool doPhiHistos = false;
   // Toggle development histos
-  constexpr bool doMpfHistos = true;
+  constexpr bool doMpfHistos = false;
 
   // In the newest ntuples (mid 2019 onwards), MET filters may be saved separately, as before these
   constexpr bool fetchMETFilters = false;
