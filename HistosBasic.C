@@ -333,16 +333,12 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   const int na = 200;
   vector<double> va(na+1);
   for (unsigned int i = 0; i != na+1; ++i) va[i] = -1. + 2.*i/na;
-if (jp::do3dHistos) {
-  hdjasymm = new TH3D("hdjasymm",";p_{T,ave};p_{T,3rd}/p_{T,ave};Asymmetry",
-                      nx,&x[0],n3,&v3[0],na,&va[0]);
-  hdjmpf = new TH3D("hdjmpf",";p_{T,ave};p_{T,3rd}/p_{T,ave};MPF",
-                    nx,&x[0],n3,&v3[0],na,&va[0]);
-  hdjasymmtp = new TH3D("hdjasymmtp",";p_{T,tag};p_{T,3rd}/p_{T,tag};Asymmetry",
-                        nx,&x[0],n3,&v3[0],na,&va[0]);
-  hdjmpftp = new TH3D("hdjmpftp",";p_{T,tag};p_{T,3rd}/p_{T,tag};MPF",
-                      nx,&x[0],n3,&v3[0],na,&va[0]);
-}
+  if (jp::do3dHistos) {
+    hdjasymm   = new TH3D("hdjasymm",";p_{T,ave};p_{T,3rd}/p_{T,ave};Asymmetry",nx,&x[0],n3,&v3[0],na,&va[0]);
+    hdjmpf     = new TH3D("hdjmpf",";p_{T,ave};p_{T,3rd}/p_{T,ave};MPF",nx,&x[0],n3,&v3[0],na,&va[0]);
+    hdjasymmtp = new TH3D("hdjasymmtp",";p_{T,tag};p_{T,3rd}/p_{T,tag};Asymmetry",nx,&x[0],n3,&v3[0],na,&va[0]);
+    hdjmpftp   = new TH3D("hdjmpftp",";p_{T,tag};p_{T,3rd}/p_{T,tag};MPF",nx,&x[0],n3,&v3[0],na,&va[0]);
+  }
   hr21 = new TH1D("hr21",";pt2/pt1",50,0.,1.);
   hr31 = new TH1D("hr31",";pt3/pt1",50,0.,1.);
   hr32 = new TH1D("hr32",";pt3/pt2",50,0.,1.);
@@ -355,7 +351,7 @@ if (jp::do3dHistos) {
 
   hyeta = new TH1D("hyeta","",100,-0.436/4.,0.436/4.);
   hyeta2 = new TH1D("hyeta2","",100,-0.436/4.,0.436/4.);
-  hetaphi = new TH2D("hetaphi","",100,-4.799,4.799,jp::nphis,jp::phirange);
+  hetaphi = new TH2D("hetaphi","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
 
   pdpt->Sumw2();
   pmpf->Sumw2();
