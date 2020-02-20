@@ -1876,7 +1876,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
           if (jp::debug) PrintInfo("..control plots of components",true);
 
-          // Composition stuff without T&P (according to triggers)
+          // Composition stuff without T&P (according to the triggers)
           assert(h->pncand); h->pncand->Fill(pt, jtn[jetidx], _w);
           assert(h->pnch); h->pnch->Fill(pt, jtnch[jetidx], _w);
           assert(h->pnne); h->pnne->Fill(pt, jtnne[jetidx]-jtnhe[jetidx], _w);
@@ -1902,12 +1902,13 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           h->pnpv->Fill(pt, npvgood, _w);
           h->pnpvall->Fill(pt, npv, _w);
           if (pt >= h->ptmin and pt < h->ptmax) { // Trigger pt range
-            h->htrpu2->Fill(trpu, _w);
+            h->htrpu->Fill(trpu, _w);
             //
             h->pnpvvsrho->Fill(rho, npvgood, _w);
             h->prhovsnpv->Fill(npvgood, rho, _w);
             h->prhovsnpvall->Fill(npv, rho, _w);
             h->h2rhovsnpv->Fill(npvgood, rho, _w);
+            h->h2trpuvsrho->Fill(trpu, rho, _w);
             //
             h->prhovstrpu->Fill(trpu, rho, _w);
             h->pnpvvstrpu->Fill(trpu, npvgood, _w);
@@ -1917,7 +1918,6 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
             if (jp::debug) PrintInfo("..control plots for topology",true);
 
-            h->htrpu->Fill(trpu, _w);
             if (h->ismcdir) {
               h->hitpu->Fill(itpu, _w);
               h->hootpuearly->Fill(ootpuearly, _w);
@@ -3261,7 +3261,7 @@ bool HistosFill::LoadLumi()
     // Skip if not STABLE BEAMS or wrong number of arguments
     // STABLE BEAMS alts: ADJUST, BEAM DUMP, FLAT TOP, INJECTION PHYSICS BEAM, N/A, RAMP DOWN, SETUP, SQUEEZE
     if (sscanf(s.c_str(),"%d:%d,%d:%d,%d/%d/%d %d:%d:%d,STABLE BEAMS,%f,%f,%f,%f,%s",
-        &rn,&fill,&ls,&ifoo, &ifoo,&ifoo,&ifoo,&ifoo,&ifoo,&ifoo, &energy,&del,&rec,&avgpu,sfoo)!=15)
+        &rn,&fill,&ls,&ifoo,&ifoo,&ifoo,&ifoo,&ifoo,&ifoo,&ifoo,&energy,&del,&rec,&avgpu,sfoo)!=15)
       skip=true;
 
     if (jp::debug) PrintInfo(Form("Run %d ls %d lumi %f/pb",rn,ls,rec*1e-6),true);

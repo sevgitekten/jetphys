@@ -92,8 +92,8 @@ HistosEta::HistosEta(TDirectory *dir, string trigname, double pttrg, double ptmi
 
   if (this->ismcdir) {
     // response closure
-    p3rvsnpv = new TProfile3D("p3rvsnpv","",jp::npts,&jp::ptrange[0],jp::netas,&jp::etarange[0],jp::npvs,&jp::pvrange[0]);
-    p3rvsnpvW = new TProfile3D("p3rvsnpvW","",jp::nwpts,&jp::wptrange[0],jp::nposetas,&jp::posetarange[0],jp::npvs,&jp::pvrange[0]);
+    p3rvsnpv = new TProfile3D("p3rvsnpv","",jp::npts,&jp::ptrange[0],jp::netas,&jp::etarange[0],jp::npvs,&jp::npvrange[0]);
+    p3rvsnpvW = new TProfile3D("p3rvsnpvW","",jp::nwpts,&jp::wptrange[0],jp::nposetas,&jp::posetarange[0],jp::npvs,&jp::npvrange[0]);
   }
 
   curdir->cd();
