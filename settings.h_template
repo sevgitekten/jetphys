@@ -46,7 +46,7 @@ using std::regex;
 #define NEWMODE
 
 namespace jp {
-  //{ BEGIN fundamental file settings
+  //{ BEGIN fundamental settings: these are the ones that need most often changes
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
   constexpr const char* type = "MC";
@@ -54,29 +54,14 @@ namespace jp {
   // This also affects the hot zone cuts done in MC.
   // The naming format is "RunX...", where X should be chosen correctly.
   constexpr const char* run = "RunF";
-  // The base location of files that are to be used. The user should check that the listings under "*path_" and "*files_" are found
-  // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
-  constexpr const char* filepath = "/work/jet_tuples/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
-
-  // Which run year are we analyzing?
-  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
-  const unsigned int yrs = 4; // Number of supported Run years
-
-  // Choose DT pileup era to be used with MC
+  // Choose DT pileup era to be used with MC (sometimes a combination of eras, so needs to be set separately)
   // 16: 0=BCD, 1=EF, 2=GH, 3=BCDEFGH
   // 17: 0=B, 1=C, 2=D, 3=E, 4=F, 5=BCDEF
   // 18: 0=A, 1=B, 2=C, 3=D, 4=ABCD, 5=ABC
   const unsigned int PUIOVidx = 4;
-  // Do we use pthat binned MC (if not, we use flat or htbinned)
-  constexpr bool pthatbins = false;
-  // Do we use ht binned MC (if not, we use flat; if yes pthatbins must be set to false)
-  constexpr bool htbins = false;
-
-  // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
-  constexpr bool dagfile1 = false; // true;
-  //} END fundamental settings
-
-  //{ BEGIN run settings
+  // Which run year are we analyzing?
+  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int yrs = 4; // Number of supported Run years
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
   //-1; // all
@@ -88,6 +73,18 @@ namespace jp {
   //1000000; // shortish test run
   //2500000; // shortish test run
   //10000000;
+
+  // Do we use pthat binned MC (if not, we use flat or htbinned)
+  constexpr bool pthatbins = false;
+  // Do we use ht binned MC (if not, we use flat; if yes pthatbins must be set to false)
+  constexpr bool htbins = false;
+
+  // The base location of files that are to be used. The user should check that the listings under "*path_" and "*files_" are found
+  // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
+  constexpr const char* filepath = "/work/jet_tuples/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
+  // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
+  constexpr bool dagfile1 = false; // true;
+
   // Number of events to skip from the beginning (for debugging)
   constexpr Long64_t nskip = 0;
   // Step between events
