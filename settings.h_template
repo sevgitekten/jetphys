@@ -39,41 +39,41 @@ using std::regex;
 #define DEBUG 0
 // Values 0/1. This flag should not be set to one, unless the user understands all the consequences.
 // This resembles "DEBUG" in the way that it acts as a safeguard against naive mistakes, but eats performance.
-#define EXPERT 1
+#define EXPERT 0
 // Values 0/1. Set to 1 to perform jet resolution correction in MC, 0 otherwise.
 #define JETRESO 0
 // New handling for triggers etc.; possibility to comment this out is left for legacy use.
 #define NEWMODE
 
 namespace jp {
-  // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
-  constexpr bool dagfile1 = false; // true;
-
   //{ BEGIN fundamental file settings
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
-  constexpr const char* type = "MC";
+  constexpr const char* type = "NU";
   // In case of DATA, choose run (all options given in dtfiles).
   // This also affects the hot zone cuts done in MC.
   // The naming format is "RunX...", where X should be chosen correctly.
-  constexpr const char* run = "RunG";
+  constexpr const char* run = "RunF";
   // The base location of files that are to be used. The user should check that the listings under "*path_" and "*files_" are found
   // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
   constexpr const char* filepath = "/work/jet_tuples/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
 
   // Which run year are we analyzing?
-  const unsigned int   yid = 0; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
-  const unsigned int   yrs = 4; // Number of supported Run years
+  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int yrs = 4; // Number of supported Run years
 
   // Choose DT pileup era to be used with MC
   // 16: 0=BCD, 1=EF, 2=GH, 3=BCDEFGH
-  // 17: 0=B, 1=C, 2=DE, 3=F, 4=BCDEF
+  // 17: 0=B, 1=C, 2=D, 3=E, 4=F, 5=BCDEF
   // 18: 0=A, 1=B, 2=C, 3=D, 4=ABCD, 5=ABC
   const unsigned int PUIOVidx = 4;
   // Do we use pthat binned MC (if not, we use flat or htbinned)
   constexpr bool pthatbins = false;
   // Do we use ht binned MC (if not, we use flat; if yes pthatbins must be set to false)
   constexpr bool htbins = false;
+
+  // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
+  constexpr bool dagfile1 = false; // true;
   //} END fundamental settings
 
   //{ BEGIN run settings
@@ -301,33 +301,46 @@ namespace jp {
 
   const array<string,yrs> jecgt_ = {
     "Summer16_07Aug2017",
-    "Fall17_17Nov2017",
+    "Summer19UL17",
+    "Summer19UL17",
+    //"Fall17_17Nov2017",
     //"Fall17_09May2018"
-    "Fall17_17Nov2017",
+    //"Fall17_17Nov2017",
     "Autumn18"
   };
   const string jecgt = jecgt_.at(yid);
   const array<string,yrs> jecversdt_ = {
     "_V20",
-    "_V32",
-    "_V32",
+    "_V1",
+    "_V1",
+    //"_V32",
+    //"_V32",
     "_V16h"
   };
   const string jecversdt = jecversdt_.at(yid);
   const array<string,yrs> jecversmc_ = {
     "_V20",
-    "_V32",
+    "_V1",
+    "_V1",
+    //"_V32",
     //"_V3", (RunF 09May2018)
-    "_V32",
+    //"_V32",
     "_V16h"
   };
   const string jecversmc = jecversmc_.at(yid);
+  const array<string,yrs> jectag_ = {
+    "",
+    "_SimpleL1",
+    "_SimpleL1",
+    ""
+  };
+  const string jectag = jectag_.at(yid);
 
   // Use Intervals-Of-Validity for JEC
   constexpr bool useIOV = true ;
   const array<vector<string>,yrs> IOVnames_ = {{
     {"BCD","EF","GH"},
-    {"B","C","DE","F"},
+    {"_RunB","_RunC","_RunD", "_RunE","_RunF"},
     {"F"}, // Run2017F is used for Run2017H (lowpu)
     {"_RunA","_RunB","_RunC","_RunD"}
   }};
@@ -335,7 +348,7 @@ namespace jp {
   // Trigger IOVs: the 1 for -inf and 400000 for inf (currently)
   const array<vector<array<int,2>>,yrs> IOVranges_ = {{
     { {272760,276811},{276831,278801},{278802,284045} }, // BCD, EF(early), (Flate)GH
-    { {297020,299329},{299337,302029},{302030,304826},{304911,306460} }, // B,C,DE,F: DE fused at 303434},{303435,
+    { {297020,299329},{299337,302029},{302030,303434},{303435,304826},{304911,306460} }, // B,C,DE,F: DE fused at 303434},{303435,
     { {306926,307082} }, // H
     { {315000,316999},{317000,319499},{319500,320399},{320400,400000} } // A,B,C,D
   }};
@@ -346,7 +359,7 @@ namespace jp {
 
     //{ BEGIN DT: Files
     constexpr const array<const char*,yrs> dtpath_ =
-      {"Data/2016/","Data/2017/RRMar18/","Data/2017/RRMar18/","Data/2018/"};
+      {"Data/2016/","Data/2017/UL/","Data/2017/UL/","Data/2018/"};
     constexpr const char* dtpath = dtpath_.at(yid);
 
     const array<map<string,vector<const char*>>,yrs> dtfiles_ = {{
@@ -396,15 +409,15 @@ namespace jp {
       },
       {
         {"P8M1",{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/2017/P8CP5/UL_FlatPthat_15to7000.root"}},
         {"HS1",{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2017/NuGun.root"}}
+        {"NuGun",{"MC/2017/UL_NuGun.root"}}
       },
       {
         {"P8M1",{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/2017/P8CP5/UL_FlatPthat_15to7000.root"}},
         {"HS1",{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2017/NuGun.root"}}
+        {"NuGun",{"MC/2017/UL_NuGun.root"}}
       },
       {
         {"P8CP5",{"MC/2018/P8CP5/FlatPthat_15to7000.root"}},
@@ -511,7 +524,7 @@ namespace jp {
 
     const array<vector<string>,yrs> PUIOVs_ = {{
       {"BCD/","EF/","GH/","BCDEFGH/","G/"},
-      {"B/","C/","DE/","F/","BCDEF/"},
+      {"B/","C/","D/","E/","F/","BCDEF/"},
       {"F/"}, // Run2017F is used for Run2017H (lowpu)
       {"A/","B/","C/","D/","ABCD/","ABC/"},
     }};

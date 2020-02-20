@@ -1631,7 +1631,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
               assert(h->pmuftp);      h->pmuftp->Fill(pttag, jtmuf[iprobe], _w);
               assert(h->phhftp);      h->phhftp->Fill(pttag, jthhf[iprobe], _w);
               assert(h->pheftp);      h->pheftp->Fill(pttag, jthef[iprobe], _w);
-              assert(h->ppuftp); h->ppuftp->Fill(pttag, jtbetaprime[iprobe]*jtchf[iprobe], _w);
+              assert(h->ppuftp); h->ppuftp->Fill(pttag, jtbetaprime[iprobe], _w);
 
               assert(h->ppt_probepertag); h->ppt_probepertag->Fill(pttag,ptprobe/pttag,_w);
 
@@ -1664,7 +1664,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                 assert(h->hmuftp);      h->hmuftp->Fill(jtmuf[iprobe], _w);
                 assert(h->hhhftp);      h->hhhftp->Fill(jthhf[iprobe], _w);
                 assert(h->hheftp);      h->hheftp->Fill(jthef[iprobe], _w);
-                assert(h->hpuftp);      h->hpuftp->Fill(jtbetaprime[iprobe]*jtchf[iprobe], _w);
+                assert(h->hpuftp);      h->hpuftp->Fill(jtbetaprime[iprobe], _w);
 
                 // Fractions vs number of primary vertices
                 assert(h->pncandtp_vsnpv);    h->pncandtp_vsnpv->Fill(npvgood, jtn[iprobe], _w);
@@ -1682,7 +1682,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                 assert(h->pmuftp_vsnpv);      h->pmuftp_vsnpv->Fill(npvgood, jtmuf[iprobe], _w);
                 assert(h->phhftp_vsnpv);      h->phhftp_vsnpv->Fill(npvgood, jthhf[iprobe], _w);
                 assert(h->pheftp_vsnpv);      h->pheftp_vsnpv->Fill(npvgood, jthef[iprobe], _w);
-                assert(h->ppuftp_vsnpv);      h->ppuftp_vsnpv->Fill(npvgood, jtbetaprime[iprobe]*jtchf[iprobe], _w);
+                assert(h->ppuftp_vsnpv);      h->ppuftp_vsnpv->Fill(npvgood, jtbetaprime[iprobe], _w);
 
                 // Fractions vs true pileup
                 assert(h->pchftp_vstrpu);      h->pchftp_vstrpu->Fill(trpu, jtchf[iprobe], _w);
@@ -1692,7 +1692,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                 assert(h->pmuftp_vstrpu);      h->pmuftp_vstrpu->Fill(trpu, jtmuf[iprobe], _w);
                 assert(h->phhftp_vstrpu);      h->phhftp_vstrpu->Fill(trpu, jthhf[iprobe], _w);
                 assert(h->pheftp_vstrpu);      h->pheftp_vstrpu->Fill(trpu, jthef[iprobe], _w);
-                assert(h->ppuftp_vstrpu);      h->ppuftp_vstrpu->Fill(trpu, jtbetaprime[iprobe]*jtchf[iprobe], _w);
+                assert(h->ppuftp_vstrpu);      h->ppuftp_vstrpu->Fill(trpu, jtbetaprime[iprobe], _w);
 
                 if (jp::doPhiHistos) {
                   if (etaprobe>0) {
@@ -1703,7 +1703,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                     assert(h->pmufpostp_vsphi);      h->pmufpostp_vsphi->Fill(phiprobe, jtmuf[iprobe], _w);
                     assert(h->phhfpostp_vsphi);      h->phhfpostp_vsphi->Fill(phiprobe, jthhf[iprobe], _w);
                     assert(h->phefpostp_vsphi);      h->phefpostp_vsphi->Fill(phiprobe, jthef[iprobe], _w);
-                    assert(h->ppufpostp_vsphi);      h->ppufpostp_vsphi->Fill(phiprobe, jtbetaprime[iprobe]*jtchf[iprobe], _w);
+                    assert(h->ppufpostp_vsphi);      h->ppufpostp_vsphi->Fill(phiprobe, jtbetaprime[iprobe], _w);
                   } else {
                     assert(h->pchfnegtp_vsphi);      h->pchfnegtp_vsphi->Fill(phiprobe, jtchf[iprobe], _w);
                     assert(h->pnefnegtp_vsphi);      h->pnefnegtp_vsphi->Fill(phiprobe, (jtnef[iprobe]-jthef[iprobe]), _w);
@@ -1712,7 +1712,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                     assert(h->pmufnegtp_vsphi);      h->pmufnegtp_vsphi->Fill(phiprobe, jtmuf[iprobe], _w);
                     assert(h->phhfnegtp_vsphi);      h->phhfnegtp_vsphi->Fill(phiprobe, jthhf[iprobe], _w);
                     assert(h->phefnegtp_vsphi);      h->phefnegtp_vsphi->Fill(phiprobe, jthef[iprobe], _w);
-                    assert(h->ppufnegtp_vsphi);      h->ppufnegtp_vsphi->Fill(phiprobe, jtbetaprime[iprobe]*jtchf[iprobe], _w);
+                    assert(h->ppufnegtp_vsphi);      h->ppufnegtp_vsphi->Fill(phiprobe, jtbetaprime[iprobe], _w);
                   }
                 }
               } // Tag fires trigger
@@ -1893,7 +1893,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           assert(h->pmuf); h->pmuf->Fill(pt, jtmuf[jetidx], _w);
           assert(h->phhf); h->phhf->Fill(pt, jthhf[jetidx], _w);
           assert(h->phhf); h->phef->Fill(pt, jthef[jetidx], _w);
-          assert(h->ppuf); h->ppuf->Fill(pt, jtbetaprime[jetidx]*jtchf[jetidx], _w);
+          assert(h->ppuf); h->ppuf->Fill(pt, jtbetaprime[jetidx], _w);
 
           // control plots for topology (JEC)
           h->pa->Fill(pt, jta[jetidx], _w);
@@ -1965,7 +1965,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             h->hmuf->Fill(jtmuf[jetidx], _w);
             h->hhhf->Fill(jthhf[jetidx], _w);
             h->hhef->Fill(jthef[jetidx], _w);
-            h->hpuf->Fill(jtbetaprime[jetidx]*jtchf[jetidx], _w);
+            h->hpuf->Fill(jtbetaprime[jetidx], _w);
 
             h->hyeta->Fill(TMath::Sign(y-eta,y), _w);
             h->hyeta2->Fill(y-eta, _w);
@@ -2327,7 +2327,7 @@ void HistosFill::FillSingleEta(HistosEta *h, Float_t* _pt, Float_t* _eta, Float_
             assert(h->pmuftp_vseta); h->pmuftp_vseta->Fill(etaprobe, jtmuf[iprobe], _w);
             assert(h->phhftp_vseta); h->phhftp_vseta->Fill(etaprobe, jthhf[iprobe], _w);
             assert(h->pheftp_vseta); h->pheftp_vseta->Fill(etaprobe, jthef[iprobe], _w);
-            assert(h->ppuftp_vseta); h->ppuftp_vseta->Fill(etaprobe, jtbetaprime[iprobe]*jtchf[iprobe], _w);
+            assert(h->ppuftp_vseta); h->ppuftp_vseta->Fill(etaprobe, jtbetaprime[iprobe], _w);
           } // select pt bin for profiles vseta
         } // etatag < 1.3
       } // tag & probe
