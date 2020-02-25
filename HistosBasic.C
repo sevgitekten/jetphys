@@ -109,7 +109,7 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   punc = new TProfile("punc","",nx,&x[0]);
   htrpu = new TH1D("htrpu","",jp::npvs,0,jp::npvs); // for PU reweighing
   hnpvgood = new TH1D("hnpvgood","",jp::npvs,0,jp::npvs);
-  hrho = new TH1D("hrho","",2*jp::npvs,0,jp::npvs);
+  hrho = new TH1D("hrho","",jp::npvs,0,jp::npvs);
 
   // JEC monitoring
   pjec_l1 = new TProfile("pjec_l1","",nx,&x[0]);
@@ -124,10 +124,10 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   pnpvall = new TProfile("pnpvall","",nx,&x[0]);
   prho = new TProfile("prho","",nx,&x[0]);
   prhovsnpv = new TProfile("prhovsnpv","",jp::npvs,0,jp::npvs);
-  pnpvvsrho = new TProfile("pnpvvsrho","",2*jp::npvs,0,jp::npvs);
+  pnpvvsrho = new TProfile("pnpvvsrho","",jp::npvs,0,jp::npvs);
   prhovsnpvall = new TProfile("prhovsnpvall","",jp::npvs,0,jp::npvs);
-  h2rhovsnpv = new TH2D("h2rhovsnpv","",2*jp::npvs,0,jp::npvs,jp::npvs,0,jp::npvs);
-  h2trpuvsrho = new TH2D("h2trpuvsrho","",jp::npvs,0,jp::npvs,2*jp::npvs,0,jp::npvs);
+  h2rhovsnpv = new TH2D("h2rhovsnpv","",jp::npvs,0,jp::npvs,jp::npvs,0,jp::npvs);
+  h2trpuvsrho = new TH2D("h2trpuvsrho","",jp::npvs,0,jp::npvs,jp::npvs,0,jp::npvs);
   //
   prhovstrpu = new TProfile("prhovstrpu","",jp::npvs,0,jp::npvs);
   pnpvvstrpu = new TProfile("pnpvvstrpu","",jp::npvs,0,jp::npvs);
