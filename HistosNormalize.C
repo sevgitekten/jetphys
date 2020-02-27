@@ -87,15 +87,15 @@ void HistosNormalize(string type = "")
         }
         ++eraNo;
       }
-      if (eraIdx>=jp::triglumiera.size()) {
-        cout << "Era index out of range! Use exact era labels for data! Currently using " << jp::run << endl;
-        return;
-      }
       if (eraIdx==-1) {
         cout << "Could not locate the given era! " << jp::run << " :(" << endl;
         return;
       }
-      cout << "Using weights according to the run era " << jp::run << "! << endl;
+      if (size_t(eraIdx)>=jp::triglumiera.size()) {
+        cout << "Era index out of range! Use exact era labels for data! Currently using " << jp::run << endl;
+        return;
+      }
+      cout << "Using weights according to the run era " << jp::run << "!" << endl;
     }
     auto &lumiHandle = (jp::usetriglumiera ? jp::triglumiera[eraIdx] : jp::triglumi);
     for (unsigned int i = 0; i < jp::notrigs; ++i) {

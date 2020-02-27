@@ -121,7 +121,7 @@ bool HistosFill::Init(TChain *tree)
   fChain->SetBranchAddress("PFMet_.et_", &PFMet__et_);
   fChain->SetBranchAddress("PFMet_.sumEt_", &PFMet__sumEt_);
   fChain->SetBranchAddress("PFMet_.phi_", &PFMet__phi_);
-  if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchAddress("FilterActive_", &FilterDecision_);
+  if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchAddress("FilterDecision_", &FilterDecision_);
   fChain->SetBranchAddress("TriggerDecision_", &TriggerDecision_);
   fChain->SetBranchAddress("L1Prescale_", &L1Prescale_);
   fChain->SetBranchAddress("HLTPrescale_", &HLTPrescale_);
@@ -252,7 +252,7 @@ bool HistosFill::Init(TChain *tree)
     fChain->SetBranchStatus("PFMetT0T1_.sumEt_",1); // metsumet
 #endif
 
-    if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchStatus("FilterActive_",1);
+    if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchStatus("FilterDecision_",1);
     fChain->SetBranchStatus("TriggerDecision_",1);
     fChain->SetBranchStatus("L1Prescale_",1);
     fChain->SetBranchStatus("HLTPrescale_",1);
@@ -808,7 +808,7 @@ bool HistosFill::AcceptEvent()
 
 
   if (jp::fetchMETFilters) {
-    if (jp::isnu or FilterDecision_.size()==0) ++_cnt["03METFlt"];
+    if (FilterDecision_.size()==0) ++_cnt["03METFlt"];
     else {
       // If we perform MET filtering, any filter firing will cause the event to be discarded.
       if (jp::doMETFiltering) return false;
@@ -1082,6 +1082,7 @@ bool HistosFill::AcceptEvent()
     // Always insert the generic mc trigger
     if (jp::debug) PrintInfo("Entering PU weight calculation!",true);
 #ifdef NEWMODE
+      // The PU gen jets are not saved => impossible to do this in SingleNeutrino
     if (_pass and (jtgenidx[i0]!=-1 or jp::isnu)) ++_cnt["07mcgenjet"];
     else return false;
 #endif
@@ -1216,11 +1217,11 @@ bool HistosFill::AcceptEvent()
   _w = _w0;
 
   // TODO: implement reweighing for k-factor (NLO*NP/LOMC)
-
   if (jp::ismc) {
     ///////////////
     // Gen Jet loop
     ///////////////
+    // For SingleNeutrino and the HT binned MG samples, emulate PtHat using a jet ht sum.
     bool doht = jp::isnu or (jp::htbins and !jp::pthatbins);
     double htsum = 0.0;
     for (int gjetidx = 0; gjetidx != gen_njt; ++gjetidx) {
@@ -1247,16 +1248,14 @@ bool HistosFill::AcceptEvent()
       else
         gen_partonflavor[gjetidx] = -1;
     } // for gjetidx
-    // In NuGun samples, we don't have gen jets
     for (int jetidx = 0; jetidx != njt; ++jetidx) htsum += jtpt[jetidx];
     if (doht) pthat = htsum/2.0;
 
     // Check if overweight PU event
     if (_pass) {
-      if (!jp::isnu) {
-        if (jtpt[i0] < 1.5*jtgenpt[i0] or jp::isnu) ++_cnt["09ptgenlim"];
-        else _pass = false;
-      }
+      // The PU gen jets are not saved => impossible to do this in SingleNeutrino
+      if (jtpt[i0] < 1.5*jtgenpt[i0] or jp::isnu) ++_cnt["09ptgenlim"];
+      else _pass = false;
 
       if (_pass) {
         if (doht) {
@@ -2282,6 +2281,14 @@ void HistosFill::FillSingleEta(HistosEta *h, Float_t* _pt, Float_t* _eta, Float_
         if (fabs(etatag) < 1.3) { // Tag required to be in the barrel region
           double pttag = jtpt[itag];
           double ptprobe = _pt[iprobe];
+          // Special PU studies
+          if (pttag>50 and pttag<60) {
+            h->hnpvall_pt50to60->Fill(npv, _w);
+            h->hnpv_pt50to60->Fill(npvgood, _w);
+            h->hrho_pt50to60->Fill(rho, _w);
+            h->hpuf_pt50to60->Fill(jtbetaprime[iprobe], _w);
+            h->hchf_pt50to60->Fill(jtchf[iprobe], _w);
+          }
           if (jp::do3dHistos) {
             double asymm = (ptprobe - pttag)/(2*ptave);
             double mpf = met1*cos(DPhi(metphi1,_phi[itag]))/(2*ptave);
@@ -2513,7 +2520,7 @@ void HistosFill::FillSingleMC(HistosMC *h,  Float_t* _recopt,  Float_t* _genpt,
       } // itag
     } // dphi > 2.7
   } // two or more jets, phase space
-} // FillSingleEta
+} // FillSingleMC
 
 
 // Write and delete histograms
