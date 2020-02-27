@@ -30,14 +30,11 @@ namespace tools {
 
   // vector manipulation
   std::vector<double> make_vector(double *a, int na);
-  double interpolate(double x, std::vector<double> const& vx,
-		     std::vector<double> const& vy);
+  double interpolate(double x, std::vector<double> const& vx, std::vector<double> const& vy);
 
   // Graph manipulation
-  void GetPoint(TGraphErrors *g, int n, double &x, double &y,
-		double &ex, double &ey);
-  void SetPoint(TGraphErrors *g, int n, double x, double y,
-		double ex, double ey);
+  void GetPoint(TGraphErrors *g, int n, double &x, double &y, double &ex, double &ey);
+  void SetPoint(TGraphErrors *g, int n, double x, double y, double ex, double ey);
   TGraphErrors *makeGraph(TH1 *hx, TH1 *hy, double scale = 1.);
   TGraphErrors *ratioGraphs(TGraphErrors *g1, TGraphErrors *g2, double erry=1.);
   TGraphErrors *ratioGraphs(TGraphErrors *g1, TF1 *f2);

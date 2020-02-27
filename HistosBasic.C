@@ -297,8 +297,6 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   hselpt = new TH1D("hselpt","",nx,&x[0]);
   hy = new TH1D("hy","",jp::netas,jp::etarange); // May 11
   hy2 = new TH1D("hy2","",jp::netas,jp::etarange);
-  heta = new TH1D("heta","",jp::netas,jp::etarange);
-  heta2 = new TH1D("heta2","",jp::netas,jp::etarange);
   hphi = new TH1D("hphi","",jp::nphis,jp::phirange);
   hdphi = new TH1D("hdphi","",jp::nwposphis,jp::wposphirange);
   hdpt = new TH1D("hdpt","",100,0.,1.);
@@ -351,7 +349,6 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
 
   hyeta = new TH1D("hyeta","",100,-0.436/4.,0.436/4.);
   hyeta2 = new TH1D("hyeta2","",100,-0.436/4.,0.436/4.);
-  hetaphi = new TH2D("hetaphi","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
 
   pdpt->Sumw2();
   pmpf->Sumw2();

@@ -8,7 +8,7 @@
 
 
 // Set the shortcuts for variables
-HistosFill::HistosFill(TChain *tree) :
+HistosFill::HistosFill(TChain *tree, int eraIdx) :
   pthat(EvtHdr__mPthat),
   weight(EvtHdr__mWeight),
   run(EvtHdr__mRun),
@@ -42,6 +42,7 @@ HistosFill::HistosFill(TChain *tree) :
 {
   assert(tree);
   _initsuccess = Init(tree);
+  _eraIdx = eraIdx;
 }
 
 
@@ -120,7 +121,7 @@ bool HistosFill::Init(TChain *tree)
   fChain->SetBranchAddress("PFMet_.et_", &PFMet__et_);
   fChain->SetBranchAddress("PFMet_.sumEt_", &PFMet__sumEt_);
   fChain->SetBranchAddress("PFMet_.phi_", &PFMet__phi_);
-  if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchAddress("FilterDecision_", &FilterDecision_);
+  if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchAddress("FilterActive_", &FilterDecision_);
   fChain->SetBranchAddress("TriggerDecision_", &TriggerDecision_);
   fChain->SetBranchAddress("L1Prescale_", &L1Prescale_);
   fChain->SetBranchAddress("HLTPrescale_", &HLTPrescale_);
@@ -251,7 +252,7 @@ bool HistosFill::Init(TChain *tree)
     fChain->SetBranchStatus("PFMetT0T1_.sumEt_",1); // metsumet
 #endif
 
-    if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchStatus("FilterDecision_",1);
+    if (jp::fetchMETFilters and jp::doMETFiltering) fChain->SetBranchStatus("FilterActive_",1);
     fChain->SetBranchStatus("TriggerDecision_",1);
     fChain->SetBranchStatus("L1Prescale_",1);
     fChain->SetBranchStatus("HLTPrescale_",1);
@@ -533,28 +534,12 @@ bool HistosFill::PreRun()
   PrintInfo(Form("%s Hot zone exclusion in eta-phi plane",jp::doVetoHot ? "Doing" : "Not doing"));
   *ferr << endl;
 
-  _eraIdx = -1;
   if (jp::isdt) {
     PrintInfo(Form("%s additional JSON selection",jp::dojson ? "Applying" : "Not applying"));
     PrintInfo(Form("%s luminosities.",jp::dolumi ? "Recalculating" : "Not recalculating"));
     PrintInfo(Form("%s additional run-level histograms",jp::doRunHistos ? "Storing" : "Not storing"));
     PrintInfo(Form("%s basic set of histograms",jp::doBasicHistos ? "Storing" : "Not storing"));
     PrintInfo(Form("%s histograms with a full eta-range",jp::doEtaHistos ? "Storing" : "Not storing"));
-    // Find out era index
-    int eraNo = 0;
-    for (auto &eraMatch : jp::eras) {
-      if (std::regex_search(jp::run,eraMatch)) {
-        _eraIdx = eraNo;
-        break;
-      }
-      ++eraNo;
-    }
-    if (_eraIdx==-1) {
-      PrintInfo(Form("Era not found for %s. Aborting!",jp::run),true);
-      return false;
-    } else {
-      PrintInfo(Form("Matched %s with era index %d!",jp::run,_eraIdx),true);
-    }
   } else if (jp::ismc) {
     PrintInfo(Form("%s pileup profile in MC to data",jp::reweighPU ? "Reweighting" : "Not reweighting"));
     PrintInfo(Form("Processing %s samples", jp::pthatbins ? "pThat binned" : "\"flat\""));
@@ -650,24 +635,24 @@ bool HistosFill::PreRun()
     string HotYr = "";
     if (jp::yid==0) {
       HotYr = "16";
-      if      (std::regex_search(jp::run,regex("^Run[BCD]"))) HotTag = "BCD";
-      else if (std::regex_search(jp::run,regex("^RunE")))     HotTag = "EF";
-      else if (std::regex_search(jp::run,regex("^RunFe")))    HotTag = "EF";
-      else if (std::regex_search(jp::run,regex("^RunFl")))    HotTag = "GH";
-      else if (std::regex_search(jp::run,regex("^Run[GH]")))  HotTag = "GH";
+      if      (std::regex_search(jp::run,regex("^[BCD]"))) HotTag = "BCD";
+      else if (std::regex_search(jp::run,regex("^E")))     HotTag = "EF";
+      else if (std::regex_search(jp::run,regex("^Fe")))    HotTag = "EF";
+      else if (std::regex_search(jp::run,regex("^Fl")))    HotTag = "GH";
+      else if (std::regex_search(jp::run,regex("^[GH]")))  HotTag = "GH";
     } else if (jp::yid==1 or jp::yid==2) {
       HotYr = "17";
-      if      (std::regex_search(jp::run,regex("^RunB"))) HotTag = "B";
-      else if (std::regex_search(jp::run,regex("^RunC"))) HotTag = "C";
-      else if (std::regex_search(jp::run,regex("^RunD"))) HotTag = "D";
-      else if (std::regex_search(jp::run,regex("^RunE"))) HotTag = "E";
-      else if (std::regex_search(jp::run,regex("^RunF"))) HotTag = "F";
+      if      (std::regex_search(jp::run,regex("^B"))) HotTag = "B";
+      else if (std::regex_search(jp::run,regex("^C"))) HotTag = "C";
+      else if (std::regex_search(jp::run,regex("^D"))) HotTag = "D";
+      else if (std::regex_search(jp::run,regex("^E"))) HotTag = "E";
+      else if (std::regex_search(jp::run,regex("^F"))) HotTag = "F";
     } else if (jp::yid==3) {
       HotYr = "18";
-      if      (std::regex_search(jp::run,regex("^RunA"))) HotTag = "A";
-      else if (std::regex_search(jp::run,regex("^RunB"))) HotTag = "B";
-      else if (std::regex_search(jp::run,regex("^RunC"))) HotTag = "C";
-      else if (std::regex_search(jp::run,regex("^RunD"))) HotTag = "D";
+      if      (std::regex_search(jp::run,regex("^A"))) HotTag = "A";
+      else if (std::regex_search(jp::run,regex("^B"))) HotTag = "B";
+      else if (std::regex_search(jp::run,regex("^C"))) HotTag = "C";
+      else if (std::regex_search(jp::run,regex("^D"))) HotTag = "D";
     }
     assert(HotTag!="");
     fHotExcl = new TFile(Form("rootfiles/hotjets-%srun%s.root",HotYr.c_str(),HotTag.c_str()),"READ");
@@ -1100,6 +1085,8 @@ bool HistosFill::AcceptEvent()
     if (_pass and (jtgenidx[i0]!=-1 or jp::isnu)) ++_cnt["07mcgenjet"];
     else return false;
 #endif
+    // In SingleNeutrino, there is one extra PV. See also LoadPuProfiles
+    double PUVal = jp::isnu ? trpu-1 : trpu;
     if (jp::domctrigsim and njt>0) {
       // Only add the greatest trigger present
       // Calculate trigger PU weight
@@ -1115,7 +1102,7 @@ bool HistosFill::AcceptEvent()
 
           // Reweight in-time pile-up
           if (jp::reweighPU) {
-            int k = _pudist[trg_name]->FindBin(trpu);
+            int k = _pudist[trg_name]->FindBin(PUVal);
             wtrue = _pudist[trg_name]->GetBinContent(k);
             _wt[trg_name] *= wtrue;
             wcond |= wtrue!=0;
@@ -1137,7 +1124,7 @@ bool HistosFill::AcceptEvent()
     _trigs.insert("mc");
     _wt["mc"] = 1.0;
     if (jp::reweighPU) {
-      int k = _pudist[jp::reftrig]->FindBin(trpu);
+      int k = _pudist[jp::reftrig]->FindBin(PUVal);
       _wt["mc"] *= _pudist[jp::reftrig]->GetBinContent(k);
     }
   } else if (jp::isdt) {
@@ -1931,8 +1918,6 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
             h->hmass->Fill(mass/energy, _w);
             h->hy->Fill(y, _w);
             h->hy2->Fill(y, _w);
-            h->heta->Fill(eta, _w);
-            h->heta2->Fill(eta, _w);
             h->hphi->Fill(phi, _w);
             h->hdphi->Fill(dphi, _w);
             h->hdpt->Fill(dpt, _w);
@@ -1969,7 +1954,6 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
             h->hyeta->Fill(TMath::Sign(y-eta,y), _w);
             h->hyeta2->Fill(y-eta, _w);
-            h->hetaphi->Fill(eta, phi, _w);
           } // within trigger pT range
 
           // closure plots for JEC
@@ -2089,10 +2073,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                    h->p2r_g_g->Fill(ptgen, r, _w);
                    h->p2r_g_ruw->Fill(pt, r); // unweighted!
                    h->p2r_g_guw->Fill(ptgen, r); // unweighted!
-
               }
-
-
 
               // Rapidity closure
               h->h2dy_r->Fill(pt, dy, _w);
@@ -2308,10 +2289,10 @@ void HistosFill::FillSingleEta(HistosEta *h, Float_t* _pt, Float_t* _eta, Float_
               float alphasel = h->alpharange[alphaidx];
               if (alpha<alphasel) {
                 // Val 10 = excluded, -10 = ok
-                h->hdjasymm[alphaidx]  ->Fill(ptave,   etaprobe, asymm, _w);
-                h->hdjmpf[alphaidx]    ->Fill(ptave,   etaprobe, mpf  , _w);
-                h->hdjasymmtp[alphaidx]->Fill(pttag,   etaprobe, asymm, _w);
-                h->hdjmpftp[alphaidx]  ->Fill(pttag,   etaprobe, mpf  , _w);
+                h->hdjasymm[alphaidx]  ->Fill(ptave, etaprobe, asymm, _w);
+                h->hdjmpf[alphaidx]    ->Fill(ptave, etaprobe, mpf  , _w);
+                h->hdjasymmtp[alphaidx]->Fill(pttag, etaprobe, asymm, _w);
+                h->hdjmpftp[alphaidx]  ->Fill(pttag, etaprobe, mpf  , _w);
                 //h->hdjasymmpt[alphaidx]->Fill(ptprobe, etaprobe, asymm, _w);
                 //h->hdjmpfpt[alphaidx]  ->Fill(ptprobe, etaprobe, mpf  , _w);
               }
@@ -2333,6 +2314,18 @@ void HistosFill::FillSingleEta(HistosEta *h, Float_t* _pt, Float_t* _eta, Float_
       } // tag & probe
     } // dphi > 2.7
   } // ids
+
+  for (int jetidx = 0; jetidx != njt; ++jetidx) {
+    // adapt variable names from different trees
+    double pt = jtpt[jetidx];
+
+    if (pt>jp::recopt and _pass_qcdmet and _jetids[jetidx] and pt >= h->ptmin and pt < h->ptmax) {
+      double eta = jteta[jetidx];
+      h->heta->Fill(eta, _w);
+      double phi = jtphi[jetidx];
+      h->hetaphi->Fill(eta, phi, _w);
+    }
+  }
 
   if (h->ismcdir and _pass_qcdmet) {
     for (int jetidx = 0; jetidx != njt; ++jetidx) {
@@ -3321,11 +3314,7 @@ bool HistosFill::LoadLumi()
 
 bool HistosFill::LoadPuProfiles()
 {
-  if (jp::PUIOVidx>=jp::PUIOVs.size()) {
-    PrintInfo(Form("Selected PU IOV too great (%u vs. %zu), check the value of jp::PUIOVidx!",jp::PUIOVidx,jp::PUIOVs.size()));
-    return false;
-  }
-  string datafile = jp::pudtpath + jp::PUIOVs[jp::PUIOVidx] + "pileup_DT.root";
+  string datafile = jp::pudtpath + jp::run + "/pileup_DT.root";
   string mcfile   = jp::pumcpath;
   if (jp::isnu)      mcfile += "pileup_NU.root";
   else if (jp::ishw) mcfile += jp::puhwfile;

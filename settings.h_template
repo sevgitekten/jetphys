@@ -50,18 +50,14 @@ namespace jp {
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
   constexpr const char* type = "MC";
-  // In case of DATA, choose run (all options given in dtfiles).
-  // This also affects the hot zone cuts done in MC.
-  // The naming format is "RunX...", where X should be chosen correctly.
-  constexpr const char* run = "RunF";
-  // Choose DT pileup era to be used with MC (sometimes a combination of eras, so needs to be set separately)
-  // 16: 0=BCD, 1=EF, 2=GH, 3=BCDEFGH
-  // 17: 0=B, 1=C, 2=D, 3=E, 4=F, 5=BCDEF
-  // 18: 0=A, 1=B, 2=C, 3=D, 4=ABCD, 5=ABC
-  const unsigned int PUIOVidx = 4;
+  // For DATA, set dataset, for MC, set PU. Also chooses hot zone cuts. See eras_ for further info.
+  // 16: B/C/D/E/Fe/Fl/G/H/BCD/EF/GH/BCDEFGH
+  // 17: B/C/D/E/F/BCDEF
+  // 17 specials: H*Fwd/H,
+  // 18: A/B/C/D/ABCD
+  const string run = "F";
   // Which run year are we analyzing?
   const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
-  const unsigned int yrs = 4; // Number of supported Run years
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
   //-1; // all
@@ -91,6 +87,8 @@ namespace jp {
   constexpr Long64_t skim = 0; // "prescale", off if zero
   // Only load selected branches (large speedup, but be careful!)
   constexpr bool quick = true;
+  // Number of supported Run years
+  const unsigned int yrs = 4;
   //} END run settings
 
   //{ BEGIN A group of constexpr switches and their settings to turn some parts of the code on/off
@@ -111,9 +109,10 @@ namespace jp {
   // Toggle development histos
   constexpr bool doMpfHistos = false;
 
-  // In the newest ntuples (mid 2019 onwards), MET filters may be saved separately, as before these
-  constexpr bool fetchMETFilters = false;
-  constexpr bool doMETFiltering = false;
+  // In the newest ntuples (19 onwards), MET filters may be saved separately, as before these.
+  // Hence, it is essential to keep the MET filtering manually on (except if the user knows what (s)he is doing).
+  constexpr bool fetchMETFilters = true;
+  constexpr bool doMETFiltering  = true;
 
   //{ BEGIN Special HistosFill analyses that are not typically needed
   // Eta phi exclusion due to hot ECAL regions (produced with dataequality.C).
@@ -206,14 +205,20 @@ namespace jp {
   }}; // in /ub
   const vector<double> triglumi = triglumi_.at(yid);
 
-  // These are used to find out which year and which era we are living in
-  const array<vector<regex>,yrs> eras_ = {{
-    {regex("^RunB"),regex("^RunC"),regex("^RunD"),regex("^RunE"),regex("^RunFe"),regex("^RunFl"),regex("^RunG"),regex("^RunH")},
-    {regex("^RunB"),regex("^RunC"),regex("^RunD"),regex("^RunE"),regex("^RunF")},
-    {regex("^RunH[a-zA-Z0-9_]*Fwd$"),regex("^RunH")},
-    {regex("^RunA"),regex("^RunB"),regex("^RunC"),regex("^RunD")}
+  // These are used generally for specifying which run is being analyzed.
+  // For data, these determine the file (dtfiles_) and luminosity (triglumiera) that is to be used.
+  // Hence, the combinations (e.g. BCD) are meaningless for data, and will not run.
+  // For MC, these determine the pileup file that is to be used.
+  // For both data and MC, these determine the hot zone map to be used.
+  // See: run.
+  const array<vector<string>,yrs> eras_ = {{
+    {"B","C","D","E","Fe","Fl","G","H","BCD","EF","GH","BCDEFGH"},
+    {"B","C","D","E","F","BCDEF"},
+    {"H[a-zA-Z0-9_]*Fwd","H"},
+    {"A","B","C","D","ABCD"}
   }};
-  const vector<regex> eras = eras_.at(yid);
+  const vector<string> eras = eras_.at(yid);
+
   // CAUTION: The next are expert options and better to leave untouched if one does not know exactly what is going on.
   // Overrides the above routines with a more intricate weighting scheme. When this is on, output-*1.root is weighted to match the era results.
   // In the version treatment we give the weights directly to induce better comparability
@@ -345,7 +350,7 @@ namespace jp {
   // Trigger IOVs: the 1 for -inf and 400000 for inf (currently)
   const array<vector<array<int,2>>,yrs> IOVranges_ = {{
     { {272760,276811},{276831,278801},{278802,284045} }, // BCD, EF(early), (Flate)GH
-    { {297020,299329},{299337,302029},{302030,303434},{303435,304826},{304911,306460} }, // B,C,DE,F: DE fused at 303434},{303435,
+    { {297020,299329},{299337,302029},{302030,303434},{303435,304826},{304911,306460} }, // B,C,D,E,F: DE fused at 303434},{303435,
     { {306926,307082} }, // H
     { {315000,316999},{317000,319499},{319500,320399},{320400,400000} } // A,B,C,D
   }};
@@ -359,66 +364,62 @@ namespace jp {
       {"Data/2016/","Data/2017/UL/","Data/2017/UL/","Data/2018/"};
     constexpr const char* dtpath = dtpath_.at(yid);
 
-    const array<map<string,vector<const char*>>,yrs> dtfiles_ = {{
+    const array<vector<vector<string>>,yrs> dtfiles_ = {{
       {
-        {"RunB" ,{"B_ZB.root", "B.root"}},
-        {"RunC" ,{"C_ZB.root", "C.root"}},
-        {"RunD" ,{"D_ZB.root", "D.root"}},
-        {"RunE" ,{"E_ZB.root", "E.root"}},
-        {"RunFe",{"Fe_ZB.root", "Fe.root"}},
-        {"RunFl",{"Fl_ZB.root", "Fl.root"}},
-        {"RunG" ,{"G_ZB.root", "G.root"}},
-        {"RunH" ,{"H_ZB.root", "H.root"}}
+        {"B_ZB.root",  "B.root"},
+        {"C_ZB.root",  "C.root"},
+        {"D_ZB.root",  "D.root"},
+        {"E_ZB.root",  "E.root"},
+        {"Fe_ZB.root", "Fe.root"},
+        {"Fl_ZB.root", "Fl.root"},
+        {"G_ZB.root",  "G.root"},
+        {"H_ZB.root",  "H.root"}
       },
       {
-        {"RunB",{"B_ZB.root", "B.root"}},
-        {"RunC",{"C_ZB.root", "C.root"}},
-        {"RunD",{"D_ZB.root", "D.root"}},
-        {"RunE",{"E_ZB.root", "E.root"}},
-        {"RunF",{"F_ZB.root", "F.root"}}
+        {"B_ZB.root", "B.root"},
+        {"C_ZB.root", "C.root"},
+        {"D_ZB.root", "D.root"},
+        {"E_ZB.root", "E.root"},
+        {"F_ZB.root", "F.root"}
       },
       {
-        {"RunH_FSQJ2",{"H_FSQJ2.root"}},
-        {"RunH_FSQJ2Fwd",{"H_FSQJ2.root"}},
-        {"RunH_LEG",{"H_LEG.root"}},
-        {"RunH_LEGFwd",{"H_LEG.root"}},
-        {"RunH_HEG",{"H_HEG.root"}},
-        {"RunH_HEGFwd",{"H_HEG.root"}},
-        {"RunH_ZB",{"H_ZB.root"}}
+        {"H_FSQJ2.root"},
+        {"H_LEG.root"},
+        {"H_HEG.root"},
+        {"H_ZB.root"}
       },
       {
-        {"RunA",{"A.root"}},
-        //{"RunA",{"A_ZB.root", "A.root"}},
-        {"RunB",{"B_ZB.root", "B.root"}},
-        {"RunC",{"C_ZB.root","C.root"}},
-        {"RunD",{"D_ZB.root","D.root"}}
+        {"A_ZB.root", "A.root"},
+        {"B_ZB.root", "B.root"},
+        {"C_ZB.root","C.root"},
+        {"D_ZB.root","D.root"}
       }
     }};
-    const map<string,vector<const char*>> dtfiles = dtfiles_.at(yid);
+    const vector<vector<string>> dtfiles = dtfiles_.at(yid);
     //}
 
     //{ BEGIN MC: Generic options
     const array<map<string,vector<const char*>>,yrs> mcfiles_ = {{
       {
-        {"P8M1",{"MC/2016/P8M1/FlatPthat_15to7000.root"}},
-        {"HS1",{"MC/2016/HS1/FlatPthat_15to7000.root"}},
+        {"P8M1" ,{"MC/2016/P8M1/FlatPthat_15to7000.root"}},
+        {"HS1"  ,{"MC/2016/HS1/FlatPthat_15to7000.root"}},
         {"NuGun",{"MC/2016/NuGun.root"}}
       },
       {
-        {"P8M1",{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/2017/P8CP5/UL_FlatPthat_15to7000.root"}},
-        {"HS1",{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2017/UL_NuGun.root"}}
+        {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
+        {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
+        {"NuGun",{"MC/2017/NuGun.root"}}
       },
       {
-        {"P8M1",{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/2017/P8CP5/UL_FlatPthat_15to7000.root"}},
-        {"HS1",{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2017/UL_NuGun.root"}}
+        {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
+        {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
+        {"NuGun",{"MC/2017/NuGun.root"}}
       },
       {
         {"P8CP5",{"MC/2018/P8CP5/FlatPthat_15to7000.root"}},
-        {"H7",{"MC/2018/H7/FlatPthat_15to7000.root"}},
+        {"H7"   ,{"MC/2018/H7/FlatPthat_15to7000.root"}},
         {"NuGun",{"MC/2018/NuGun.root"}}
       }
     }};
@@ -429,8 +430,8 @@ namespace jp {
     // All the following values need to be updated, if other source tuples are used.
     const array<const char*,yrs> pthatpath_ = {
       "MC/2016/P8M1/",
-      "MC/2017/P8CP5/",
-      "MC/2017/P8CP5/",
+      "MC/UL17/P8CP5/",
+      "MC/UL17/P8CP5/",
       "MC/2018/P8CP5/"
     };
     const char* pthatpath = pthatpath_.at(yid);
@@ -518,14 +519,6 @@ namespace jp {
     //{ BEGIN MC pileup files for reweighting purposes. MC PU profile is reweighted to match Data.
     constexpr bool reweighPU = true;
     constexpr const double maxpu = 80.0;
-
-    const array<vector<string>,yrs> PUIOVs_ = {{
-      {"BCD/","EF/","GH/","BCDEFGH/","G/"},
-      {"B/","C/","D/","E/","F/","BCDEF/"},
-      {"F/"}, // Run2017F is used for Run2017H (lowpu)
-      {"A/","B/","C/","D/","ABCD/","ABC/"},
-    }};
-    const vector<string> PUIOVs = PUIOVs_.at(yid);
 
     const array<string,yrs> pudtpath_ =
       {"pileup/DT/16_LRRAUG/","pileup/DT/17_RRMAR/","pileup/DT/17_RRMAR/","pileup/DT/18_Impro/"};
@@ -785,7 +778,7 @@ namespace jp {
   constexpr bool gitinfo = !EXPERT;
 
   // Will assert be used in the programs? More than 1/3 reduction of run time if off.
-  #if EXPERT == 1
+  #if DEBUG == 1
   #define USEASSERT
   #endif
   //} END Important handles that should not be touched most of the time

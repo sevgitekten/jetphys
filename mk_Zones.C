@@ -9,7 +9,6 @@
 
 // Draw 2D plot of jet rates in (eta,phi) to spot issues
 void dataquality(bool overlayNew = true) {
-  const char *eras = "A";
   const double maxgoodsig = 3.; // How many rms values away is a good signal
   const double minsig = 3;
   const double maxsig = 8;
@@ -21,14 +20,14 @@ void dataquality(bool overlayNew = true) {
   const char *yeartag = yrtag.c_str();
 
   // Further overlay settings
-  string overlayName = Form("./hotjets-%srun%s.root",yeartag,eras);
+  //string overlayName = Form("./hotjets-%srun%s.root",yeartag,"DE");
+  string overlayName = Form("./hotjets-%srun%s.root",yeartag,jp:runLetter);
   bool overlayR = false;
   bool overlayM = false;
   bool overlayH = false;
 
   //string savedir = "rootfiles";
   string savedir = ".";
-
 
   const array<vector<double>,jp::yrs> thresholdcoeffs_ = {{
     {0.7,0.8,0.9,0.9,1.2,1.5}, // 2016
@@ -78,8 +77,9 @@ void dataquality(bool overlayNew = true) {
   TFile *fm = new TFile("./output-MC-1.root","READ");
   assert(fm && !fm->IsZombie());
 
-  TFile *fh = new TFile("./output-HW-1.root","READ");
-  assert(fh && !fh->IsZombie());
+  TFile *fh = 0;
+  //TFile *fh = new TFile("./output-HW-1.root","READ");
+  //assert(fh && !fh->IsZombie());
 
   TH2D *h2hotNew(0);
   TH2D *h2hotr(0);
@@ -136,9 +136,9 @@ void dataquality(bool overlayNew = true) {
   TH2D *h2hots[jp::notrigs], *h2colds[jp::notrigs];
   TH1D *hrmss[jp::notrigs], *hrms2s[jp::notrigs];
 
-  for (int dtmc = 0; dtmc <= 2; ++dtmc) {
+  for (int dtmc = 0; dtmc <= 1; ++dtmc) {
     TFile *f = (dtmc==0) ? fd : ((dtmc==1) ? fm : fh);
-    bool enterdir = f->cd("Standard");
+    bool enterdir = f->cd("FullEta_Reco");
     assert(enterdir);
     TDirectory *din = gDirectory;
     string nametag = (dtmc==0) ? "data" : ((dtmc==1) ? "mc" : "hw");
@@ -148,22 +148,13 @@ void dataquality(bool overlayNew = true) {
       const char *ctrg = jp::triggers[itrg];
       cout << strg << endl;
 
-      TH2D *h2 = 0;
-      for (int ieta = 0; ieta < neta; ++ieta) {
-        double etamin = etabins[ieta];
-        double etamax = etabins[ieta+1];
+      bool enterdir2 = gDirectory->cd(ctrg);
+      assert(enterdir2);
 
-        bool enterdir2 = din->cd(Form("Eta_%1.1f-%1.1f",etamin,etamax));
-        assert(enterdir2);
-        bool enterdir3 = gDirectory->cd(ctrg);
-        assert(enterdir3);
-        TDirectory *d = gDirectory;
+      TDirectory *d = gDirectory;
 
-        TH2D *h = (TH2D*)d->Get("hetaphi");
-        assert(h);
-        if (!h2) h2 = (TH2D*)h->Clone("h2");
-        else h2->Add(h);
-      } // for ieta
+      TH2D *h2 = (TH2D*)d->Get("hetaphi");
+      assert(h2);
 
       TH2D *h2hot = (TH2D*)h2->Clone("h2hot");
       TH2D *h2cold = (TH2D*)h2->Clone("h2cold");
@@ -348,24 +339,24 @@ void dataquality(bool overlayNew = true) {
     h2hotr->SetFillStyle(0);
     h2hotr->SetLineColor(kBlack);
     h2hotr->SetFillColor(kBlack);
-    h2hotr->GetXaxis()->SetRangeUser(-4.79,4.79);
-    h2hotr->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+    //h2hotr->GetXaxis()->SetRangeUser(-4.79,4.79);
+    //h2hotr->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
     h2hotr->GetZaxis()->SetRangeUser(0,10);
     h2hotm->SetFillStyle(0);
     h2hotm->SetLineColor(kRed);
-    h2hotm->GetXaxis()->SetRangeUser(-4.79,4.79);
-    h2hotm->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+    //h2hotm->GetXaxis()->SetRangeUser(-4.79,4.79);
+    //h2hotm->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
     h2hotm->GetZaxis()->SetRangeUser(0,10);
     h2hotHCAL->SetFillStyle(0);
     h2hotHCAL->SetLineColor(kMagenta+1);
-    h2hotHCAL->GetXaxis()->SetRangeUser(-4.79,4.79);
-    h2hotHCAL->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+    //h2hotHCAL->GetXaxis()->SetRangeUser(-4.79,4.79);
+    //h2hotHCAL->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
     h2hotHCAL->GetZaxis()->SetRangeUser(0,10);
     if (overlayNew) {
       h2hotNew->SetFillStyle(0);
       h2hotNew->SetLineColor(kBlack);
-      h2hotNew->GetXaxis()->SetRangeUser(-4.79,4.79);
-      h2hotNew->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+      //h2hotNew->GetXaxis()->SetRangeUser(-4.79,4.79);
+      //h2hotNew->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
       h2hotNew->GetZaxis()->SetRangeUser(0,10);
       h2hotNew->Scale(h2s[jp::notrigs-1]->Integral());
       //h2hotNew->Scale(10000*max(static_cast<double>(h2s[0]->Integral()),1.0));
@@ -387,8 +378,8 @@ void dataquality(bool overlayNew = true) {
       gPad->SetBottomMargin(0.10);
 
       h2s[itrg]->SetTitle("Number of jets;#eta_{jet};#phi_{jet}");
-      h2s[itrg]->GetXaxis()->SetRangeUser(-4.79,4.79);
-      h2s[itrg]->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+      //h2s[itrg]->GetXaxis()->SetRangeUser(-4.79,4.79);
+      //h2s[itrg]->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
 
       h2hotHCAL->SetFillStyle(0);
       h2s[itrg]->DrawClone("COLZ");
@@ -411,8 +402,8 @@ void dataquality(bool overlayNew = true) {
 
       h2as[itrg]->SetMinimum(-8);
       h2as[itrg]->SetMaximum(+8);
-      h2as[itrg]->GetXaxis()->SetRangeUser(-4.79,4.79);
-      h2as[itrg]->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+      //h2as[itrg]->GetXaxis()->SetRangeUser(-4.79,4.79);
+      //h2as[itrg]->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
 
       h2as[itrg]->DrawClone("COLZ");
       if (overlayR) h2hotr->DrawClone("SAMEBOX");
@@ -429,8 +420,8 @@ void dataquality(bool overlayNew = true) {
       h2bs[itrg]->SetTitle("Relative fluctuation;#eta_{jet};#phi_{jet}");
       h2bs[itrg]->SetMinimum(-1.0);
       h2bs[itrg]->SetMaximum(+1.0);
-      h2bs[itrg]->GetXaxis()->SetRangeUser(-4.79,4.79);
-      h2bs[itrg]->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+      //h2bs[itrg]->GetXaxis()->SetRangeUser(-4.79,4.79);
+      //h2bs[itrg]->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
 
       h2bs[itrg]->Draw("COLZ");
       if (overlayR) h2hotr->DrawClone("SAMEBOX");
@@ -460,8 +451,8 @@ void dataquality(bool overlayNew = true) {
     h2cumul->SetTitle("Cumulative h2as;#eta_{jet};#phi_{jet}");
     h2cumul->SetMinimum(-45);
     h2cumul->SetMaximum(+45);
-    h2cumul->GetXaxis()->SetRangeUser(-4.79,4.79);
-    h2cumul->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+    //h2cumul->GetXaxis()->SetRangeUser(-4.79,4.79);
+    //h2cumul->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
 
     h2cumul->Draw("COLZ");
     if (overlayR) h2hotr->DrawClone("SAMEBOX");
@@ -478,8 +469,8 @@ void dataquality(bool overlayNew = true) {
     h2hot->SetTitle("Cumulative h2hot;#eta_{jet};#phi_{jet}");
     h2hot->SetMinimum(-20);
     h2hot->SetMaximum(+20);
-    h2hot->GetXaxis()->SetRangeUser(-4.79,4.79);
-    h2hot->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+    //h2hot->GetXaxis()->SetRangeUser(-4.79,4.79);
+    //h2hot->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
 
     h2hot->DrawClone("COLZ");
     if (overlayR) h2hotr->DrawClone("SAMEBOX");
@@ -496,8 +487,8 @@ void dataquality(bool overlayNew = true) {
     h2cold->SetTitle("Cumulative h2cold;#eta_{jet};#phi_{jet}");
     h2cold->SetMinimum(-30);
     h2cold->SetMaximum(+30);
-    h2cold->GetXaxis()->SetRangeUser(-4.79,4.79);
-    h2cold->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+    //h2cold->GetXaxis()->SetRangeUser(-4.79,4.79);
+    //h2cold->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
 
     h2cold->DrawClone("COLZ");
     if (overlayR) h2hotr->DrawClone("SAMEBOX");
@@ -509,16 +500,16 @@ void dataquality(bool overlayNew = true) {
     c0hot->SaveAs(Form("pdf/%squality_hots.pdf",nametag.c_str()));
     c0cold->SaveAs(Form("pdf/%squality_colds.pdf",nametag.c_str()));
 
-    h2hot2->GetXaxis()->SetRangeUser(-4.79,4.79);
-    h2hot2->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
-    TFile *fouthot = new TFile(Form("%s/hotjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,eras),"RECREATE");
+    //h2hot2->GetXaxis()->SetRangeUser(-4.79,4.79);
+    //h2hot2->GetYaxis()->SetRangeUser(-TMath::Pi(),TMath::Pi());
+    TFile *fouthot = new TFile(Form("%s/hotjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp:runLetter),"RECREATE");
     h2hot->Write("h2hot");
     h2hot2->Write("h2hotfilter");
     //h2hotr->Write("h2hotrobert");
     //h2hotm->Write("h2hotmikko");
     //h2hotHCAL->Write("h2hotHCAL");
     fouthot->Close();
-    TFile *foutcold = new TFile(Form("%s/coldjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,eras),"RECREATE");
+    TFile *foutcold = new TFile(Form("%s/coldjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp:runLetter),"RECREATE");
     h2cold->Write("h2cold");
     h2cold2->Write("h2hole");
     foutcold->Close();

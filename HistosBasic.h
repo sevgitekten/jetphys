@@ -280,8 +280,6 @@ class HistosBasic {
   TH1D *hselpt;
   TH1D *hy;
   TH1D *hy2;
-  TH1D *heta;
-  TH1D *heta2;
   TH1D *hphi;
   TH1D *hdphi;
   TH1D *hdpt;
@@ -329,7 +327,6 @@ class HistosBasic {
 
   TH1D *hyeta;
   TH1D *hyeta2;
-  TH2D *hetaphi;
 
   // MC checks
   TH1D *hpt_jt30;

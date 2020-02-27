@@ -181,7 +181,7 @@ public :
 
   // We don't delete that much stuff here, since ROOT takes care of garbage collection (and gets very easily angry!!!)
   ~HistosFill() {}
-  HistosFill(TChain *tree);
+  HistosFill(TChain *tree, int eraIdx = 0);
   virtual bool     Init(TChain *tree); // custom
 
   virtual void     Loop();

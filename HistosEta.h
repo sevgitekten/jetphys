@@ -64,6 +64,9 @@ class HistosEta {
   vector<TH3D *> hdjmpftp;
   //vector<TH3D *> hdjmpfpt;
 
+  TH1D *heta;
+  TH2D *hetaphi;
+
   TProfile3D *p3rvsnpv;
   TProfile3D *p3rvsnpvW;
 

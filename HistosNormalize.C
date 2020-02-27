@@ -81,17 +81,25 @@ void HistosNormalize(string type = "")
     if (jp::usetriglumiera) {
       int eraNo = 0;
       for (auto &eraMatch : jp::eras) {
-        if (std::regex_search(jp::run,eraMatch)) {
+        if (jp::run==eraMatch) {
           eraIdx = eraNo;
           break;
         }
         ++eraNo;
       }
-      if (eraIdx!=-1) cout << "Using weights according to the run era!" << endl;
-      else cout << "Could not locate the given era! :(" << endl;
+      if (eraIdx>=jp::triglumiera.size()) {
+        cout << "Era index out of range! Use exact era labels for data! Currently using " << jp::run << endl;
+        return;
+      }
+      if (eraIdx==-1) {
+        cout << "Could not locate the given era! " << jp::run << " :(" << endl;
+        return;
+      }
+      cout << "Using weights according to the run era " << jp::run << "! << endl;
     }
+    auto &lumiHandle = (jp::usetriglumiera ? jp::triglumiera[eraIdx] : jp::triglumi);
     for (unsigned int i = 0; i < jp::notrigs; ++i) {
-      double lumi = (jp::usetriglumiera ? jp::triglumiera[eraIdx][i]/1e6 : jp::triglumi[i]/1e6); // /ub to /pb
+      double lumi = lumiHandle[i]/1e6; // /ub to /pb
       cout << Form(" *%s: %1.3f /pb", jp::triggers[i],lumi) << endl;
       triglumi[jp::triggers[i]] = lumi;
     }
