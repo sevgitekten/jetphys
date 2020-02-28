@@ -75,6 +75,7 @@ HistosEta::HistosEta(TDirectory *dir, string trigname, double pttrg, double ptmi
   // Special studies for tag between 50 and 60 GeV.
   hnpvall_pt50to60 = new TH1D("hnpvall_pt50to60","",jp::npvs,&jp::npvrange[0]);
   hnpv_pt50to60    = new TH1D("hnpv_pt50to60"   ,"",jp::npvs,&jp::npvrange[0]);
+  htrpu_pt50to60    = new TH1D("htrpu_pt50to60"   ,"",jp::npvs,&jp::npvrange[0]);
   hrho_pt50to60    = new TH1D("hrho_pt50to60"   ,"",jp::npvs,&jp::npvrange[0]);
   hpuf_pt50to60    = new TH1D("hpuf_pt50to60"   ,"",100,0,1);
   hchf_pt50to60    = new TH1D("hchf_pt50to60"   ,"",100,0,1);

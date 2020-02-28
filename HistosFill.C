@@ -2286,6 +2286,7 @@ void HistosFill::FillSingleEta(HistosEta *h, Float_t* _pt, Float_t* _eta, Float_
             h->hnpvall_pt50to60->Fill(npv, _w);
             h->hnpv_pt50to60->Fill(npvgood, _w);
             h->hrho_pt50to60->Fill(rho, _w);
+            h->htrpu_pt50to60->Fill(trpu, _w);
             h->hpuf_pt50to60->Fill(jtbetaprime[iprobe], _w);
             h->hchf_pt50to60->Fill(jtchf[iprobe], _w);
           }
