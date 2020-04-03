@@ -43,7 +43,6 @@
 
 using namespace std;
 
-bool _doTUnfold = false;
 double _epsilon = 1e-12;
 
 // Resolution function
@@ -369,12 +368,6 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   double mtbinsX = mt->GetNbinsX();  double mtbinsY = mt->GetNbinsY();
   
-  vector<double> vyAB = deriveSubBins(jp::unfptmingen, maxx); // measured with tighter binning, include max
-  TH2D *mtAdjustedBinning = new TH2D(Form("mtAB%s",c),"mtAB;p_{T,reco};p_{T,gen}",           // Construction: x, y
-  		       vyAB.size()-1, &vyAB[0],vx.size()-1, &vx[0]
- 		       );
-
- 
   // From http://hepunx.rl.ac.uk/~adye/software/unfold/RooUnfold.html
   // For 1-dimensional true and measured distribution bins Tj and Mi,
   // the response matrix element Rij gives the fraction of events
@@ -437,41 +430,6 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     } // for j
   } // for i 
 
-  if (_doTUnfold) {
-
-  for (int i = 1; i != mtAdjustedBinning->GetNbinsX()+1; ++i) {
-   
-    double ptreco1 = mtAdjustedBinning->GetXaxis()->GetBinLowEdge(i);
-    double ptreco2 = mtAdjustedBinning->GetXaxis()->GetBinLowEdge(i+1);
-
-    double ptreco = 0;
-    if (!isnan(fnlo->Eval(ptreco2))) {
-      double yreco = fnlo->Integral(ptreco1, ptreco2) / (ptreco2 - ptreco1);
-      ptreco = fnlo->GetX(yreco, ptreco1, ptreco2);
-      }
-        
-    
-    for (int j = 1; j != mtAdjustedBinning->GetNbinsY()+1; ++j) {
-
-      double ptgen1 = min(jp::emax/cosh(y1), mtAdjustedBinning->GetYaxis()->GetBinLowEdge(j));
-      double ptgen2 = min(jp::emax/cosh(y1), mtAdjustedBinning->GetYaxis()->GetBinLowEdge(j+1));
-
-      if (ptgen1>=jp::unfptmingen && ptreco>jp::unfptminreco && ptgen1*cosh(y1)<jp::emax) {  // This results in rows and columns of 0 in mt
-
-        fnlos->SetParameter(4, ptgen1);
-        fnlos->SetParameter(5, ptgen2);
-        // 2D integration over pTreco, pTgen simplified to 1D over pTgen
-        mtAdjustedBinning->SetBinContent(i, j, fnlos->Eval(ptreco) * (ptreco2 - ptreco1));
-
-	fnlos->SetParameter(4, 0);
-        fnlos->SetParameter(5, 0);
-      }
-    } // for j
-  } // for i
-
-
-  }
-  
   // Check condition number (statcomm recommendation) of the response matrix mt (TDecompSVD)
   // cond(K) = sigma_max/max(0,sigma_min), sigmas are singular values of matrix K
 
@@ -624,47 +582,6 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
       hcorrpt_svd->SetBinError(j, hTrueSVD->GetBinError(i));
       }
   
-
-  // TUnfold
-
-  _doTUnfold = false;
-  if (_doTUnfold) {
-
-  // for mt need finer binning for reco! neew N_reco = 2*N_gen
-  TUnfoldDensity unfold(mt,TUnfold::kHistMapOutputVert);
-
-  if(unfold.SetInput(hpt)>=10000) { // need rebinning of hpt(0)!
-    std::cout<<"Unfolding result may be wrong\n";
-  }
-
-  // TUnfold unfolding is done here
-  //
-  // scan L curve and find best point
-  Int_t nScan=50;
-  // use automatic L-curve scan: start with taumin=taumax=0.0
-  Double_t tauMin=0.0;
-  Double_t tauMax=0.0;
-  Int_t iBest;
-  TSpline *logTauX,*logTauY;
-  TGraph *lCurve;
-
-  // if required, report Info messages (for debugging the L-curve scan)
-  //   Int_t oldinfo=gErrorIgnoreLevel;
-  // gErrorIgnoreLevel=kInfo;
-
-  // this method scans the parameter tau and finds the kink in the L curve
-  // finally, the unfolding is done for the best choice of tau
-  iBest=unfold.ScanLcurve(nScan,tauMin,tauMax,&lCurve,&logTauX,&logTauY);
-
-  // if required, switch to previous log-level
-  //  gErrorIgnoreLevel=oldinfo;
-  
-  TH1 *histMunfold=unfold.GetOutput("Unfolded");
-  histMunfold->Write();
-
-
-  } // if _doTUnfold
-
   //  if (jp::debug)
    cout << "Unfolding done." << endl << flush;
 
@@ -794,8 +711,6 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
       tools::SetPoint(gratio, gratio->GetN(), x, y / ys, ex, ey / ys);
   }
 
-  if (!_doTUnfold) {
-
     // Inputs and central method results
     hpt->Write("hpt");
     hcorrpt_dag->Write("hcorrpt");
@@ -841,19 +756,10 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     hcorrpt_bin->Write();
     hcorrpt_svd->Write();
 
-
-
-
-    
     // Unfolding covariance matrix
     hCov->Write();
-  }
 
-  if (_doTUnfold) {
-    mtAdjustedBinning->Write();
 
-  }
-  
   
 }
 
