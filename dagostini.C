@@ -43,7 +43,6 @@
 
 using namespace std;
 
-bool _jet = false;
 bool _doTUnfold = false;
 double _epsilon = 1e-12;
 
@@ -131,11 +130,10 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
     // Found hpt plots: call unfolding routine
     if(jp::isgluon && !jp::isquark){
         cout << "gluon unfolding routine"<<endl;
-        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hgpt" || string(obj->GetName())=="hpt_jet" )) {
+        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hgpt" )) {
             cout << "+" << flush;
             
-            _jet = TString(obj->GetName()).Contains("hpt_jet");
-            TH1D *hpt = (TH1D*)obj;
+	    TH1D *hpt = (TH1D*)obj;
             //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
             //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
             TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hgpt_g" : "hgpt"); assert(hpt2);
@@ -144,11 +142,10 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
         } //hgpt plots
     }else if(jp::isquark && !jp::isgluon){
         cout << "quark unfolding routine"<<endl;
-        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hqpt" || string(obj->GetName())=="hpt_jet" )) {
+        if (obj->InheritsFrom("TH1") && (string(obj->GetName())=="hqpt")) {
             cout << "+" << flush;
             
-            _jet = TString(obj->GetName()).Contains("hpt_jet");
-            TH1D *hpt = (TH1D*)obj;
+	    TH1D *hpt = (TH1D*)obj;
             //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
             //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
             TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hqpt_g" : "hqpt"); assert(hpt2);
@@ -161,8 +158,7 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
 
             cout << "+" << flush;
             
-            _jet = TString(obj->GetName()).Contains("hpt_jet");
-            TH1D *hpt = (TH1D*)obj;
+	    TH1D *hpt = (TH1D*)obj;
 	    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
             if (hpt2)
                 dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
@@ -184,10 +180,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   sscanf(outdir->GetName(),"Eta_%f-%f",&y1,&y2);
   cout << outdir->GetName() << " y1:" << y1 << " y2: " << y2 << endl;
   const char *c = id.c_str();
-  if (_jet) c = "_jet";
-
   _ismcjer = ismc;
-
 
   // Correct hpt (data) for ECAL prefire
   // Similar way as in https://github.com/miquork/jecsys/blob/2018_Moriond19/minitools/drawDeltaJEC.C
@@ -597,9 +590,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   cout << "Moving to bin by bin" << endl;
   
   TH1D *hcorrpt_bin(0), *hcorrpt_svd(0);
-  //  _jet = 0; // added
-  if (!_jet) {
-
+ 
     RooUnfoldResponse *uResps = new RooUnfoldResponse(my, mxs, mts);
     RooUnfoldBinByBin *uBin = new RooUnfoldBinByBin(uResps, hreco);
     TH1D *hTrueBin = (TH1D*)uBin->Hreco(RooUnfold::kCovariance);
@@ -632,7 +623,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
       hcorrpt_svd->SetBinContent(j, hTrueSVD->GetBinContent(i));
       hcorrpt_svd->SetBinError(j, hTrueSVD->GetBinError(i));
       }
-   }
+  
 
   // TUnfold
 
@@ -687,7 +678,6 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   //
   TGraphErrors *gfold_bin(0), *gcorrpt_bin(0);
   TGraphErrors *gfold_svd(0), *gcorrpt_svd(0);
-  if (!_jet) {
 
     gfold_bin = new TGraphErrors(0);
     gfold_bin->SetName(Form("gfold_bin%s",c));
@@ -697,7 +687,6 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     gfold_svd->SetName(Form("gfold_svd%s",c));
     gcorrpt_svd = new TGraphErrors(0);
     gcorrpt_svd->SetName(Form("gcorrpt_svd%s",c));
-  }
 
   // Normalize hcorrpt
   for (int i = 1; i != hcorrpt_dag->GetNbinsX()+1; ++i) {
@@ -705,19 +694,18 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     hcorrpt_dag->SetBinContent(i, hcorrpt_dag->GetBinContent(i) / dpt);
     hcorrpt_dag->SetBinError(i, hcorrpt_dag->GetBinError(i) / dpt);
   }
-  if (!_jet) {
-
-    for (int i = 1; i != hcorrpt_bin->GetNbinsX()+1; ++i) {
-      double dpt = hcorrpt_bin->GetBinWidth(i);
-      hcorrpt_bin->SetBinContent(i, hcorrpt_bin->GetBinContent(i) / dpt);
-      hcorrpt_bin->SetBinError(i, hcorrpt_bin->GetBinError(i) / dpt);
-    }
-    for (int i = 1; i != hcorrpt_bin->GetNbinsX()+1; ++i) {
-      double dpt = hcorrpt_svd->GetBinWidth(i);
-      hcorrpt_svd->SetBinContent(i, hcorrpt_svd->GetBinContent(i) / dpt);
-      hcorrpt_svd->SetBinError(i, hcorrpt_svd->GetBinError(i) / dpt);
-    }
+ 
+  for (int i = 1; i != hcorrpt_bin->GetNbinsX()+1; ++i) {
+    double dpt = hcorrpt_bin->GetBinWidth(i);
+    hcorrpt_bin->SetBinContent(i, hcorrpt_bin->GetBinContent(i) / dpt);
+    hcorrpt_bin->SetBinError(i, hcorrpt_bin->GetBinError(i) / dpt);
   }
+  for (int i = 1; i != hcorrpt_bin->GetNbinsX()+1; ++i) {
+    double dpt = hcorrpt_svd->GetBinWidth(i);
+    hcorrpt_svd->SetBinContent(i, hcorrpt_svd->GetBinContent(i) / dpt);
+    hcorrpt_svd->SetBinError(i, hcorrpt_svd->GetBinError(i) / dpt);
+  }
+ 
 
   for (int i = 0; i != gpt->GetN(); ++i) {
 
@@ -740,44 +728,41 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     }
   } // for i
 
-  if (!_jet) {
+  for (int i = 0; i != gpt->GetN(); ++i) {
+    
+    double x, y, ex, ey;
+    tools::GetPoint(gpt, i, x, y, ex, ey);
+    
+    int j = hcorrpt_bin->FindBin(x);
+    double ycorr_bin = hcorrpt_bin->GetBinContent(j);
+    double eycorr_bin = hcorrpt_bin->GetBinError(j);
+    double ycorr_svd = hcorrpt_svd->GetBinContent(j);
+    double eycorr_svd = hcorrpt_svd->GetBinError(j);
+    
+    double k_bin = (ycorr_bin && y ? ycorr_bin / y : 1.);
+    double k_svd = (ycorr_svd && y ? ycorr_svd / y : 1.);
 
-    for (int i = 0; i != gpt->GetN(); ++i) {
+    if (!TMath::IsNaN(k_bin)) {
+      
+      double dk = 0;
+      //if (eycorr_bin/ycorr_bin > ey/y)
+      dk = eycorr_bin/ycorr_bin*k_bin;
+      tools::SetPoint(gfold_bin, gfold_bin->GetN(), x, k_bin, ex, dk);
+      tools::SetPoint(gcorrpt_bin, gcorrpt_bin->GetN(),
+		      x, ycorr_bin, ex, eycorr_bin);
+    }
 
-      double x, y, ex, ey;
-      tools::GetPoint(gpt, i, x, y, ex, ey);
+    if (!TMath::IsNaN(k_svd)) {
+      
+      double dk = 0;
+      //if (eycorr_svd/ycorr_svd > ey/y)
+      dk = eycorr_svd/ycorr_svd*k_svd;
+      tools::SetPoint(gfold_svd, gfold_svd->GetN(), x, k_svd, ex, dk);
+      tools::SetPoint(gcorrpt_svd, gcorrpt_svd->GetN(),
+		      x, ycorr_svd, ex, eycorr_svd);
+    }
 
-      int j = hcorrpt_bin->FindBin(x);
-      double ycorr_bin = hcorrpt_bin->GetBinContent(j);
-      double eycorr_bin = hcorrpt_bin->GetBinError(j);
-      double ycorr_svd = hcorrpt_svd->GetBinContent(j);
-      double eycorr_svd = hcorrpt_svd->GetBinError(j);
-
-      double k_bin = (ycorr_bin && y ? ycorr_bin / y : 1.);
-      double k_svd = (ycorr_svd && y ? ycorr_svd / y : 1.);
-
-      if (!TMath::IsNaN(k_bin)) {
-
-	double dk = 0;
-	//if (eycorr_bin/ycorr_bin > ey/y)
-	dk = eycorr_bin/ycorr_bin*k_bin;
-	tools::SetPoint(gfold_bin, gfold_bin->GetN(), x, k_bin, ex, dk);
-	tools::SetPoint(gcorrpt_bin, gcorrpt_bin->GetN(),
-			x, ycorr_bin, ex, eycorr_bin);
-      }
-
-      if (!TMath::IsNaN(k_svd)) {
-
-	double dk = 0;
-	//if (eycorr_svd/ycorr_svd > ey/y)
-	dk = eycorr_svd/ycorr_svd*k_svd;
-	tools::SetPoint(gfold_svd, gfold_svd->GetN(), x, k_svd, ex, dk);
-	tools::SetPoint(gcorrpt_svd, gcorrpt_svd->GetN(),
-			x, ycorr_svd, ex, eycorr_svd);
-      }
-
-    } // for i
-  }
+  } // for i
 
   outdir->cd();
 
@@ -809,7 +794,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
       tools::SetPoint(gratio, gratio->GetN(), x, y / ys, ex, ey / ys);
   }
 
-  if (!_jet && !_doTUnfold) {
+  if (!_doTUnfold) {
 
     // Inputs and central method results
     hpt->Write("hpt");
