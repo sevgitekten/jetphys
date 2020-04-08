@@ -56,7 +56,7 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   hupt_g0tw = new TH1D("hupt_g0tw","",nx,&x[0]);//// unmatched
   hgpt_g0 = new TH1D("hgpt_g0","",nx,&x[0]);//Ozlem
   hqpt_g0 = new TH1D("hqpt_g0","",nx,&x[0]);//Ozlem
-  hupt_g0 = new TH1D("hupt_g0","",nx,&x[0]);// unmatched 
+  hupt_g0 = new TH1D("hupt_g0","",nx,&x[0]);// unmatched
   hcopt = new TH1D("hcopt","",nx,&x[0]);
 
 
@@ -107,8 +107,9 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   pjec = new TProfile("pjec","",nx,&x[0]);
   pjec2 = new TProfile("pjec2","",nx,&x[0]);
   punc = new TProfile("punc","",nx,&x[0]);
-  hnpvgood = new TH1D("hnpvgood","",jp::npvs,jp::pvrange);
-  hrho = new TH1D("hrho","",200,0,100);
+  htrpu = new TH1D("htrpu","",jp::npvs,0,jp::npvs); // for PU reweighing
+  hnpvgood = new TH1D("hnpvgood","",jp::npvs,0,jp::npvs);
+  hrho = new TH1D("hrho","",jp::npvs,0,jp::npvs);
 
   // JEC monitoring
   pjec_l1 = new TProfile("pjec_l1","",nx,&x[0]);
@@ -122,18 +123,18 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   pnpv = new TProfile("pnpv","",nx,&x[0]);
   pnpvall = new TProfile("pnpvall","",nx,&x[0]);
   prho = new TProfile("prho","",nx,&x[0]);
-  prhovsnpv = new TProfile("prhovsnpv","",jp::npvs,jp::pvrange);
-  pnpvvsrho = new TProfile("pnpvvsrho","",jp::npvs,jp::pvrange);
-  prhovsnpvall = new TProfile("prhovsnpvall","",jp::npvs,jp::pvrange);
-  h2rhovsnpv = new TH2D("h2rhovsnpv","",jp::npvs,jp::pvrange,200,0,40);
+  prhovsnpv = new TProfile("prhovsnpv","",jp::npvs,0,jp::npvs);
+  pnpvvsrho = new TProfile("pnpvvsrho","",jp::npvs,0,jp::npvs);
+  prhovsnpvall = new TProfile("prhovsnpvall","",jp::npvs,0,jp::npvs);
+  h2rhovsnpv = new TH2D("h2rhovsnpv","",jp::npvs,0,jp::npvs,jp::npvs,0,jp::npvs);
+  h2trpuvsrho = new TH2D("h2trpuvsrho","",jp::npvs,0,jp::npvs,jp::npvs,0,jp::npvs);
   //
-  prhovstrpu = new TProfile("prhovstrpu","",jp::npvs,jp::pvrange);
-  pnpvvstrpu = new TProfile("pnpvvstrpu","",jp::npvs,jp::pvrange);
-  pnpvallvstrpu = new TProfile("pnpvallvstrpu","",jp::npvs,jp::pvrange);
-  pitpuvstrpu = new TProfile("itpuvstrpu","",jp::npvs,jp::pvrange);
-  htrpu2 = new TH1D("htrpu2","",jp::npvs,jp::pvrange);
-  hjet_vstrpu = new TH1D("hjet_vstrpu","",jp::npvs,jp::pvrange);
-  hlumi_vstrpu = new TH1D("hlumi_vstrpu","",jp::npvs,jp::pvrange);
+  prhovstrpu = new TProfile("prhovstrpu","",jp::npvs,0,jp::npvs);
+  pnpvvstrpu = new TProfile("pnpvvstrpu","",jp::npvs,0,jp::npvs);
+  pnpvallvstrpu = new TProfile("pnpvallvstrpu","",jp::npvs,0,jp::npvs);
+  pitpuvstrpu = new TProfile("itpuvstrpu","",jp::npvs,0,jp::npvs);
+  hjet_vstrpu = new TH1D("hjet_vstrpu","",jp::npvs,0,jp::npvs);
+  hlumi_vstrpu = new TH1D("hlumi_vstrpu","",jp::npvs,0,jp::npvs);
 
   // luminosity
   hlumi = new TH1D("hlumi","",nx,&x[0]);
@@ -169,9 +170,9 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   ppttagptprobe_noa = new TProfile("ppttagptprobe_noa","",jp::npts,&jp::ptrange[0]);
   ppttagmu_noa = new TProfile("ppttagmu_noa","",jp::npts,&jp::ptrange[0]);
   h2pttagptprobe = new TH2D("h2pttagptprobe","",jp::npts,&jp::ptrange[0],jp::npts,&jp::ptrange[0]);
-  h2pttagmu = new TH2D("h2pttagmu","",jp::npts,&jp::ptrange[0],jp::npvs,jp::pvrange);
+  h2pttagmu = new TH2D("h2pttagmu","",jp::npts,&jp::ptrange[0],jp::npvs,0,jp::npvs);
   h2pttagptprobe_noa = new TH2D("h2pttagptprobe_noa","",jp::npts,&jp::ptrange[0],jp::npts,&jp::ptrange[0]);
-  h2pttagmu_noa = new TH2D("h2pttagmu_noa","",jp::npts,&jp::ptrange[0],jp::npvs,jp::pvrange);
+  h2pttagmu_noa = new TH2D("h2pttagmu_noa","",jp::npts,&jp::ptrange[0],jp::npvs,0,jp::npvs);
 
   hncand = new TH1D("hncand","",300,-0.5,299.5);
   hnch = new TH1D("hnch","",300,-0.5,299.5);
@@ -224,31 +225,31 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   hheftp = new TH1D("hheftp","",110,0.,1.1);
   hpuftp = new TH1D("hpuftp","",110,0.,1.1);
   // control plots vs NPV
-  pncandtp_vsnpv = new TProfile("pncandtp_vsnpv","",jp::npvs,jp::pvrange);
-  pnchtp_vsnpv = new TProfile("pnchtp_vsnpv","",jp::npvs,jp::pvrange);
-  pnnetp_vsnpv = new TProfile("pnnetp_vsnpv","",jp::npvs,jp::pvrange);
-  pnnhtp_vsnpv = new TProfile("pnnhtp_vsnpv","",jp::npvs,jp::pvrange);
-  pncetp_vsnpv = new TProfile("pncetp_vsnpv","",jp::npvs,jp::pvrange);
-  pnmutp_vsnpv = new TProfile("pnmutp_vsnpv","",jp::npvs,jp::pvrange);
-  pnhhtp_vsnpv = new TProfile("pnhhtp_vsnpv","",jp::npvs,jp::pvrange);
-  pnhetp_vsnpv = new TProfile("pnhetp_vsnpv","",jp::npvs,jp::pvrange);
-  pchftp_vsnpv = new TProfile("pchftp_vsnpv","",jp::npvs,jp::pvrange);
-  pneftp_vsnpv = new TProfile("pneftp_vsnpv","",jp::npvs,jp::pvrange);
-  pnhftp_vsnpv = new TProfile("pnhftp_vsnpv","",jp::npvs,jp::pvrange);
-  pceftp_vsnpv = new TProfile("pceftp_vsnpv","",jp::npvs,jp::pvrange);
-  pmuftp_vsnpv = new TProfile("pmuftp_vsnpv","",jp::npvs,jp::pvrange);
-  phhftp_vsnpv = new TProfile("phhftp_vsnpv","",jp::npvs,jp::pvrange);
-  pheftp_vsnpv = new TProfile("pheftp_vsnpv","",jp::npvs,jp::pvrange);
-  ppuftp_vsnpv = new TProfile("ppuftp_vsnpv","",jp::npvs,jp::pvrange);
+  pncandtp_vsnpv = new TProfile("pncandtp_vsnpv","",jp::npvs,0,jp::npvs);
+  pnchtp_vsnpv = new TProfile("pnchtp_vsnpv","",jp::npvs,0,jp::npvs);
+  pnnetp_vsnpv = new TProfile("pnnetp_vsnpv","",jp::npvs,0,jp::npvs);
+  pnnhtp_vsnpv = new TProfile("pnnhtp_vsnpv","",jp::npvs,0,jp::npvs);
+  pncetp_vsnpv = new TProfile("pncetp_vsnpv","",jp::npvs,0,jp::npvs);
+  pnmutp_vsnpv = new TProfile("pnmutp_vsnpv","",jp::npvs,0,jp::npvs);
+  pnhhtp_vsnpv = new TProfile("pnhhtp_vsnpv","",jp::npvs,0,jp::npvs);
+  pnhetp_vsnpv = new TProfile("pnhetp_vsnpv","",jp::npvs,0,jp::npvs);
+  pchftp_vsnpv = new TProfile("pchftp_vsnpv","",jp::npvs,0,jp::npvs);
+  pneftp_vsnpv = new TProfile("pneftp_vsnpv","",jp::npvs,0,jp::npvs);
+  pnhftp_vsnpv = new TProfile("pnhftp_vsnpv","",jp::npvs,0,jp::npvs);
+  pceftp_vsnpv = new TProfile("pceftp_vsnpv","",jp::npvs,0,jp::npvs);
+  pmuftp_vsnpv = new TProfile("pmuftp_vsnpv","",jp::npvs,0,jp::npvs);
+  phhftp_vsnpv = new TProfile("phhftp_vsnpv","",jp::npvs,0,jp::npvs);
+  pheftp_vsnpv = new TProfile("pheftp_vsnpv","",jp::npvs,0,jp::npvs);
+  ppuftp_vsnpv = new TProfile("ppuftp_vsnpv","",jp::npvs,0,jp::npvs);
   //
-  pchftp_vstrpu = new TProfile("pchftp_vstrpu","",jp::npvs,jp::pvrange);
-  pneftp_vstrpu = new TProfile("pneftp_vstrpu","",jp::npvs,jp::pvrange);
-  pnhftp_vstrpu = new TProfile("pnhftp_vstrpu","",jp::npvs,jp::pvrange);
-  pceftp_vstrpu = new TProfile("pceftp_vstrpu","",jp::npvs,jp::pvrange);
-  pmuftp_vstrpu = new TProfile("pmuftp_vstrpu","",jp::npvs,jp::pvrange);
-  phhftp_vstrpu = new TProfile("phhftp_vstrpu","",jp::npvs,jp::pvrange);
-  pheftp_vstrpu = new TProfile("pheftp_vstrpu","",jp::npvs,jp::pvrange);
-  ppuftp_vstrpu = new TProfile("ppuftp_vstrpu","",jp::npvs,jp::pvrange);
+  pchftp_vstrpu = new TProfile("pchftp_vstrpu","",jp::npvs,0,jp::npvs);
+  pneftp_vstrpu = new TProfile("pneftp_vstrpu","",jp::npvs,0,jp::npvs);
+  pnhftp_vstrpu = new TProfile("pnhftp_vstrpu","",jp::npvs,0,jp::npvs);
+  pceftp_vstrpu = new TProfile("pceftp_vstrpu","",jp::npvs,0,jp::npvs);
+  pmuftp_vstrpu = new TProfile("pmuftp_vstrpu","",jp::npvs,0,jp::npvs);
+  phhftp_vstrpu = new TProfile("phhftp_vstrpu","",jp::npvs,0,jp::npvs);
+  pheftp_vstrpu = new TProfile("pheftp_vstrpu","",jp::npvs,0,jp::npvs);
+  ppuftp_vstrpu = new TProfile("ppuftp_vstrpu","",jp::npvs,0,jp::npvs);
   //
   if (jp::doPhiHistos) {
     pchfpostp_vsphi = new TProfile("pchfpostp_vsphi","",jp::nwphis,jp::wphirange);
@@ -296,8 +297,6 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   hselpt = new TH1D("hselpt","",nx,&x[0]);
   hy = new TH1D("hy","",jp::netas,jp::etarange); // May 11
   hy2 = new TH1D("hy2","",jp::netas,jp::etarange);
-  heta = new TH1D("heta","",jp::netas,jp::etarange);
-  heta2 = new TH1D("heta2","",jp::netas,jp::etarange);
   hphi = new TH1D("hphi","",jp::nphis,jp::phirange);
   hdphi = new TH1D("hdphi","",jp::nwposphis,jp::wposphirange);
   hdpt = new TH1D("hdpt","",100,0.,1.);
@@ -332,48 +331,42 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   const int na = 200;
   vector<double> va(na+1);
   for (unsigned int i = 0; i != na+1; ++i) va[i] = -1. + 2.*i/na;
-if (jp::do3dHistos) {
-  hdjasymm = new TH3D("hdjasymm",";p_{T,ave};p_{T,3rd}/p_{T,ave};Asymmetry",
-                      nx,&x[0],n3,&v3[0],na,&va[0]);
-  hdjmpf = new TH3D("hdjmpf",";p_{T,ave};p_{T,3rd}/p_{T,ave};MPF",
-                    nx,&x[0],n3,&v3[0],na,&va[0]);
-  hdjasymmtp = new TH3D("hdjasymmtp",";p_{T,tag};p_{T,3rd}/p_{T,tag};Asymmetry",
-                        nx,&x[0],n3,&v3[0],na,&va[0]);
-  hdjmpftp = new TH3D("hdjmpftp",";p_{T,tag};p_{T,3rd}/p_{T,tag};MPF",
-                      nx,&x[0],n3,&v3[0],na,&va[0]);
-}
+  if (jp::do3dHistos) {
+    hdjasymm   = new TH3D("hdjasymm",";p_{T,ave};p_{T,3rd}/p_{T,ave};Asymmetry",nx,&x[0],n3,&v3[0],na,&va[0]);
+    hdjmpf     = new TH3D("hdjmpf",";p_{T,ave};p_{T,3rd}/p_{T,ave};MPF",nx,&x[0],n3,&v3[0],na,&va[0]);
+    hdjasymmtp = new TH3D("hdjasymmtp",";p_{T,tag};p_{T,3rd}/p_{T,tag};Asymmetry",nx,&x[0],n3,&v3[0],na,&va[0]);
+    hdjmpftp   = new TH3D("hdjmpftp",";p_{T,tag};p_{T,3rd}/p_{T,tag};MPF",nx,&x[0],n3,&v3[0],na,&va[0]);
+  }
   hr21 = new TH1D("hr21",";pt2/pt1",50,0.,1.);
   hr31 = new TH1D("hr31",";pt3/pt1",50,0.,1.);
   hr32 = new TH1D("hr32",";pt3/pt2",50,0.,1.);
-  pr21 = new TProfile("pr21",";npvgood;pt2/pt1",jp::npvs,jp::pvrange);
-  pr31 = new TProfile("pr31",";npvgood;pt3/pt1",jp::npvs,jp::pvrange);
-  pr32 = new TProfile("pr32",";npvgood;pt3/pt2",jp::npvs,jp::pvrange);
-  px21 = new TProfile("px21",";npvgood;has pt2/pt1",jp::npvs,jp::pvrange);
-  px31 = new TProfile("px31",";npvgood;has pt3/pt1",jp::npvs,jp::pvrange);
-  px32 = new TProfile("px32",";npvgood;has pt3/pt2",jp::npvs,jp::pvrange);
+  pr21 = new TProfile("pr21",";npvgood;pt2/pt1",jp::npvs,0,jp::npvs);
+  pr31 = new TProfile("pr31",";npvgood;pt3/pt1",jp::npvs,0,jp::npvs);
+  pr32 = new TProfile("pr32",";npvgood;pt3/pt2",jp::npvs,0,jp::npvs);
+  px21 = new TProfile("px21",";npvgood;has pt2/pt1",jp::npvs,0,jp::npvs);
+  px31 = new TProfile("px31",";npvgood;has pt3/pt1",jp::npvs,0,jp::npvs);
+  px32 = new TProfile("px32",";npvgood;has pt3/pt2",jp::npvs,0,jp::npvs);
 
   hyeta = new TH1D("hyeta","",100,-0.436/4.,0.436/4.);
   hyeta2 = new TH1D("hyeta2","",100,-0.436/4.,0.436/4.);
-  hetaphi = new TH2D("hetaphi","",100,-4.799,4.799,jp::nphis,jp::phirange);
 
   pdpt->Sumw2();
   pmpf->Sumw2();
   pmpf1->Sumw2();
   pmpf2->Sumw2();
   pmpfx->Sumw2();
-if (jp::do3dHistos) {
-  hdjasymm->Sumw2();
-  hdjmpf->Sumw2();
-  hdjasymmtp->Sumw2();
-  hdjmpftp->Sumw2();
-}
+  if (jp::do3dHistos) {
+    hdjasymm->Sumw2();
+    hdjmpf->Sumw2();
+    hdjasymmtp->Sumw2();
+    hdjmpftp->Sumw2();
+  }
   ppt_probepertag = new TProfile("ppt_probepertag","",nx,&x[0]);
   ppt_probepertag_g = new TProfile("ppt_probepertag_g","",nx,&x[0]);//qgl okan follow up later
   ppt_probepertag_q= new TProfile("ppt_probepertag_q","",nx,&x[0]);//qgl okan follow up later
 
 
   // MC checks
-  htrpu = new TH1D("htrpu","",120,0.,60.); // for PU reweighing
   if (this->ismcdir) {
     hpthat = new TH1D("hpthat","",nx,&x[0]);
     hpthatnlo = new TH1D("hpthatnlo","",nx,&x[0]);
@@ -396,7 +389,7 @@ if (jp::do3dHistos) {
     hitpu = new TH1D("hitpu","",100,-0.5,99.5);
     hootpuearly = new TH1D("hootpuearly","",100,-0.5,99.5);
     hootpulate = new TH1D("hootpulate","",100,-0.5,99.5);
-    h2itvsoot = new TH2D("h2itvsoot","",25,-0.5,24.5,jp::npvs,jp::pvrange);
+    h2itvsoot = new TH2D("h2itvsoot","",25,-0.5,24.5,jp::npvs,0,jp::npvs);
 
     hpt_noid_g = new TH1D("hpt_noid_g","",nx,&x[0]);
     hpt_nojetid_g = new TH1D("hpt_nojetid_g","",nx,&x[0]);
@@ -415,14 +408,14 @@ if (jp::do3dHistos) {
     ppt_g = new TProfile("ppt_g","",nx,&x[0]);
 
     // Response closure
-    p2rvsnpv = new TProfile2D("p2rvsnpv","",nx,&x[0],jp::npvs,jp::pvrange);
+    p2rvsnpv = new TProfile2D("p2rvsnpv","",nx,&x[0],jp::npvs,0,jp::npvs);
     h2r_r = new TH2D("h2r_r","",nx,&x[0],600,0,3);
     h2r_g = new TH2D("h2r_g","",nx,&x[0],600,0,3);
     p2r_r = new TProfile("p2r_r","",nx,&x[0]);
     p2r_g = new TProfile("p2r_g","",nx,&x[0]);
     p2r_ruw = new TProfile("p2r_ruw","",nx,&x[0]);
     p2r_guw = new TProfile("p2r_guw","",nx,&x[0]);
-    
+
     h2r_g_r = new TH2D("h2r_g_r","",nx,&x[0],600,0,3);
     h2r_g_g = new TH2D("h2r_g_g","",nx,&x[0],600,0,3);
     p2r_g_r = new TProfile("p2r_g_r","",nx,&x[0]);
@@ -430,14 +423,14 @@ if (jp::do3dHistos) {
     p2r_g_ruw = new TProfile("p2r_g_ruw","",nx,&x[0]);
     p2r_g_guw = new TProfile("p2r_g_guw","",nx,&x[0]);
 
-    
+
     h2r_q_r = new TH2D("h2r_q_r","",nx,&x[0],600,0,3);
     h2r_q_g = new TH2D("h2r_q_g","",nx,&x[0],600,0,3);
     p2r_q_r = new TProfile("p2r_q_r","",nx,&x[0]);
     p2r_q_g = new TProfile("p2r_q_g","",nx,&x[0]);
     p2r_q_ruw = new TProfile("p2r_q_ruw","",nx,&x[0]);
     p2r_q_guw = new TProfile("p2r_q_guw","",nx,&x[0]);
-    
+
     h2r_u_r = new TH2D("h2r_u_r","",nx,&x[0],600,0,3);
     h2r_u_g = new TH2D("h2r_u_g","",nx,&x[0],600,0,3);
     p2r_u_r = new TProfile("p2r_u_r","",nx,&x[0]);

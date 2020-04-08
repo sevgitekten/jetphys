@@ -153,7 +153,7 @@ void Fracs::makeProfile(unsigned mode, TDirectory *dmc, TDirectory *ddt, string 
       xLo = 0.36; yLo = 0.15; xHi = 0.56; yHi = 0.45;
     } else if (_vspt) {
       if (eta2 != 3.0) {
-        xLo = 0.18; yLo = 0.18; xHi = 0.48; yHi = 0.48;
+        xLo = 0.18; yLo = 0.25; xHi = 0.48; yHi = 0.55;
       } else {
         xLo = 0.18; yLo = 0.14; xHi = 0.48; yHi = 0.44;
       }

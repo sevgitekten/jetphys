@@ -83,17 +83,27 @@ void HistosNormalize(string type = "")
     //    if (jp::usetriglumiera) { // Fix for including luminosity normalization for inclusive jets
     eraNo = 0;
       for (auto &eraMatch : jp::eras) {
-        if (std::regex_search(jp::run,eraMatch)) {
+        if (jp::run==eraMatch) {
           eraIdx = eraNo;
           break;
         }
         ++eraNo;
       }
-      if (eraIdx!=-1) cout << "Using weights according to the run era!" << endl;
-      else cout << "Could not locate the given era! :(" << endl;
-      //  } // Fix for including luminosity normalization for inclusive jets
+
+      if (eraIdx==-1) {
+        cout << "Could not locate the given era! " << jp::run << " :(" << endl;
+        return;
+      }
+      if (size_t(eraIdx)>=jp::triglumiera.size()) {
+        cout << "Era index out of range! Use exact era labels for data! Currently using " << jp::run << endl;
+        return;
+      }
+      cout << "Using weights according to the run era " << jp::run << "!" << endl;
+    }
+    auto &lumiHandle = (jp::usetriglumiera ? jp::triglumiera[eraIdx] : jp::triglumi);
+
     for (unsigned int i = 0; i < jp::notrigs; ++i) {
-      double lumi = (jp::usetriglumiera ? jp::triglumiera[eraIdx][i]/1e6 : jp::triglumi[i]/1e6); // /ub to /pb
+      double lumi = lumiHandle[i]/1e6; // /ub to /pb
       cout << Form(" *%s: %1.3f /pb", jp::triggers[i],lumi) << endl;
       triglumi[jp::triggers[i]] = lumi;
     }
@@ -155,7 +165,7 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double et
         loclvl++;
       } else if (TString(indir2->GetName()).Contains("FullEta")) {
         loclvl++;
-      } else if (loclvl>0) {
+      } else if (loclvl>=0) {
         loclvl++;
         cout << endl << " trg: " << indir2->GetName();
       }
@@ -194,9 +204,11 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double et
             continue;
           } // hlumi
 
-          // Set lumi weights
-          lumi = triglumi[trgname];
-          lumiref = triglumi[jp::reftrig];
+          if (triglumi.count(trgname)!=0) {
+            // Set lumi weights if this is a trigger folder
+            lumi = triglumi[trgname];
+            lumiref = triglumi[jp::reftrig];
+          }
         } else { // Use lumi info from hlumi
           TH1D* lumihisto = dynamic_cast<TH1D*>(indir->Get("hlumi"));
           TH1D* lumihistoref = dynamic_cast<TH1D*>(indir->Get(Form("../%s/hlumi",jp::reftrig)));

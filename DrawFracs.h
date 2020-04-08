@@ -159,7 +159,7 @@ public:
 
     // Opening the requested files {
     const char *cdt_type = all_MC ? _dt_type.c_str() : "DATA";
-    TFile *fdt = new TFile(Form("%soutput-%s-%s.root",dt_path,cdt_type,pertrg?"1":"2b"),"READ");
+    TFile *fdt = new TFile(Form("%soutput-%s-%s.root",dt_path,cdt_type,pertrg?"2a":"2b"),"READ");
     assert(fdt and !fdt->IsZombie());
     bool enterdtstandard = fdt->cd("Standard"); assert(enterdtstandard);
     _ddt = gDirectory;
@@ -167,7 +167,7 @@ public:
     cout << fdt->GetName() << endl;
 
     const char *cmc_type = all_DT ? "DATA" : mc_type.c_str();
-    TFile *fmc = new TFile(Form("%soutput-%s-%s.root",mc_path,cmc_type,pertrg?"1":"2b"),"READ");
+    TFile *fmc = new TFile(Form("%soutput-%s-%s.root",mc_path,cmc_type,pertrg?"2a":"2b"),"READ");
     assert(fmc and !fdt->IsZombie());
     bool entermcstandard = fmc->cd("Standard"); assert(entermcstandard);
     _dmc = gDirectory;

@@ -41,11 +41,12 @@ using std::regex;
 // This resembles "DEBUG" in the way that it acts as a safeguard against naive mistakes, but eats performance.
 #define EXPERT 0
 // Values 0/1. Set to 1 to perform jet resolution correction in MC, 0 otherwise.
-#define JETRESO EXPERT
+#define JETRESO 0
 // New handling for triggers etc.; possibility to comment this out is left for legacy use.
 #define NEWMODE
 
 namespace jp {
+
   // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
   constexpr bool dagfile1 = false;
 
@@ -55,51 +56,50 @@ namespace jp {
   // Save git version info (recommended)
   constexpr bool gitinfo = true;
 
-  //{ BEGIN fundamental file settings
+  //{ BEGIN fundamental settings: these are the ones that need most often changes
+
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
-  constexpr const char* type = "DATA";
-  // In case of DATA, choose run (all options given in dtfiles).
-  // This also affects the hot zone cuts done in MC.
-  // The naming format is "RunX...", where X should be chosen correctly.
-  constexpr const char* run = "RunG";
-  // The base location of files that are to be used. The user should check that the listings under "*path_" and "*files_" are found
-  // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
-  constexpr const char* filepath = "/work/jet_tuples/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
-
+  constexpr const char* type = "MC";
+  // For DATA, set dataset, for MC, set PU. Also chooses hot zone cuts. See eras_ for further info.
+  // 16: B/C/D/E/Fe/Fl/G/H/BCD/EF/GH/BCDEFGH
+  // 17: B/C/D/E/F/BCDEF
+  // 17 specials: H*Fwd/H,
+  // 18: A/B/C/D/ABCD
+  const string run = "F";
   // Which run year are we analyzing?
-  const unsigned int   yid = 0; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
-  const unsigned int   yrs = 4; // Number of supported Run years
-
-  // Choose DT pileup era to be used with MC
-  // 16: 0=BCD, 1=EF, 2=GH, 3=BCDEFGH
-  // 17: 0=B, 1=C, 2=DE, 3=F, 4=BCDEF
-  // 18: 0=A, 1=B, 2=C, 3=D, 4=ABCD
-  const unsigned int PUIOVidx = 2;
-  // Do we use pthat binned MC (if not, we use flat or htbinned)
-  constexpr bool pthatbins = false;
-  // Do we use ht binned MC (if not, we use flat; if yes pthatbins must be set to false)
-  constexpr bool htbins = false;
-  //} END fundamental settings
-
-  //{ BEGIN run settings
+  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
-  -1; // all
+  //-1; // all
   //10; // debug
   //100; //debug
   //1000;
-  //10000; // shorter test run
+  10000; // shorter test run
   //100000; // short test run
   //1000000; // shortish test run
   //2500000; // shortish test run
   //10000000;
+
+  // Do we use pthat binned MC (if not, we use flat or htbinned)
+  constexpr bool pthatbins = false;
+  // Do we use ht binned MC (if not, we use flat; if yes pthatbins must be set to false)
+  constexpr bool htbins = false;
+
+  // The base location of files that are to be used. The user should check that the listings under "*path_" and "*files_" are found
+  // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
+  constexpr const char* filepath = "/work/jet_tuples/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
+  // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
+  constexpr bool dagfile1 = false; // true;
+
   // Number of events to skip from the beginning (for debugging)
   constexpr Long64_t nskip = 0;
   // Step between events
   constexpr Long64_t skim = 0; // "prescale", off if zero
   // Only load selected branches (large speedup, but be careful!)
   constexpr bool quick = true;
+  // Number of supported Run years
+  const unsigned int yrs = 4;
   //} END run settings
 
   //{ BEGIN A group of constexpr switches and their settings to turn some parts of the code on/off
@@ -114,30 +114,30 @@ namespace jp {
   // Special reco/gen histos in mc
   constexpr bool doEtaHistosMcResponse = false; // Special studies
   // Toggle 3D asymmetry and mpf histos off, if too much space is consumed
-  constexpr bool do3dHistos = true;
+  constexpr bool do3dHistos = false;
   // Toggle phi histograms
   constexpr bool doPhiHistos = false;
   // Toggle development histos
   constexpr bool doMpfHistos = false;
 
-
-  // In the newest ntuples (mid 2019 onwards), MET filters may be saved separately, as before these
+  // In the newest ntuples (19 onwards), MET filters may be saved separately, as before these.
+  // Hence, it is essential to keep the MET filtering manually on (except if the user knows what (s)he is doing).
   constexpr bool fetchMETFilters = true;
-  constexpr bool doMETFiltering = true;
+  constexpr bool doMETFiltering  = true;
 
   //{ BEGIN Special HistosFill analyses that are not typically needed
   // Eta phi exclusion due to hot ECAL regions (produced with dataequality.C).
   // Note: the output-*.root files are originally used for the production of the exclusion zones.
   // Hence, the user should no whether she/he is producing or applying the hot zone vetos.
   constexpr bool doVetoHot = false;
-  const constexpr char HotType[] = ""; // h2hotr (Robert) or h2hotm (Mikko)
+  const constexpr char HotType[] = "filter"; // h2hotr (Robert) or h2hotm (Mikko)
 
   // Check for duplicates (warning: takes a lot of memory!)
   constexpr bool checkduplicates = false;
   //} END Special analyses that are not typically needed
 
   // QGL studies (use quark and gluon switches for unfolding study)
-  constexpr bool isgluon = false;  
+  constexpr bool isgluon = false;
   constexpr bool isquark = false;
   // QGL studies (use an external file for qgl studies)
   constexpr bool doqglfile = false;
@@ -216,14 +216,20 @@ namespace jp {
   }}; // in /ub
   const vector<double> triglumi = triglumi_.at(yid);
 
-  // These are used to find out which year and which era we are living in
-  const array<vector<regex>,yrs> eras_ = {{
-    {regex("^RunB"),regex("^RunC"),regex("^RunD"),regex("^RunE"),regex("^RunFe"),regex("^RunFl"),regex("^RunG"),regex("^RunH")},
-    {regex("^RunB"),regex("^RunC"),regex("^RunD"),regex("^RunE"),regex("^RunF")},
-    {regex("^RunH[a-zA-Z0-9_]*Fwd$"),regex("^RunH")},
-    {regex("^RunA"),regex("^RunB"),regex("^RunC"),regex("^RunD")}
+  // These are used generally for specifying which run is being analyzed.
+  // For data, these determine the file (dtfiles_) and luminosity (triglumiera) that is to be used.
+  // Hence, the combinations (e.g. BCD) are meaningless for data, and will not run.
+  // For MC, these determine the pileup file that is to be used.
+  // For both data and MC, these determine the hot zone map to be used.
+  // See: run.
+  const array<vector<string>,yrs> eras_ = {{
+    {"B","C","D","E","Fe","Fl","G","H","BCD","EF","GH","BCDEFGH"},
+    {"B","C","D","E","F","BCDEF"},
+    {"H[a-zA-Z0-9_]*Fwd","H"},
+    {"A","B","C","D","ABCD"}
   }};
-  const vector<regex> eras = eras_.at(yid);
+  const vector<string> eras = eras_.at(yid);
+
   // CAUTION: The next are expert options and better to leave untouched if one does not know exactly what is going on.
   // Overrides the above routines with a more intricate weighting scheme. When this is on, output-*1.root is weighted to match the era results.
   // In the version treatment we give the weights directly to induce better comparability
@@ -308,33 +314,45 @@ namespace jp {
 
   const array<string,yrs> jecgt_ = {
     "Summer16_07Aug2017",
-    "Fall17_17Nov2017B_V32_DATA/Fall17_17Nov2017", 
+    "Summer19UL17",
+    "Summer19UL17",
     //"Fall17_09May2018"
-    "Fall17_17Nov2017",
+    //"Fall17_17Nov2017",
     "Autumn18"
   };
   const string jecgt = jecgt_.at(yid);
   const array<string,yrs> jecversdt_ = {
     "_V20",
-    "_V32",
-    "_V32",
-    "_V15"
+    "_V1",
+    "_V1",
+    //"_V32",
+    //"_V32",
+    "_V16h"
   };
   const string jecversdt = jecversdt_.at(yid);
   const array<string,yrs> jecversmc_ = {
     "_V20",
-    "_V32",
+    "_V1",
+    "_V1",
+    //"_V32",
     //"_V3", (RunF 09May2018)
-    "_V32",
-    "_V15"
+    //"_V32",
+    "_V16h"
   };
   const string jecversmc = jecversmc_.at(yid);
+  const array<string,yrs> jectag_ = {
+    "",
+    "_SimpleL1",
+    "_SimpleL1",
+    ""
+  };
+  const string jectag = jectag_.at(yid);
 
   // Use Intervals-Of-Validity for JEC
   constexpr bool useIOV = true ;
   const array<vector<string>,yrs> IOVnames_ = {{
     {"BCD","EF","GH"},
-    {"B","C","DE","F"},
+    {"_RunB","_RunC","_RunD", "_RunE","_RunF"},
     {"F"}, // Run2017F is used for Run2017H (lowpu)
     {"_RunA","_RunB","_RunC","_RunD"}
   }};
@@ -342,7 +360,7 @@ namespace jp {
   // Trigger IOVs: the 1 for -inf and 400000 for inf (currently)
   const array<vector<array<int,2>>,yrs> IOVranges_ = {{
     { {272760,276811},{276831,278801},{278802,284045} }, // BCD, EF(early), (Flate)GH
-    { {297020,299329},{299337,302029},{302030,304826},{304911,306460} }, // B,C,DE,F: DE fused at 303434},{303435,
+    { {297020,299329},{299337,302029},{302030,303434},{303435,304826},{304911,306460} }, // B,C,D,E,F: DE fused at 303434},{303435,
     { {306926,307082} }, // H
     { {315000,316999},{317000,319499},{319500,320399},{320400,400000} } // A,B,C,D
   }};
@@ -353,68 +371,65 @@ namespace jp {
 
     //{ BEGIN DT: Files
     constexpr const array<const char*,yrs> dtpath_ =
-      {"Data/2016/","Data/2017/RRMar18/","Data/2017/RRMar18/","Data/2018/"};
+      {"Data/2016/","Data/2017/UL/","Data/2017/UL/","Data/2018/"};
     constexpr const char* dtpath = dtpath_.at(yid);
 
-    const array<map<string,vector<const char*>>,yrs> dtfiles_ = {{
+    const array<vector<vector<string>>,yrs> dtfiles_ = {{
       {
-        {"RunB" ,{"B_ZB.root", "B.root"}},
-        {"RunC" ,{"C_ZB.root", "C.root"}},
-        {"RunD" ,{"D_ZB.root", "D.root"}},
-        {"RunE" ,{"E_ZB.root", "E.root"}},
-        {"RunFe",{"Fe_ZB.root", "Fe.root"}},
-        {"RunFl",{"Fl_ZB.root", "Fl.root"}},
-        {"RunG" ,{"G_ZB.root", "G.root"}},
-        {"RunH" ,{"H_ZB.root", "H.root"}}
+        {"B_ZB.root",  "B.root"},
+        {"C_ZB.root",  "C.root"},
+        {"D_ZB.root",  "D.root"},
+        {"E_ZB.root",  "E.root"},
+        {"Fe_ZB.root", "Fe.root"},
+        {"Fl_ZB.root", "Fl.root"},
+        {"G_ZB.root",  "G.root"},
+        {"H_ZB.root",  "H.root"}
       },
       {
-        {"RunB",{"B_ZB.root", "B.root"}},
-        {"RunC",{"C_ZB.root", "C.root"}},
-        {"RunD",{"D_ZB.root", "D.root"}},
-        {"RunE",{"E_ZB.root", "E.root"}},
-        {"RunF",{"F_ZB.root", "F.root"}}
+        {"B_ZB.root", "B.root"},
+        {"C_ZB.root", "C.root"},
+        {"D_ZB.root", "D.root"},
+        {"E_ZB.root", "E.root"},
+        {"F_ZB.root", "F.root"}
       },
       {
-        {"RunH_FSQJ2",{"H_FSQJ2.root"}},
-        {"RunH_FSQJ2Fwd",{"H_FSQJ2.root"}},
-        {"RunH_LEG",{"H_LEG.root"}},
-        {"RunH_LEGFwd",{"H_LEG.root"}},
-        {"RunH_HEG",{"H_HEG.root"}},
-        {"RunH_HEGFwd",{"H_HEG.root"}},
-        {"RunH_ZB",{"H_ZB.root"}}
+        {"H_FSQJ2.root"},
+        {"H_LEG.root"},
+        {"H_HEG.root"},
+        {"H_ZB.root"}
       },
       {
-        {"RunA",{"A_ZB.root", "A.root"}},
-        {"RunB",{"B_ZB.root", "B.root"}},
-        {"RunC",{"C_ZB.root","C.root"}},
-        {"RunD",{"D_ZB.root","D.root"}}
+        {"A_ZB.root", "A.root"},
+        {"B_ZB.root", "B.root"},
+        {"C_ZB.root","C.root"},
+        {"D_ZB.root","D.root"}
       }
     }};
-    const map<string,vector<const char*>> dtfiles = dtfiles_.at(yid);
+    const vector<vector<string>> dtfiles = dtfiles_.at(yid);
     //}
 
     //{ BEGIN MC: Generic options
     const array<map<string,vector<const char*>>,yrs> mcfiles_ = {{
       {
-        {"P8M1",{"MC/2016/P8M1/FlatPthat_15to7000.root"}},
-        {"HS1",{"MC/2016/HS1/FlatPthat_15to7000.root"}},
+        {"P8M1" ,{"MC/2016/P8M1/FlatPthat_15to7000.root"}},
+        {"HS1"  ,{"MC/2016/HS1/FlatPthat_15to7000.root"}},
         {"NuGun",{"MC/2016/NuGun.root"}}
       },
       {
-        {"P8M1",{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
+        {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
         {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
-        {"HS1",{"MC/2017/HS1/FlatPthat_15to7000.root"}},
+        {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
         {"NuGun",{"MC/2017/NuGun.root"}}
       },
       {
-        {"P8M1",{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
+        {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
         {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
-        {"HS1",{"MC/2017/HS1/FlatPthat_15to7000.root"}},
+        {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
         {"NuGun",{"MC/2017/NuGun.root"}}
       },
       {
         {"P8CP5",{"MC/2018/P8CP5/FlatPthat_15to7000.root"}},
-        {"H7",{"MC/2018/H7/FlatPthat_15to7000.root"}},
+        {"H7"   ,{"MC/2018/H7/FlatPthat_15to7000.root"}},
         {"NuGun",{"MC/2018/NuGun.root"}}
       }
     }};
@@ -425,8 +440,8 @@ namespace jp {
     // All the following values need to be updated, if other source tuples are used.
     const array<const char*,yrs> pthatpath_ = {
       "MC/2016/P8M1/",
-      "MC/2017/P8CP5/",
-      "MC/2017/P8CP5/",
+      "MC/UL17/P8CP5/",
+      "MC/UL17/P8CP5/",
       "MC/2018/P8CP5/"
     };
     const char* pthatpath = pthatpath_.at(yid);
@@ -515,14 +530,6 @@ namespace jp {
     constexpr bool reweighPU = true;
     constexpr const double maxpu = 80.0;
 
-    const array<vector<string>,yrs> PUIOVs_ = {{
-      {"BCD/","EF/","GH/","BCDEFGH/"},
-      {"B/","C/","DE/","F/","BCDEF/"},
-      {"F/"}, // Run2017F is used for Run2017H (lowpu)
-      {"A/","B/","C/","D/","ABCD/"},
-    }};
-    const vector<string> PUIOVs = PUIOVs_.at(yid);
-
     const array<string,yrs> pudtpath_ =
       {"pileup/DT/16_LRRAUG/","pileup/DT/17_RRMAR/","pileup/DT/17_RRMAR/","pileup/DT/18_Impro/"};
     const string pudtpath = pudtpath_.at(yid);
@@ -577,30 +584,12 @@ namespace jp {
   };
   constexpr const unsigned int noptranges = sizeof(ptrangevseta)/sizeof(ptrangevseta[0]);
 
-  constexpr const double wetarange[] = {
-    -5.191, -3.839, -3.489, -3.139, -2.964, -2.853, -2.650, -2.500, -2.322, -2.172, -1.930, -1.653, -1.479, -1.305, -1.044, -0.783, -0.522, -0.261,
-      0.000,  0.261,  0.522,  0.783,  1.044,  1.305,  1.479,  1.653,  1.930, 2.172,  2.322,  2.500,  2.650,  2.853,  2.964,  3.139,  3.489,  3.839, 5.191
-  };
-  constexpr const unsigned int nwetas = sizeof(wetarange)/sizeof(wetarange[0])-1;
-
-  constexpr const double posetarange[] = {
-    0, 0.261, 0.522, 0.783, 0.957, 1.131, 1.305, 1.479, 1.93, 2.322, 2.411, 2.5, 2.853, 2.964, 5.191
-  };
-  constexpr const unsigned int nposetas = sizeof(posetarange)/sizeof(posetarange[0])-1;
-
-  // This agrees with the L2Relative eta grid
-  constexpr const double etarange[] = {
-    -5.191,-4.889,-4.716,-4.538,-4.363,-4.191,-4.013,-3.839,-3.664,-3.489,-3.314,-3.139,-2.964,-2.853,-2.65,-2.5,-2.322,-2.172,-2.043,-1.93,-1.83,-1.74,-1.653,-1.566,-1.479,-1.392,-1.305,-1.218,-1.131,-1.044,-0.957,-0.879,-0.783,-0.696,-0.609,-0.522,-0.435,-0.348,-0.261,-0.174,-0.087,
-     0.000, 0.087, 0.174, 0.261,0.348, 0.435, 0.522, 0.609, 0.696, 0.783, 0.879, 0.957, 1.044, 1.131, 1.218,1.305, 1.392, 1.479, 1.566, 1.653, 1.74, 1.83, 1.93, 2.043, 2.172, 2.322, 2.5,2.65, 2.853, 2.964, 3.139, 3.314, 3.489, 3.664, 3.839, 4.013, 4.191, 4.363,4.538, 4.716, 4.889, 5.191
-  };
-  constexpr const unsigned int netas = sizeof(etarange)/sizeof(etarange[0])-1;
-
   constexpr const double ptrange_semi[] = {
     15, 18, 21, 24, 28, 32, 37, 43, 49, 56, 64, 74, 84, 97, 114, 133, 153, 174, 196, 220, 245, 272, 300, 330, 362, 395, 430, 468, 507, 548, 592, 638, 686, 737, 790, 846, 905, 967, 1032, 1101, 1172, 1248, 1327, 1410, 1497, 1588, 1684, 1784, 1890, 2000, 2116, 2238, 2366, 2500, 2640, 2787, 2941, 3103, 3273, 3450, 3832, 6076, 6389
   };
   constexpr const unsigned int npts_semi = sizeof(ptrange_semi)/sizeof(ptrange_semi[0])-1;
 
-  // This agrees with the L2Relative pt grids
+  // This agrees with the L2Relative pt grids (Historical conventions)
   constexpr const unsigned int nopts_etarange = 30;
   constexpr const double ptforetarange[][nopts_etarange] = {
     {0.001,8.18905,9.56088,11.3415,13.2548,15.3228,17.4045,20.9332,25.1423,6500}, // Eta -5.191 - -4.889
@@ -688,28 +677,51 @@ namespace jp {
   };
   constexpr const int ptbins[] = {9,11,13,16,17,19,19,20,21,20,21,19,18,20,21,23,24,25,25,25,26,26,26,26,26,28,28,28,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,28,28,28,26,26,26,26,26,25,25,25,24,23,21,20,18,19,21,20,21,20,19,19,17,16,13,11,9};
 
-  constexpr const double pvrange[] = {
-    -0.5,0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5,12.5,13.5,14.5,15.5,16.5,17.5,18.5,19.5,20.5,21.5,22.5,23.5,24.5,25.5,26.5,27.5,28.5,29.5,30.5,31.5,32.5,33.5,34.5,35.5,36.5,37.5,38.5,39.5,40.5,41.5,42.5,43.5,44.5,45.5,46.5,47.5,48.5,49.5
+  constexpr const double npvrange[] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80
   };
-  constexpr const unsigned int npvs = sizeof(pvrange)/sizeof(pvrange[0])-1;
+  constexpr const unsigned int npvs = sizeof(npvrange)/sizeof(npvrange[0])-1; // 100
 
+  constexpr const double wetarange[] = {
+    -5.191, -3.839, -3.489, -3.139, -2.964, -2.853, -2.650, -2.500, -2.322, -2.172, -1.930, -1.653, -1.479, -1.305, -1.044, -0.783, -0.522, -0.261,
+      0.000,  0.261,  0.522,  0.783,  1.044,  1.305,  1.479,  1.653,  1.930, 2.172,  2.322,  2.500,  2.650,  2.853,  2.964,  3.139,  3.489,  3.839, 5.191
+  };
+  constexpr const unsigned int nwetas = sizeof(wetarange)/sizeof(wetarange[0])-1;
+
+  constexpr const double posetarange[] = {
+    0, 0.261, 0.522, 0.783, 0.957, 1.131, 1.305, 1.479, 1.93, 2.322, 2.411, 2.5, 2.853, 2.964, 5.191
+  };
+  constexpr const unsigned int nposetas = sizeof(posetarange)/sizeof(posetarange[0])-1;
+
+  // This agrees with the L2Relative eta grid, steps of 0.087 in the barrel (HCAL tower granularity, includes 5x5 ECAL towers)
+  constexpr const double etarange[] = {
+    -5.191,-4.889,-4.716,-4.538,-4.363,-4.191,-4.013,-3.839,-3.664,-3.489,-3.314,-3.139,-2.964,-2.853,-2.65,-2.5,-2.322,-2.172,-2.043,-1.93,-1.83,-1.74,-1.653,-1.566,-1.479,-1.392,-1.305,-1.218,-1.131,-1.044,-0.957,-0.879,-0.783,-0.696,-0.609,-0.522,-0.435,-0.348,-0.261,-0.174,-0.087,
+     0.000, 0.087, 0.174, 0.261,0.348, 0.435, 0.522, 0.609, 0.696, 0.783, 0.879, 0.957, 1.044, 1.131, 1.218,1.305, 1.392, 1.479, 1.566, 1.653, 1.74, 1.83, 1.93, 2.043, 2.172, 2.322, 2.5,2.65, 2.853, 2.964, 3.139, 3.314, 3.489, 3.664, 3.839, 4.013, 4.191, 4.363,4.538, 4.716, 4.889, 5.191
+  };
+  constexpr const unsigned int netas = sizeof(etarange)/sizeof(etarange[0])-1;
+
+  // In the spirit of L2Relative, 4*18 phi bins, steps of approximately 0.087 (HCAL tower granularity, includes 5x5 ECAL towers)
   constexpr const double phirange[] = {
-    -3.15,-3.097959,-3.054326,-3.010693,-2.967060,-2.923426,-2.879793,-2.836160,-2.792527,-2.748894,-2.705260,-2.661627,-2.617994,-2.574361,-2.530727,-2.487094,-2.443461,-2.399828,-2.356194,-2.312561,-2.268928,-2.225295,-2.181662,-2.138028,-2.094395,-2.050762,-2.007129,-1.963495,-1.919862,-1.876229,-1.832596,-1.788962,-1.745329,-1.701696,-1.658063,-1.614430,-1.570796,-1.527163,-1.483530,-1.439897,-1.396263,-1.352630,-1.308997,-1.265364,-1.221730,-1.178097,-1.134464,-1.090831,-1.047198,-1.003564,-0.959931,-0.916298,-0.872665,-0.829031,-0.785398,-0.741765,-0.698132,-0.654498,-0.610865,-0.567232,-0.523599,-0.479966,-0.436332,-0.392699,-0.349066,-0.305433,-0.261799,-0.218166,-0.174533,-0.130900,-0.087266,-0.043633,0.000000,0.043633,0.087266,0.130900,0.174533,0.218166,0.261799,0.305433,0.349066,0.392699,0.436332,0.479966,0.523599,0.567232,0.610865,0.654498,0.698132,0.741765,0.785398,0.829031,0.872665,0.916298,0.959931,1.003564,1.047198,1.090831,1.134464,1.178097,1.221730,1.265364,1.308997,1.352630,1.396263,1.439897,1.483530,1.527163,1.570796,1.614430,1.658063,1.701696,1.745329,1.788962,1.832596,1.876229,1.919862,1.963495,2.007129,2.050762,2.094395,2.138028,2.181662,2.225295,2.268928,2.312561,2.356194,2.399828,2.443461,2.487094,2.530727,2.574361,2.617994,2.661627,2.705260,2.748894,2.792527,2.836160,2.879793,2.923426,2.967060,3.010693,3.054326,3.097959,3.15
+    -3.14159265360, -3.0543261909902775, -2.9670597283905553, -2.879793265790833, -2.792526803191111, -2.705260340591389, -2.6179938779916667, -2.5307274153919446, -2.443460952792222, -2.3561944901925, -2.2689280275927777, -2.1816615649930555, -2.0943951023933334, -2.0071286397936112, -1.9198621771938889, -1.8325957145941667, -1.7453292519944443, -1.6580627893947222, -1.570796326795, -1.4835298641952777, -1.3962634015955555, -1.3089969389958334, -1.221730476396111, -1.1344640137963888, -1.0471975511966667, -0.9599310885969444, -0.8726646259972222, -0.7853981633975, -0.6981317007977778, -0.6108652381980555, -0.5235987755983333, -0.4363323129986111, -0.3490658503988889, -0.26179938779916667, -0.17453292519944444, -0.08726646259972222,
+    0.0, 0.08726646259972222, 0.17453292519944444, 0.26179938779916667, 0.3490658503988889, 0.4363323129986111, 0.5235987755983333, 0.6108652381980555, 0.6981317007977778, 0.7853981633975, 0.8726646259972222, 0.9599310885969444, 1.0471975511966667, 1.1344640137963888, 1.221730476396111, 1.3089969389958334, 1.3962634015955555, 1.4835298641952777, 1.570796326795, 1.6580627893947222, 1.7453292519944443, 1.8325957145941667, 1.9198621771938889, 2.0071286397936112, 2.0943951023933334, 2.1816615649930555, 2.2689280275927777, 2.3561944901925, 2.443460952792222, 2.5307274153919446, 2.6179938779916667, 2.705260340591389, 2.792526803191111, 2.879793265790833, 2.9670597283905553, 3.0543261909902775, 3.14159265360
   };
   constexpr const unsigned int nphis = sizeof(phirange)/sizeof(phirange[0])-1;
 
+  // In the spirit of L2Relative, 4*18 phi bins, steps of approximately 0.087 (HCAL tower granularity, includes 5x5 ECAL towers)
   constexpr const double posphirange[] = {
-  0.000000,0.021817,0.043633,0.065450,0.087266,0.109083,0.130900,0.152716,0.174533,0.196350,0.218166,0.239983,0.261799,0.283616,0.305433,0.327249,0.349066,0.370882,0.392699,0.414516,0.436332,0.458149,0.479966,0.501782,0.523599,0.545415,0.567232,0.589049,0.610865,0.632682,0.654498,0.676315,0.698132,0.719948,0.741765,0.763582,0.785398,0.807215,0.829031,0.850848,0.872665,0.894481,0.916298,0.938114,0.959931,0.981748,1.003564,1.025381,1.047198,1.069014,1.090831,1.112647,1.134464,1.156281,1.178097,1.199914,1.221730,1.243547,1.265364,1.287180,1.308997,1.330814,1.352630,1.374447,1.396263,1.418080,1.439897,1.461713,1.483530,1.505346,1.527163,1.548980,1.570796,1.592613,1.614430,1.636246,1.658063,1.679879,1.701696,1.723513,1.745329,1.767146,1.788962,1.810779,1.832596,1.854412,1.876229,1.898046,1.919862,1.941679,1.963495,1.985312,2.007129,2.028945,2.050762,2.072578,2.094395,2.116212,2.138028,2.159845,2.181662,2.203478,2.225295,2.247111,2.268928,2.290745,2.312561,2.334378,2.356194,2.378011,2.399828,2.421644,2.443461,2.465278,2.487094,2.508911,2.530727,2.552544,2.574361,2.596177,2.617994,2.639810,2.661627,2.683444,2.705260,2.727077,2.748894,2.770710,2.792527,2.814343,2.836160,2.857977,2.879793,2.901610,2.923426,2.945243,2.967060,2.988876,3.010693,3.032510,3.054326,3.076143,3.097959,3.119776,3.15
+    0.0, 0.08726646259972222, 0.17453292519944444, 0.26179938779916667, 0.3490658503988889, 0.4363323129986111, 0.5235987755983333, 0.6108652381980555, 0.6981317007977778, 0.7853981633975, 0.8726646259972222, 0.9599310885969444, 1.0471975511966667, 1.1344640137963888, 1.221730476396111, 1.3089969389958334, 1.3962634015955555, 1.4835298641952777, 1.570796326795, 1.6580627893947222, 1.7453292519944443, 1.8325957145941667, 1.9198621771938889, 2.0071286397936112, 2.0943951023933334, 2.1816615649930555, 2.2689280275927777, 2.3561944901925, 2.443460952792222, 2.5307274153919446, 2.6179938779916667, 2.705260340591389, 2.792526803191111, 2.879793265790833, 2.9670597283905553, 3.0543261909902775, 3.14159265360
   };
   constexpr const unsigned int nposphis = sizeof(posphirange)/sizeof(posphirange[0])-1;
 
+  // Same as phirange, but bins with twice the width
   constexpr const double wphirange[] = {
-    -3.15,-2.96706,-2.79253,-2.61799,-2.44346,-2.26893,-2.0944,-1.91986,-1.74533,-1.5708,-1.39626,-1.22173,-1.0472,-0.872665,-0.698132,-0.523599,-0.349066,-0.174533,0,0.174533,0.349066,0.523599,0.698132,0.872665,1.0472,1.22173,1.39626,1.5708,1.74533,1.91986,2.0944,2.26893,2.44346,2.61799,2.79253,2.96706,3.15
+    -3.14159265360, -2.9670597283905553, -2.792526803191111, -2.6179938779916667, -2.443460952792222, -2.2689280275927777, -2.0943951023933334, -1.9198621771938889, -1.7453292519944443, -1.570796326795, -1.3962634015955555, -1.221730476396111, -1.0471975511966667, -0.8726646259972222, -0.6981317007977778, -0.5235987755983333, -0.3490658503988889, -0.17453292519944444, 0.0, 0.17453292519944444, 0.3490658503988889, 0.5235987755983333, 0.6981317007977778, 0.8726646259972222, 1.0471975511966667, 1.221730476396111, 1.3962634015955555, 1.570796326795, 1.7453292519944443, 1.9198621771938889, 2.0943951023933334, 2.2689280275927777, 2.443460952792222, 2.6179938779916667, 2.792526803191111, 2.9670597283905553, 3.14159265360
   };
   constexpr const unsigned int nwphis = sizeof(wphirange)/sizeof(wphirange[0])-1;
 
+  // Same as posphirange, but bins with twice the width
   constexpr const double wposphirange[] = {
-    0,0.0872665,0.174533,0.261799,0.349066,0.436332,0.523599,0.610865,0.698132,0.785398,0.872665,0.959931,1.0472,1.13446,1.22173,1.309,1.39626,1.48353,1.5708,1.65806,1.74533,1.8326,1.91986,2.00713,2.0944,2.18166,2.26893,2.35619,2.44346,2.53073,2.61799,2.70526,2.79253,2.87979,2.96706,3.05433,3.15
+    0.0, 0.17453292519944444, 0.3490658503988889, 0.5235987755983333, 0.6981317007977778, 0.8726646259972222, 1.0471975511966667, 1.221730476396111, 1.3962634015955555, 1.570796326795, 1.7453292519944443, 1.9198621771938889, 2.0943951023933334, 2.2689280275927777, 2.443460952792222, 2.6179938779916667, 2.792526803191111, 2.9670597283905553, 3.14159265360
   };
   constexpr const unsigned int nwposphis = sizeof(wposphirange)/sizeof(wposphirange[0])-1;
 
@@ -748,19 +760,9 @@ namespace jp {
   // Luminosity weighting options (DATA)
   // Do we use trigger lumi weighting (see triglumi or triglumiera)
   constexpr bool usetriglumi = true;
-  // Use per-era values in HistosNormalize (not recommmended)
-  // That is, use values from the correct triglumiera instead of triglumi values.
-  constexpr bool usetriglumiera = false;
-  // Do a "pseudo-weighting" procedure within histosFill.
-  // When this setting is on, we weight by w_era/w_year (pseudo-weight) in HistosFill.
-  // Then, in HistosNormalize we apply w_year.
-  constexpr bool useeraweights = true;
-  // So, what is the difference between usetriglumiera and useeraweights?
-  // The former applies the correction within HistosNormalize.
-  // The latter runs a per-run correction within HistosFill and then further applies the common correction in HistosNormalize.
-  // This allows us to "glue" output-*-1.root files together with hadd, if several runs are given at the same time.
-  // Thus, with the latter option we have a "per-Era" kind of weighting procedure - and all the files behave quite as normally.
-  // In HistosFill we apply only small corrections that revolve around one, which is basically just fine-tuning.
+  // Use per-era values in HistosNormalize instead of per-year values.
+  // Note that only after this (the output-*-2a files) hadd can be used safely.
+  constexpr bool usetriglumiera = true;
 
   //{ BEGIN HistosNormalize (leave these off if not interested on details)
   // Correct for trigger efficiency based on MC
@@ -786,7 +788,7 @@ namespace jp {
   constexpr bool gitinfo = !EXPERT;
 
   // Will assert be used in the programs? More than 1/3 reduction of run time if off.
-  #if EXPERT == 1
+  #if DEBUG == 1
   #define USEASSERT
   #endif
   //} END Important handles that should not be touched most of the time

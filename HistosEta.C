@@ -27,50 +27,64 @@ HistosEta::HistosEta(TDirectory *dir, string trigname, double pttrg, double ptmi
   for (unsigned int i = 0; i != na+1; ++i)
     va[i] = -1. + 2.*i/na;
 
-  // Loop over alpha entries of interest
-  for (auto alpha : alpharange) {
-    int major_alpha = 100*alpha;
-    // Start by coming up with a nice number identifier
-    int padding = TMath::Log10(major_alpha);
-    padding = 2-padding;
-    while (major_alpha%10==0)
-      major_alpha /= 10;
-    string number = std::to_string(major_alpha);
-    for (int i = 0; i < padding; ++i)
-      number = string("0")+number;
+  if (jp::do3dHistos) {
+    // Loop over alpha entries of interest
+    for (auto alpha : alpharange) {
+      int major_alpha = 100*alpha;
+      // Start by coming up with a nice number identifier
+      int padding = TMath::Log10(major_alpha);
+      padding = 2-padding;
+      while (major_alpha%10==0)
+        major_alpha /= 10;
+      string number = std::to_string(major_alpha);
+      for (int i = 0; i < padding; ++i)
+        number = string("0")+number;
 
-    // Fill all histo types with a corresponding histogram
-    hdjasymm.push_back(  new TH3D((string("hdjasymm_a")+number).c_str(),
-                              ";p_{T,ave};#eta;Asymmetry",
-                              jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
-    hdjasymmtp.push_back(new TH3D((string("hdjasymmtp_a")+number).c_str(),
-                              ";p_{T,tag};#eta;Asymmetry",
-                              jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
-    //hdjasymmpt.push_back(new TH3D((string("hdjasymmpt_a")+number).c_str(),
-    //                          ";p_{T,probe};#eta;Asymmetry",
-    //                          jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
-    hdjmpf.push_back(    new TH3D((string("hdjmpf_a")+number).c_str(),
-                              ";p_{T,ave};#eta;MPF",
-                              jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
-    hdjmpftp.push_back(  new TH3D((string("hdjmpftp_a")+number).c_str(),
-                              ";p_{T,tag};#eta;MPF",
-                              jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
-   // hdjmpfpt.push_back(  new TH3D((string("hdjmpfpt_a")+number).c_str(),
-   //                           ";p_{T,probe};#eta;MPF",
-   //                           jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
-  }//
+      // Fill all histo types with a corresponding histogram
+      hdjasymm.push_back(  new TH3D((string("hdjasymm_a")+number).c_str(),
+                                ";p_{T,ave};#eta;Asymmetry",
+                                jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
+      hdjasymmtp.push_back(new TH3D((string("hdjasymmtp_a")+number).c_str(),
+                                ";p_{T,tag};#eta;Asymmetry",
+                                jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
+      //hdjasymmpt.push_back(new TH3D((string("hdjasymmpt_a")+number).c_str(),
+      //                          ";p_{T,probe};#eta;Asymmetry",
+      //                          jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
+      hdjmpf.push_back(    new TH3D((string("hdjmpf_a")+number).c_str(),
+                                ";p_{T,ave};#eta;MPF",
+                                jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
+      hdjmpftp.push_back(  new TH3D((string("hdjmpftp_a")+number).c_str(),
+                                ";p_{T,tag};#eta;MPF",
+                                jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
+     // hdjmpfpt.push_back(  new TH3D((string("hdjmpfpt_a")+number).c_str(),
+     //                           ";p_{T,probe};#eta;MPF",
+     //                           jp::npts,&jp::ptrange[0],jp::nwetas,&jp::wetarange[0],na,&va[0]) );
+    }
 
-  // Weights:
-  for (unsigned i = 0; i < alpharange.size(); ++i) {
-    hdjasymm[i]->Sumw2();
-    hdjasymmtp[i]->Sumw2();
-    //hdjasymmpt[i]->Sumw2();
-    hdjmpf[i]->Sumw2();
-    hdjmpftp[i]->Sumw2();
-    //hdjmpfpt[i]->Sumw2();
+    // Weights:
+    for (unsigned i = 0; i < alpharange.size(); ++i) {
+      hdjasymm[i]->Sumw2();
+      hdjasymmtp[i]->Sumw2();
+      //hdjasymmpt[i]->Sumw2();
+      hdjmpf[i]->Sumw2();
+      hdjmpftp[i]->Sumw2();
+      //hdjmpfpt[i]->Sumw2();
+    }
   }
 
-  // components vs eta (Ozlem)
+  // Special studies for tag between 50 and 60 GeV.
+  hnpvall_pt50to60 = new TH1D("hnpvall_pt50to60","",jp::npvs,&jp::npvrange[0]);
+  hnpv_pt50to60    = new TH1D("hnpv_pt50to60"   ,"",jp::npvs,&jp::npvrange[0]);
+  htrpu_pt50to60    = new TH1D("htrpu_pt50to60"   ,"",jp::npvs,&jp::npvrange[0]);
+  hrho_pt50to60    = new TH1D("hrho_pt50to60"   ,"",jp::npvs,&jp::npvrange[0]);
+  hpuf_pt50to60    = new TH1D("hpuf_pt50to60"   ,"",100,0,1);
+  hchf_pt50to60    = new TH1D("hchf_pt50to60"   ,"",100,0,1);
+
+  // eta profiles
+  heta = new TH1D("heta","",jp::netas,jp::etarange);
+  hetaphi = new TH2D("hetaphi","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+
+  // components vs eta
   pncandtp_vseta = new TProfile("pcandtp_vseta","",jp::netas,jp::etarange);
   pnchtp_vseta = new TProfile("pnchtp_vseta","",jp::netas,jp::etarange);
   pnnetp_vseta = new TProfile("pnnetp_vseta","",jp::netas,jp::etarange);
@@ -90,10 +104,9 @@ HistosEta::HistosEta(TDirectory *dir, string trigname, double pttrg, double ptmi
   pbetastartp_vseta = new TProfile("pbetastartp_vseta","",jp::netas,jp::etarange);
   ppuftp_vseta = new TProfile("ppuftp_vseta","",jp::netas,jp::etarange);
 
-  if (this->ismcdir) {
-    // response closure
-    p3rvsnpv = new TProfile3D("p3rvsnpv","",jp::npts,&jp::ptrange[0],jp::netas,&jp::etarange[0],jp::npvs,&jp::pvrange[0]);
-    p3rvsnpvW = new TProfile3D("p3rvsnpvW","",jp::nwpts,&jp::wptrange[0],jp::nposetas,&jp::posetarange[0],jp::npvs,&jp::pvrange[0]);
+  if (this->ismcdir) { // response closure
+    p3rvsnpv = new TProfile3D("p3rvsnpv","",jp::npts,&jp::ptrange[0],jp::netas,&jp::etarange[0],jp::npvs,&jp::npvrange[0]);
+    p3rvsnpvW = new TProfile3D("p3rvsnpvW","",jp::nwpts,&jp::wptrange[0],jp::nposetas,&jp::posetarange[0],jp::npvs,&jp::npvrange[0]);
   }
 
   curdir->cd();
