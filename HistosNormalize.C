@@ -107,7 +107,7 @@ void HistosNormalize(string type = "")
       cout << Form(" *%s: %1.3f /pb", jp::triggers[i],lumi) << endl;
       triglumi[jp::triggers[i]] = lumi;
     }
-  }
+  
 
   cout << "Calling HistosNormalize("<<type<<");" << endl;
   cout << "Input file " << fin->GetName() << endl;
