@@ -172,9 +172,6 @@ void drawDagostini(string type) {
     l->SetLineStyle(kDotted);
     l->DrawLine(uf::ptminnlo,0.15,uf::ptminnlo,1.15); // minimum pt in unfolding
 
-    //  l->SetLineStyle(kDashed);
-    //  l->DrawLine(uf::xminpas,0.15,uf::xminpas,1.15); // Line showing data points included in results
-
     gfwd->SetName("gfwd");
     gfwd->SetLineWidth(2);
     gfwd->SetLineColor(kRed);
@@ -221,8 +218,6 @@ void drawDagostini(string type) {
     l->SetLineStyle(kDotted);
     l->DrawLine(ptmin,0.9,ptmin,1.1);
     l->SetLineStyle(kDashed);
-    //l->DrawLine(56,0.9,56,1.1); // v2
-    l->DrawLine(uf::xminpas,0.9,uf::xminpas,1.1);
 
     TGraphErrors *grfwd = tools::ratioGraphs(gfwd, gfwd);
     grfwd->Draw("SAMEL");
