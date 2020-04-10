@@ -1,4 +1,3 @@
-
 // Purpose: d'Agostini ("Bayesian" or Richardson-Lucy) unfolding, including
 //          response matrix generation from NLO theory and parameterized JER
 // Author:  mikko.voutilainen@cern.ch
@@ -36,6 +35,7 @@
 #include "settings.h"
 #include "tools.h"
 #include "ansatz.h"
+#include "unfsettings.h"
 
 #include "deriveSubBins.h"
 
@@ -61,7 +61,7 @@ void dagostiniUnfold(string type) {
 
    // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
    // TFile *fin2 = new TFile(Form("output-%s-2c.root","MC"),"READ");
-   TFile *fin2 = new TFile(jp::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
+   TFile *fin2 = new TFile(uf::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
 
   assert(fin2 && !fin2->IsZombie());
   
@@ -135,7 +135,7 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
 	    TH1D *hpt = (TH1D*)obj;
             //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
             //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
-            TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hgpt_g" : "hgpt"); assert(hpt2);
+            TH1D *hpt2 = (TH1D*)indir2->Get(uf::dagfile1 ? "mc/hgpt_g" : "hgpt"); assert(hpt2);
             if (hpt2)
                 dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
         } //hgpt plots
@@ -147,7 +147,7 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
 	    TH1D *hpt = (TH1D*)obj;
             //TH1D *hpt2 = (TH1D*)indir2->Get("hnlo"); assert(hpt2);
             //    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hgpt"); assert(hpt2);
-            TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hqpt_g" : "hqpt"); assert(hpt2);
+            TH1D *hpt2 = (TH1D*)indir2->Get(uf::dagfile1 ? "mc/hqpt_g" : "hqpt"); assert(hpt2);
             if (hpt2)
                 dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
         } //hqpt plots
@@ -158,7 +158,7 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
             cout << "+" << flush;
             
 	    TH1D *hpt = (TH1D*)obj;
-	    TH1D *hpt2 = (TH1D*)indir2->Get(jp::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
+	    TH1D *hpt2 = (TH1D*)indir2->Get(uf::dagfile1 ? "mc/hpt_g" : "hpt"); assert(hpt2);
             if (hpt2)
                 dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);
             } // hpt for inclusive for other cases 
@@ -184,7 +184,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   // Correct hpt (data) for ECAL prefire
   // Similar way as in https://github.com/miquork/jecsys/blob/2018_Moriond19/minitools/drawDeltaJEC.C
 
-  if (y1 >= 2.0 && y2 <= 3.0 && jp::yid < 2 && jp::doECALprefire) {
+  if (y1 >= 2.0 && y2 <= 3.0 && jp::yid < 2 && uf::doECALprefire) {
 
     jer_iov runECAL = prefireIOV();
 
@@ -210,7 +210,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   TF1 *fnlo = new TF1(Form("fus%s",c),
 		           "[0]*pow(x,[1])"
                       "*pow(1-x*cosh([3])/[4],[2])", //10., 1000.);
-		      jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
+		      uf::ptminnlo, min(uf::xmax, jp::emax/cosh(y1)));
 
   fnlo->SetParameters(5e10,-5.2,8.9,y1,jp::emax);
   //  fnlo->SetParameters(2e14*2e-10,-18,-5,10,y1,jp::emax);
@@ -219,10 +219,10 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   //hnlo->Fit(fnlo,"QRN");
   //hnlo->Scale(2e-10); // TEMP PATCH
-  fnlo->SetRange(max(jp::fitmin,jp::unfptminnlo), min(jp::xmax, jp::emax/cosh(y1)));
+  fnlo->SetRange(max(uf::fitmin,uf::ptminnlo), min(uf::xmax, jp::emax/cosh(y1)));
   cout << "fit hnlo" << endl;
   hnlo->Fit(fnlo,"RN"); 
-  fnlo->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
+  fnlo->SetRange(uf::ptminnlo, min(uf::xmax, jp::emax/cosh(y1)));
 
   // Graph of theory points with centered bins
   const double minerr = 0.02;
@@ -249,10 +249,10 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   // Second fit to properly centered graph
   //gnlo2->Fit(fnlo,"QRN");
-  fnlo->SetRange(max(jp::fitmin,jp::unfptminnlo), min(jp::xmax, jp::emax/cosh(y1)));   // Fit ranges here...
+  fnlo->SetRange(max(uf::fitmin,uf::ptminnlo), min(uf::xmax, jp::emax/cosh(y1)));   // Fit ranges here...
   cout << "fit to gnlo2" << endl;
   gnlo2->Fit(fnlo,"RN");
-  fnlo->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
+  fnlo->SetRange(uf::ptminnlo, min(uf::xmax, jp::emax/cosh(y1)));
 
   // Bin-centered data points
   TGraphErrors *gpt = new TGraphErrors(0);
@@ -273,8 +273,8 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
   // Create smeared theory curve
   double maxpt = jp::emax/cosh(y1);
-  cout << "y1 "<< y1 << " c "<< c <<endl<<flush;
-  TF1 *fnlos = new TF1(Form("fs%s",c),smearedAnsatz,jp::unfptminnlo,maxpt,nk+3); 
+  cout << "y1 "<< y1 <<endl<<flush;
+  TF1 *fnlos = new TF1(Form("fs%s",c),smearedAnsatz,uf::ptminnlo,maxpt,nk+3); 
   fnlos->SetParameters(y1, fnlo->GetParameter(0), fnlo->GetParameter(1),
                        fnlo->GetParameter(2), 0, 0);
   cout << "par0 "<< fnlos->GetParameter(0) << " y1 "<< y1<<endl<<flush; 
@@ -324,12 +324,12 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
     double x2 = hpt->GetBinLowEdge(i+1);
     double y = hpt->GetBinContent(i); 
 
-    if (x>=jp::unfptmingen && y>0) {
+    if (x>=uf::ptmingen && y>0) {
       if (vx.size()==0) vx.push_back(x1);
       vx.push_back(x2);
     }
 
-      if (x>=jp::unfptminreco && y>0) {
+      if (x>=uf::ptminreco && y>0) {
        if (vy.size()==0) vy.push_back(x1);
        vy.push_back(x2);
        maxx = x2;
@@ -390,7 +390,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
       double ptgen1 = min(jp::emax/cosh(y1), mt->GetYaxis()->GetBinLowEdge(j));
       double ptgen2 = min(jp::emax/cosh(y1), mt->GetYaxis()->GetBinLowEdge(j+1));
 
-      if (ptgen1>=jp::unfptmingen && ptreco>jp::unfptminreco && ptgen1*cosh(y1)<jp::emax) {  // This results in rows and columns of 0 in mt
+      if (ptgen1>=uf::ptmingen && ptreco>uf::ptminreco && ptgen1*cosh(y1)<jp::emax) {  // This results in rows and columns of 0 in mt
 
         fnlos->SetParameter(4, ptgen1);
         fnlos->SetParameter(5, ptgen2);
@@ -684,7 +684,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   outdir->cd();
 
   // Save resolution function
-  TF1 *fres = new TF1(Form("fres%s",c), fPtRes, jp::xmin, jp::xmax, 1);
+  TF1 *fres = new TF1(Form("fres%s",c), fPtRes, uf::xmin, uf::xmax, 1);
   fres->SetParameter(0, y1);
 
   // Store NLO ratio to (unsmeared) fit
@@ -722,10 +722,10 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 
     // Fit functions.
     uResp->Write();
-    fnlo->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
+    fnlo->SetRange(uf::ptminnlo, min(uf::xmax, jp::emax/cosh(y1)));
     fnlo->SetNpx(1000); // otherwise ugly on log x-axis after write
     fnlo->Write();
-    fnlos->SetRange(jp::unfptminnlo, min(jp::xmax, jp::emax/cosh(y1)));
+    fnlos->SetRange(uf::ptminnlo, min(uf::xmax, jp::emax/cosh(y1)));
     fnlos->SetNpx(1000); // otherwise ugly on log x-axis after write
     fnlos->Write();
     fres->Write();
