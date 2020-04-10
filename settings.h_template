@@ -90,7 +90,7 @@ namespace jp {
   // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
   constexpr const char* filepath = "/work/jet_tuples/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
   // Use output-MC-1 instead of MC-2b (or NLOxNP) in dagostini.C
-  constexpr bool dagfile1 = false; // true;
+  //  constexpr bool dagfile1 = false; // true;
 
   // Number of events to skip from the beginning (for debugging)
   constexpr Long64_t nskip = 0;
@@ -785,7 +785,7 @@ namespace jp {
   // Debugging info
   constexpr bool debug = DEBUG;
   // Save git version info (recommended)
-  constexpr bool gitinfo = !EXPERT;
+  //  constexpr bool gitinfo = !EXPERT;
 
   // Will assert be used in the programs? More than 1/3 reduction of run time if off.
   #if DEBUG == 1
@@ -812,6 +812,7 @@ namespace jp {
   constexpr double unfptminreco = 60; // recopt; //40; recopt needs to be bigger than genpt
   constexpr double unfptmingen = 40;
   constexpr double unfptminnlo = 15;
+  constexpr double fitmin = 15;
 
   constexpr double fitptmin = 15;
   // Changed on 2013-05-020: analysis from 49 GeV to 56 GeV
