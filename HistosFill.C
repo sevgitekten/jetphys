@@ -3364,10 +3364,15 @@ bool HistosFill::LoadPuProfiles()
 
   _pumc = dynamic_cast<TH1D*>(fpumc->Get("pileupmc")->Clone("pumchelp"));
   if (!_pumc) return false;
+  //if (jp::isnu) { // In the neutrino gun samples we look at the hardest PU event, so need to shift PU by -1
+  //  _pumc->SetBinContent(0,_pumc->GetBinContent(0)+_pumc->GetBinContent(1));
+  //  for (int idx = 1; idx < _pumc->GetNbinsX(); ++idx)
+  //    _pumc->SetBinContent(idx,_pumc->GetBinContent(idx+1));
+  //}
   double maxmcpu = _pumc->GetMaximum();
   _pumc->Scale(1.0/maxmcpu);
   int lomclim = _pumc->FindFirstBinAbove(0.01);
-  int upmclim = _pumc->FindLastBinAbove(0.01);
+  int upmclim = _pumc->FindLastBinAbove (0.01);
   int maxmcbin = _pumc->FindFirstBinAbove(0.999);
   PrintInfo(Form("Maximum bin: %d for MC",maxmcbin),true);
   PrintInfo(Form("Hazardous pu below & above: %f, %f",_pumc->GetBinLowEdge(lomclim),_pumc->GetBinLowEdge(upmclim+1)),true);
@@ -3376,11 +3381,12 @@ bool HistosFill::LoadPuProfiles()
 
   // For data, load each trigger separately
   for (auto &t : jp::triggers) {
-    _pudist[t] = dynamic_cast<TH1D*>(f_pudist->Get(t));
-    if (!_pudist[t]) {
+    auto *tmpPU = dynamic_cast<TH1D*>(f_pudist->Get(t));
+    if (!tmpPU) {
       PrintInfo(Form("The trigger %s was not found in the DT pileup file!",t),true);
       return false;
     }
+    _pudist[t] = dynamic_cast<TH1D*>(tmpPU->Clone(Form("pu%s",t)));
     int nbinsdt = _pudist[t]->GetNbinsX();
     int kdt = _pudist[t]->FindBin(33);
     if (kdt!=kmc or nbinsdt!=nbinsmc) {
@@ -3390,12 +3396,15 @@ bool HistosFill::LoadPuProfiles()
       return false;
     }
     double maxdtpu = _pudist[t]->GetMaximum();
-    int lodtlim = _pudist[t]->FindFirstBinAbove(maxdtpu/100.0);
-    int updtlim = _pudist[t]->FindLastBinAbove(maxdtpu/100.0);
-    int maxdtbin = _pudist[t]->FindFirstBinAbove(0.999*maxdtpu);
+    int lodtlim    = _pudist[t]->FindFirstBinAbove(maxdtpu/100.0);
+    int updtlim    = _pudist[t]->FindLastBinAbove (maxdtpu/100.0);
+    int maxdtbin   = _pudist[t]->FindFirstBinAbove(0.999*maxdtpu);
 
     for (int bin = 0; bin < lomclim; ++bin) // Set fore-tail to zero
       _pudist[t]->SetBinContent(bin,0.0);
+    for (int bin = upmclim+1; bin <= nbinsdt; ++bin) // Set aft-tail to zero
+      _pudist[t]->SetBinContent(bin,0.0);
+
     PrintInfo(Form("Maximum bin: %d for DT trg %s",maxdtbin,t),true);
     PrintInfo(Form("Hazardous pu below & above: %f, %f",_pudist[t]->GetBinLowEdge(lodtlim),_pudist[t]->GetBinLowEdge(updtlim+1)),true);
     _pudist[t]->Divide(_pumc);
