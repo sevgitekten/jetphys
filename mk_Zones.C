@@ -76,16 +76,16 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
   TFile *fd = new TFile("./output-DATA-2a.root","READ");
   assert(fd && !fd->IsZombie());
 
-  TFile *fm = 0;//new TFile("./output-MC-2a.root","READ");
-  //assert(fm && !fm->IsZombie());
+  TFile *fm = new TFile("./output-MCNU-2a.root","READ");
+  assert(fm && !fm->IsZombie());
 
   TFile *fh = 0;
-  //TFile *fh = new TFile("./output-HW-1.root","READ");
+  //TFile *fh = new TFile("./output-HWNU-2a.root","READ");
   //assert(fh && !fh->IsZombie());
 
   TH2D *h2s[jp::notrigs], *h2as[jp::notrigs], *h2bs[jp::notrigs], *h2hots[jp::notrigs], *h2colds[jp::notrigs];
   TH2D *h2template = 0;
-  for (int dtmc = 0; dtmc <= 0; ++dtmc) {
+  for (int dtmc = 0; dtmc <= 1; ++dtmc) {
     TFile *f = (dtmc==0) ? fd : ((dtmc==1) ? fm : fh);
     bool enterdir = f->cd("FullEta_Reco");
     assert(enterdir);
@@ -469,7 +469,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
       h2cold->Write("h2cold");
       h2cold2->Write("h2hole");
 
-      if (typestring!="" and typestring!="_muf" and typestring!="_cef") {
+      if (typestring=="" or typestring=="_chf" or typestring=="_nhf") {
         h2hotComb ->Add(h2hot);
         h2hotComb2->Add(h2hot2);
       }
