@@ -18,7 +18,8 @@ void ZeroBinsToVal(TH2D *h2, double val) {
 }
 
 // Draw 2D plot of jet rates in (eta,phi) to spot issues
-void mk_Zones(bool combo = false) {
+void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
+
   const double minsig = 3.0; // For a single trigger, how many sigmas are interpreted as a significant deviation?
   bool phidep = true;
 
@@ -92,10 +93,13 @@ void mk_Zones(bool combo = false) {
     string nametag = (dtmc==0) ? "data" : ((dtmc==1) ? "mc" : "hw");
     string roottag = (dtmc==0) ? "" : ((dtmc==1) ? "mc" : "hw");
     TFile *phifile = phidep ? new TFile("pdf/phifile.root","RECREATE") : 0;
+
+    TH2D *h2hotComb(0), *h2hotComb2(0);
+
+    TFile *fouthot = new TFile(Form("%s/hotjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str()),"RECREATE");
+    TFile *foutcold = new TFile(Form("%s/coldjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str()),"RECREATE");
     for (auto &type : types) {
       // Further overlay settings
-      string overlayName = combo ? Form("../hotjets-%srunBCDEF%s.root",yeartag,type) : Form("./hotjets-%srun%s%s.root",yeartag,jp::run.c_str(),type);
-
       TH2D *h2hotNew(0);
       bool overlayNew = true;
       TFile *hotmap = new TFile(overlayName.c_str());
@@ -103,6 +107,7 @@ void mk_Zones(bool combo = false) {
         h2hotNew = static_cast<TH2D*>(static_cast<TH2D*>(hotmap->Get("h2hotfilter"))->Clone("newmap"));
         assert(h2hotNew && !h2hotNew->IsZombie());
       } else {
+        cout << "Overlay file " << overlayName << " not found!" << endl;
         overlayNew = false;
       }
 
@@ -125,12 +130,14 @@ void mk_Zones(bool combo = false) {
             h2empty->SetBinError   (idxeta, idxphi, 0);
           } // for j
         } // for i
+        if (h2hotComb==0)  h2hotComb  = static_cast<TH2D*>(h2empty->Clone("h2hot"));       // Combined filtered variations
+        if (h2hotComb2==0) h2hotComb2 = static_cast<TH2D*>(h2empty->Clone("h2hotfilter")); // Combined filtered variations
 
         // Hot and cold mappings
-        TH2D *h2a     = (TH2D*)h2empty->Clone(Form("h2a%s",ctrg));    // Fluctuation w.r.t. variance
-        TH2D *h2b     = (TH2D*)h2empty->Clone(Form("h2b%s",ctrg));    // Fluctuation w.r.t. mean
-        TH2D *h2hot   = (TH2D*)h2empty->Clone(Form("h2hot%s",ctrg));  // Filtered upwards fluctuations in h2a
-        TH2D *h2cold  = (TH2D*)h2empty->Clone(Form("h2cold%s",ctrg)); // Filtered downwards fluctuations in h2a
+        TH2D *h2a    = static_cast<TH2D*>(h2empty->Clone(Form("h2a%s",ctrg)));    // Fluctuation w.r.t. variance
+        TH2D *h2b    = static_cast<TH2D*>(h2empty->Clone(Form("h2b%s",ctrg)));    // Fluctuation w.r.t. mean
+        TH2D *h2hot  = static_cast<TH2D*>(h2empty->Clone(Form("h2hot%s",ctrg)));  // Filtered upwards fluctuations in h2a
+        TH2D *h2cold = static_cast<TH2D*>(h2empty->Clone(Form("h2cold%s",ctrg))); // Filtered downwards fluctuations in h2a
         // Extract eta and phi binnning
         vector<double> xbins, ybins;
         for (unsigned idxeta = 1u; idxeta <= h2->GetNbinsX(); ++idxeta) xbins.push_back(h2->GetXaxis()->GetBinLowEdge(idxeta));
@@ -274,12 +281,11 @@ void mk_Zones(bool combo = false) {
         }
       } // for idxeta
 
-      if (overlayNew) {
-        h2hotNew->SetFillStyle(0);
-        h2hotNew->SetLineColor(kBlack);
-        h2hotNew->GetZaxis()->SetRangeUser(0,10);
-        h2hotNew->Scale(h2s[jp::notrigs-1]->Integral());
-      }
+      if (!overlayNew) h2hotNew = static_cast<TH2D*>(h2hot2->Clone("newmap"));
+      h2hotNew->SetFillStyle(0);
+      h2hotNew->SetLineColor(kBlack);
+      h2hotNew->GetZaxis()->SetRangeUser(0,10);
+      h2hotNew->Scale(h2s[jp::notrigs-1]->Integral());
 
       TLine *l = new TLine();
       l->SetLineColor(kBlack);
@@ -330,7 +336,7 @@ void mk_Zones(bool combo = false) {
         ZeroBinsToVal(h2as[itrg],-2*minmaxa);
 
         h2as[itrg]->Draw("COLZ");
-        if (overlayNew) h2hotNew->DrawClone("SAMEBOX");
+        h2hotNew->DrawClone("SAMEBOX");
         l->DrawLine(1.305,-TMath::Pi(),1.305,TMath::Pi());
         l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
         l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
@@ -348,7 +354,7 @@ void mk_Zones(bool combo = false) {
         ZeroBinsToVal(h2bs[itrg],-2);
 
         h2bs[itrg]->Draw("COLZ");
-        if (overlayNew) h2hotNew->DrawClone("SAMEBOX");
+        h2hotNew->DrawClone("SAMEBOX");
         l->DrawLine(1.305,-TMath::Pi(),1.305,TMath::Pi());
         l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
         l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
@@ -374,7 +380,7 @@ void mk_Zones(bool combo = false) {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      if (overlayNew) h2hotNew->DrawClone("SAMEBOX");
+      h2hotNew->DrawClone("SAMEBOX");
 
       TCanvas *c0p = new TCanvas(Form("c0p%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -392,7 +398,7 @@ void mk_Zones(bool combo = false) {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      if (overlayNew) h2hotNew->DrawClone("SAMEBOX");
+      h2hotNew->DrawClone("SAMEBOX");
 
       TCanvas *c0n = new TCanvas(Form("c0n%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -409,7 +415,7 @@ void mk_Zones(bool combo = false) {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      if (overlayNew) h2hotNew->DrawClone("SAMEBOX");
+      h2hotNew->DrawClone("SAMEBOX");
 
       TCanvas *c0hot = new TCanvas(Form("c0hot%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -427,7 +433,7 @@ void mk_Zones(bool combo = false) {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      if (overlayNew) h2hotNew->DrawClone("SAMEBOX");
+      h2hotNew->DrawClone("SAMEBOX");
 
       TCanvas *c0cold = new TCanvas(Form("c0cold%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -444,7 +450,7 @@ void mk_Zones(bool combo = false) {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      if (overlayNew) h2hotNew->DrawClone("SAMEBOX");
+      h2hotNew->DrawClone("SAMEBOX");
 
       c0    ->SaveAs(Form("pdf/%s%s_cumulation.pdf",nametag.c_str(),type));
       c0p   ->SaveAs(Form("pdf/%s%s_hotcumulation.pdf",nametag.c_str(),type));
@@ -452,15 +458,28 @@ void mk_Zones(bool combo = false) {
       c0hot ->SaveAs(Form("pdf/%s%s_hots.pdf",nametag.c_str(),type));
       c0cold->SaveAs(Form("pdf/%s%s_colds.pdf",nametag.c_str(),type));
 
-      TFile *fouthot = new TFile(Form("%s/hotjets%s-%srun%s%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str(),type),"RECREATE");
+      string typestring = type;
+      const char* dirname = typestring=="" ? "all" : string(type).substr(1).c_str();
+      fouthot->mkdir(dirname);
+      fouthot->cd(dirname);
       h2hot->Write("h2hot");
       h2hot2->Write("h2hotfilter");
-      fouthot->Close();
-      TFile *foutcold = new TFile(Form("%s/coldjets%s-%srun%s%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str(),type),"RECREATE");
+      foutcold->mkdir(dirname);
+      foutcold->cd(dirname);
       h2cold->Write("h2cold");
       h2cold2->Write("h2hole");
-      foutcold->Close();
+
+      if (typestring!="" and typestring!="_muf" and typestring!="_cef") {
+        h2hotComb ->Add(h2hot);
+        h2hotComb2->Add(h2hot2);
+      }
     } // type
     if (phifile) phifile->Close();
+
+    fouthot->cd();
+    h2hotComb->Write("h2hot");
+    h2hotComb2->Write("h2hotfilter");
+    fouthot->Close();
+    foutcold->Close();
   } // Sample (data/mc/herwig)
 }
