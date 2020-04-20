@@ -24,8 +24,7 @@ HistosEta::HistosEta(TDirectory *dir, string trigname, double pttrg, double ptmi
 
   const int na = 200;
   vector<double> va(na+1);
-  for (unsigned int i = 0; i != na+1; ++i)
-    va[i] = -1. + 2.*i/na;
+  for (unsigned int i = 0; i != na+1; ++i) va[i] = -1. + 2.*i/na;
 
   if (jp::do3dHistos) {
     // Loop over alpha entries of interest
@@ -83,6 +82,22 @@ HistosEta::HistosEta(TDirectory *dir, string trigname, double pttrg, double ptmi
   // eta profiles
   heta = new TH1D("heta","",jp::netas,jp::etarange);
   hetaphi = new TH2D("hetaphi","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  hetaphi_chf = new TH2D("hetaphi_chf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  hetaphi_nef = new TH2D("hetaphi_nef","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  hetaphi_nhf = new TH2D("hetaphi_nhf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  hetaphi_cef = new TH2D("hetaphi_cef","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  hetaphi_muf = new TH2D("hetaphi_muf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  hetaphi_hhf = new TH2D("hetaphi_hhf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  hetaphi_hef = new TH2D("hetaphi_hef","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  hetaphi_puf = new TH2D("hetaphi_puf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  petaphi_chf = new TProfile2D("petaphi_chf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  petaphi_nef = new TProfile2D("petaphi_nef","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  petaphi_nhf = new TProfile2D("petaphi_nhf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  petaphi_cef = new TProfile2D("petaphi_cef","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  petaphi_muf = new TProfile2D("petaphi_muf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  petaphi_hhf = new TProfile2D("petaphi_hhf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  petaphi_hef = new TProfile2D("petaphi_hef","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
+  petaphi_puf = new TProfile2D("petaphi_puf","",jp::netas,jp::etarange,jp::nphis,jp::phirange);
 
   // components vs eta
   pncandtp_vseta = new TProfile("pcandtp_vseta","",jp::netas,jp::etarange);
@@ -100,8 +115,6 @@ HistosEta::HistosEta(TDirectory *dir, string trigname, double pttrg, double ptmi
   pmuftp_vseta = new TProfile("pmuftp_vseta","",jp::netas,jp::etarange);
   phhftp_vseta = new TProfile("phhftp_vseta","",jp::netas,jp::etarange);
   pheftp_vseta = new TProfile("pheftp_vseta","",jp::netas,jp::etarange);
-  pbetatp_vseta = new TProfile("pbetatp_vseta","",jp::netas,jp::etarange);
-  pbetastartp_vseta = new TProfile("pbetastartp_vseta","",jp::netas,jp::etarange);
   ppuftp_vseta = new TProfile("ppuftp_vseta","",jp::netas,jp::etarange);
 
   if (this->ismcdir) { // response closure

@@ -1087,7 +1087,7 @@ bool HistosFill::AcceptEvent()
     else return false;
 #endif
     // In SingleNeutrino, there is one extra PV. See also LoadPuProfiles
-    double PUVal = jp::isnu ? trpu-1 : trpu;
+    double PUVal = trpu;
     if (jp::domctrigsim and njt>0) {
       // Only add the greatest trigger present
       // Calculate trigger PU weight
@@ -1548,7 +1548,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
       }
       //} Dijet mass
       //{ Calculate and fill jet mass.
-      assert(h->hjmass);  h->hjmass->Fill(_j1.M(),weight);  h->hjmass->Fill(_j2.M(),weight);
+      assert(h->hjmass);  h->hjmass ->Fill(_j1.M(),weight);  h->hjmass->Fill(_j2.M(),weight);
       assert(h->hjmass0); h->hjmass0->Fill(_j1.M(),weight); h->hjmass0->Fill(_j2.M(),weight);
       if (dphi > 2.7) { // Back-to-back condition
         if (alpha<0.1) { assert(h->hjmass_a01); h->hjmass_a01->Fill(_j1.M(),weight); h->hjmass_a01->Fill(_j2.M(),weight); }
@@ -1599,25 +1599,25 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
               assert(h->ppttagptprobe); h->ppttagptprobe->Fill(pttag,ptprobe, _w);
               assert(h->h2pttagptprobe); h->h2pttagptprobe->Fill(pttag,ptprobe, _w);
               assert(h->ppttageff); h->ppttageff->Fill(pttag, 1, _w);
-              assert(h->ppttagmu); h->ppttagmu->Fill(pttag,trpu, _w);
+              assert(h->ppttagmu);  h->ppttagmu ->Fill(pttag,trpu, _w);
               assert(h->h2pttagmu); h->h2pttagmu->Fill(pttag,trpu, _w);
               //{ Composition vs pt tag pt
               // Fractions vs pt: we do pt selection later in HistosCombine
-              assert(h->pncandtp);    h->pncandtp->Fill(pttag, jtn[iprobe], _w);
-              assert(h->pnchtp);      h->pnchtp->Fill(pttag, jtnch[iprobe], _w);
-              assert(h->pnnetp);      h->pnnetp->Fill(pttag, jtnne[iprobe]-jtnhe[iprobe], _w);
-              assert(h->pnnhtp);      h->pnnhtp->Fill(pttag, jtnnh[iprobe]-jtnhh[iprobe], _w);
-              assert(h->pncetp);      h->pncetp->Fill(pttag, jtnce[iprobe], _w);
-              assert(h->pnmutp);      h->pnmutp->Fill(pttag, jtnmu[iprobe], _w);
+              assert(h->pncandtp);    h->pncandtp->Fill(pttag, jtn[iprobe]  , _w);
+              assert(h->pnchtp);      h->pnchtp  ->Fill(pttag, jtnch[iprobe], _w);
+              assert(h->pnnetp);      h->pnnetp  ->Fill(pttag, jtnne[iprobe]-jtnhe[iprobe], _w);
+              assert(h->pnnhtp);      h->pnnhtp  ->Fill(pttag, jtnnh[iprobe]-jtnhh[iprobe], _w);
+              assert(h->pncetp);      h->pncetp  ->Fill(pttag, jtnce[iprobe], _w);
+              assert(h->pnmutp);      h->pnmutp  ->Fill(pttag, jtnmu[iprobe], _w);
 
-              assert(h->pchftp);      h->pchftp->Fill(pttag, jtchf[iprobe], _w);
-              assert(h->pneftp);      h->pneftp->Fill(pttag, (jtnef[iprobe]-jthef[iprobe]), _w);
-              assert(h->pnhftp);      h->pnhftp->Fill(pttag, (jtnhf[iprobe]-jthhf[iprobe]), _w);
-              assert(h->pceftp);      h->pceftp->Fill(pttag, jtcef[iprobe], _w);
-              assert(h->pmuftp);      h->pmuftp->Fill(pttag, jtmuf[iprobe], _w);
-              assert(h->phhftp);      h->phhftp->Fill(pttag, jthhf[iprobe], _w);
-              assert(h->pheftp);      h->pheftp->Fill(pttag, jthef[iprobe], _w);
-              assert(h->ppuftp); h->ppuftp->Fill(pttag, jtbetaprime[iprobe], _w);
+              assert(h->pchftp);      h->pchftp  ->Fill(pttag, jtchf[iprobe], _w);
+              assert(h->pneftp);      h->pneftp  ->Fill(pttag, (jtnef[iprobe]-jthef[iprobe]), _w);
+              assert(h->pnhftp);      h->pnhftp  ->Fill(pttag, (jtnhf[iprobe]-jthhf[iprobe]), _w);
+              assert(h->pceftp);      h->pceftp  ->Fill(pttag, jtcef[iprobe], _w);
+              assert(h->pmuftp);      h->pmuftp  ->Fill(pttag, jtmuf[iprobe], _w);
+              assert(h->phhftp);      h->phhftp  ->Fill(pttag, jthhf[iprobe], _w);
+              assert(h->pheftp);      h->pheftp  ->Fill(pttag, jthef[iprobe], _w);
+              assert(h->ppuftp);      h->ppuftp  ->Fill(pttag, jtbetaprime[iprobe], _w);
 
               assert(h->ppt_probepertag); h->ppt_probepertag->Fill(pttag,ptprobe/pttag,_w);
 
@@ -1873,8 +1873,8 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           assert(h->pnhe); h->pnhe->Fill(pt, jtnhe[jetidx], _w);
           //
           assert(h->pchf); h->pchf->Fill(pt, jtchf[jetidx], _w);
-          assert(h->pnef); h->pnef->Fill(pt, (jtnef[jetidx]-jthef[jetidx]), _w);
-          assert(h->pnhf); h->pnhf->Fill(pt, (jtnhf[jetidx]-jthhf[jetidx]), _w);
+          assert(h->pnef); h->pnef->Fill(pt, jtnef[jetidx]-jthef[jetidx], _w);
+          assert(h->pnhf); h->pnhf->Fill(pt, jtnhf[jetidx]-jthhf[jetidx], _w);
           assert(h->pcef); h->pcef->Fill(pt, jtcef[jetidx], _w);
           assert(h->pmuf); h->pmuf->Fill(pt, jtmuf[jetidx], _w);
           assert(h->phhf); h->phhf->Fill(pt, jthhf[jetidx], _w);
@@ -2266,72 +2266,91 @@ void HistosFill::FillSingleEta(HistosEta *h, Float_t* _pt, Float_t* _eta, Float_
   int i0 = jt3leads[0];
   int i1 = jt3leads[1];
   int i2 = jt3leads[2];
-  if (_pass_qcdmet and i0>=0 and _jetids[i0] and jtpt[i0]>jp::recopt and i1>=0 and _jetids[i1] and jtpt[i1]>jp::recopt) { // Quality conditios for leading jets
-    double dphi = DPhi(jtphi[i0], jtphi[i1]);
-    if (dphi > 2.7) { // Back-to-back condition
-      double pt3 = ((i2>=0 and jtpt[i2]>jp::recopt) ? jtpt[i2] : 0.);
-      double ptave = 0.5 * (jtpt[i0] + jtpt[i1]);
-      double alpha = pt3/ptave;
+  if (_pass_qcdmet) {
+    if (i0>=0 and _jetids[i0] and jtpt[i0]>jp::recopt and i1>=0 and _jetids[i1] and jtpt[i1]>jp::recopt) { // Quality conditios for leading jets
+      double dphi = DPhi(jtphi[i0], jtphi[i1]);
+      if (dphi > 2.7) { // Back-to-back condition
+        double pt3 = ((i2>=0 and jtpt[i2]>jp::recopt) ? jtpt[i2] : 0.);
+        double ptave = 0.5 * (jtpt[i0] + jtpt[i1]);
+        double alpha = pt3/ptave;
 
-      for (auto itag_lead = 0u; itag_lead<2u; ++itag_lead) { // Look for both t&p combos for the leading jets
-        int itag = jt3leads[itag_lead];
-        int iprobe = jt3leads[(itag_lead==0 ? 1 : 0)];
-        double etatag = jteta[itag];
-        double etaprobe = jteta[iprobe];
-        if (fabs(etatag) < 1.3) { // Tag required to be in the barrel region
-          double pttag = jtpt[itag];
-          double ptprobe = _pt[iprobe];
-          // Special PU studies
-          if (pttag>50 and pttag<60) {
-            h->hnpvall_pt50to60->Fill(npv, _w);
-            h->hnpv_pt50to60->Fill(npvgood, _w);
-            h->hrho_pt50to60->Fill(rho, _w);
-            h->htrpu_pt50to60->Fill(trpu, _w);
-            h->hpuf_pt50to60->Fill(jtbetaprime[iprobe], _w);
-            h->hchf_pt50to60->Fill(jtchf[iprobe], _w);
-          }
-          if (jp::do3dHistos) {
-            double asymm = (ptprobe - pttag)/(2*ptave);
-            double mpf = met1*cos(DPhi(metphi1,_phi[itag]))/(2*ptave);
-            for (auto alphaidx = 0u; alphaidx < h->alpharange.size(); ++alphaidx) {
-              float alphasel = h->alpharange[alphaidx];
-              if (alpha<alphasel) {
-                // Val 10 = excluded, -10 = ok
-                h->hdjasymm[alphaidx]  ->Fill(ptave, etaprobe, asymm, _w);
-                h->hdjmpf[alphaidx]    ->Fill(ptave, etaprobe, mpf  , _w);
-                h->hdjasymmtp[alphaidx]->Fill(pttag, etaprobe, asymm, _w);
-                h->hdjmpftp[alphaidx]  ->Fill(pttag, etaprobe, mpf  , _w);
-                //h->hdjasymmpt[alphaidx]->Fill(ptprobe, etaprobe, asymm, _w);
-                //h->hdjmpfpt[alphaidx]  ->Fill(ptprobe, etaprobe, mpf  , _w);
+        for (auto itag_lead = 0u; itag_lead<2u; ++itag_lead) { // Look for both t&p combos for the leading jets
+          int itag = jt3leads[itag_lead];
+          int iprobe = jt3leads[(itag_lead==0 ? 1 : 0)];
+          double etatag = jteta[itag];
+          double etaprobe = jteta[iprobe];
+          if (fabs(etatag) < 1.3) { // Tag required to be in the barrel region
+            double pttag = jtpt[itag];
+            double ptprobe = _pt[iprobe];
+            // Special PU studies
+            if (pttag>50 and pttag<60) {
+              h->hnpvall_pt50to60->Fill(npv, _w);
+              h->hnpv_pt50to60->Fill(npvgood, _w);
+              h->hrho_pt50to60->Fill(rho, _w);
+              h->htrpu_pt50to60->Fill(trpu, _w);
+              h->hpuf_pt50to60->Fill(jtbetaprime[iprobe], _w);
+              h->hchf_pt50to60->Fill(jtchf[iprobe], _w);
+            }
+            if (jp::do3dHistos) {
+              double asymm = (ptprobe - pttag)/(2*ptave);
+              double mpf = met1*cos(DPhi(metphi1,_phi[itag]))/(2*ptave);
+              for (auto alphaidx = 0u; alphaidx < h->alpharange.size(); ++alphaidx) {
+                float alphasel = h->alpharange[alphaidx];
+                if (alpha<alphasel) {
+                  // Val 10 = excluded, -10 = ok
+                  h->hdjasymm[alphaidx]  ->Fill(ptave, etaprobe, asymm, _w);
+                  h->hdjmpf[alphaidx]    ->Fill(ptave, etaprobe, mpf  , _w);
+                  h->hdjasymmtp[alphaidx]->Fill(pttag, etaprobe, asymm, _w);
+                  h->hdjmpftp[alphaidx]  ->Fill(pttag, etaprobe, mpf  , _w);
+                  //h->hdjasymmpt[alphaidx]->Fill(ptprobe, etaprobe, asymm, _w);
+                  //h->hdjmpfpt[alphaidx]  ->Fill(ptprobe, etaprobe, mpf  , _w);
+                }
               }
             }
-          }
 
-          // for composition vs eta
-          if (alpha < 0.3 and pttag >= h->ptmin and pttag < h->ptmax) { // Alpha and trigger
-            assert(h->pchftp_vseta); h->pchftp_vseta->Fill(etaprobe, jtchf[iprobe], _w);
-            assert(h->pneftp_vseta); h->pneftp_vseta->Fill(etaprobe, (jtnef[iprobe]-jthef[iprobe]), _w);
-            assert(h->pnhftp_vseta); h->pnhftp_vseta->Fill(etaprobe, (jtnhf[iprobe]-jthhf[iprobe]), _w);
-            assert(h->pceftp_vseta); h->pceftp_vseta->Fill(etaprobe, jtcef[iprobe], _w);
-            assert(h->pmuftp_vseta); h->pmuftp_vseta->Fill(etaprobe, jtmuf[iprobe], _w);
-            assert(h->phhftp_vseta); h->phhftp_vseta->Fill(etaprobe, jthhf[iprobe], _w);
-            assert(h->pheftp_vseta); h->pheftp_vseta->Fill(etaprobe, jthef[iprobe], _w);
-            assert(h->ppuftp_vseta); h->ppuftp_vseta->Fill(etaprobe, jtbetaprime[iprobe], _w);
-          } // select pt bin for profiles vseta
-        } // etatag < 1.3
-      } // tag & probe
-    } // dphi > 2.7
+            // for composition vs eta
+            if (alpha < 0.3 and pttag >= h->ptmin and pttag < h->ptmax) { // Alpha and trigger
+              assert(h->pchftp_vseta); h->pchftp_vseta->Fill(etaprobe, jtchf[iprobe], _w);
+              assert(h->pneftp_vseta); h->pneftp_vseta->Fill(etaprobe, jtnef[iprobe]-jthef[iprobe], _w);
+              assert(h->pnhftp_vseta); h->pnhftp_vseta->Fill(etaprobe, jtnhf[iprobe]-jthhf[iprobe], _w);
+              assert(h->pceftp_vseta); h->pceftp_vseta->Fill(etaprobe, jtcef[iprobe], _w);
+              assert(h->pmuftp_vseta); h->pmuftp_vseta->Fill(etaprobe, jtmuf[iprobe], _w);
+              assert(h->phhftp_vseta); h->phhftp_vseta->Fill(etaprobe, jthhf[iprobe], _w);
+              assert(h->pheftp_vseta); h->pheftp_vseta->Fill(etaprobe, jthef[iprobe], _w);
+              assert(h->ppuftp_vseta); h->ppuftp_vseta->Fill(etaprobe, jtbetaprime[iprobe], _w);
+            } // select pt bin for profiles vseta
+          } // etatag < 1.3
+        } // tag & probe
+      } // dphi > 2.7
+    }
   } // ids
 
   for (int jetidx = 0; jetidx != njt; ++jetidx) {
     // adapt variable names from different trees
     double pt = jtpt[jetidx];
+    double eta = jteta[jetidx];
 
     if (pt>jp::recopt and _pass_qcdmet and _jetids[jetidx] and pt >= h->ptmin and pt < h->ptmax) {
       double eta = jteta[jetidx];
       h->heta->Fill(eta, _w);
       double phi = jtphi[jetidx];
       h->hetaphi->Fill(eta, phi, _w);
+      assert(h->hetaphi_chf); h->hetaphi_chf->Fill(eta, phi, jtchf[jetidx]*_w);
+      assert(h->hetaphi_nef); h->hetaphi_nef->Fill(eta, phi, jtnef[jetidx]-jthef[jetidx]*_w);
+      assert(h->hetaphi_nhf); h->hetaphi_nhf->Fill(eta, phi, jtnhf[jetidx]-jthhf[jetidx]*_w);
+      assert(h->hetaphi_cef); h->hetaphi_cef->Fill(eta, phi, jtcef[jetidx]*_w);
+      assert(h->hetaphi_muf); h->hetaphi_muf->Fill(eta, phi, jtmuf[jetidx]*_w);
+      assert(h->hetaphi_hhf); h->hetaphi_hhf->Fill(eta, phi, jthhf[jetidx]*_w);
+      assert(h->hetaphi_hef); h->hetaphi_hef->Fill(eta, phi, jthef[jetidx]*_w);
+      assert(h->hetaphi_puf); h->hetaphi_puf->Fill(eta, phi, jtbetaprime[jetidx]*_w);
+      assert(h->petaphi_chf); h->petaphi_chf->Fill(eta, phi, jtchf[jetidx], _w);
+      assert(h->petaphi_nef); h->petaphi_nef->Fill(eta, phi, jtnef[jetidx]-jthef[jetidx], _w);
+      assert(h->petaphi_nhf); h->petaphi_nhf->Fill(eta, phi, jtnhf[jetidx]-jthhf[jetidx], _w);
+      assert(h->petaphi_cef); h->petaphi_cef->Fill(eta, phi, jtcef[jetidx], _w);
+      assert(h->petaphi_muf); h->petaphi_muf->Fill(eta, phi, jtmuf[jetidx], _w);
+      assert(h->petaphi_hhf); h->petaphi_hhf->Fill(eta, phi, jthhf[jetidx], _w);
+      assert(h->petaphi_hef); h->petaphi_hef->Fill(eta, phi, jthef[jetidx], _w);
+      assert(h->petaphi_puf); h->petaphi_puf->Fill(eta, phi, jtbetaprime[jetidx], _w);
     }
   }
 
@@ -2651,19 +2670,18 @@ void HistosFill::FillRun(string name)
           h->tw_trg[t][run] += _prescales[t][run]; // prescale weighted events
           h->npv_trg[t][run] += npv;
           h->npvgood_trg[t][run] += npvgood;
-          h->c_chf[t][run] += jtchf[jetidx];
-          h->c_nef[t][run] += (jtnef[jetidx]-jthef[jetidx]);
-          h->c_nhf[t][run] += (jtnhf[jetidx]-jthhf[jetidx]);
+          h->c_chf[t][run]       += jtchf[jetidx];
+          h->c_nef[t][run]       += (jtnef[jetidx]-jthef[jetidx]);
+          h->c_nhf[t][run]       += (jtnhf[jetidx]-jthhf[jetidx]);
           h->c_betaprime[t][run] += jtbetaprime[jetidx];
         }
 
         int itag = (jetidx==0 ? 1 : 0);
-        if (jetidx<2 and dphi > 2.7 and pt3 < jtpt[itag] and fabs(jteta[itag]) < 1.3 and
-            jtpt[itag] > h->pt[t] and _jetids[itag]) {
+        if (jetidx<2 and dphi > 2.7 and pt3 < jtpt[itag] and fabs(jteta[itag]) < 1.3 and jtpt[itag] > h->pt[t] and _jetids[itag]) {
           ++h->t_trgtp[t][run];
-          h->c_chftp[t][run] += jtchf[jetidx];
-          h->c_neftp[t][run] += (jtnef[jetidx]-jthef[jetidx]);
-          h->c_nhftp[t][run] += (jtnhf[jetidx]-jthhf[jetidx]);
+          h->c_chftp[t][run]       += jtchf[jetidx];
+          h->c_neftp[t][run]       += (jtnef[jetidx]-jthef[jetidx]);
+          h->c_nhftp[t][run]       += (jtnhf[jetidx]-jthhf[jetidx]);
           h->c_betaprimetp[t][run] += jtbetaprime[jetidx];
         }
 
@@ -3346,11 +3364,6 @@ bool HistosFill::LoadPuProfiles()
 
   _pumc = dynamic_cast<TH1D*>(fpumc->Get("pileupmc")->Clone("pumchelp"));
   if (!_pumc) return false;
-  if (jp::isnu) { // In the neutrino gun samples we look at the hardest PU event, so need to shift PU by -1
-    _pumc->SetBinContent(0,_pumc->GetBinContent(0)+_pumc->GetBinContent(1));
-    for (int idx = 1; idx < _pumc->GetNbinsX(); ++idx)
-      _pumc->SetBinContent(idx,_pumc->GetBinContent(idx+1));
-  }
   double maxmcpu = _pumc->GetMaximum();
   _pumc->Scale(1.0/maxmcpu);
   int lomclim = _pumc->FindFirstBinAbove(0.01);
