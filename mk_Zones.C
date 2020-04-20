@@ -85,6 +85,15 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
 
   TH2D *h2s[jp::notrigs], *h2as[jp::notrigs], *h2bs[jp::notrigs], *h2hots[jp::notrigs], *h2colds[jp::notrigs];
   TH2D *h2template = 0;
+  TH2D *h2hotNew = 0;
+  // Further overlay settings
+  TFile *hotmap = new TFile(overlayName.c_str());
+  if (!hotmap->IsZombie()) {
+    h2hotNew = static_cast<TH2D*>(static_cast<TH2D*>(hotmap->Get("h2hotfilter"))->Clone("newmap"));
+    assert(h2hotNew && !h2hotNew->IsZombie());
+  } else {
+    cout << "Overlay file " << overlayName << " not found!" << endl;
+  }
   for (int dtmc = 0; dtmc <= 1; ++dtmc) {
     TFile *f = (dtmc==0) ? fd : ((dtmc==1) ? fm : fh);
     bool enterdir = f->cd("FullEta_Reco");
@@ -99,17 +108,6 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
     TFile *fouthot = new TFile(Form("%s/hotjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str()),"RECREATE");
     TFile *foutcold = new TFile(Form("%s/coldjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str()),"RECREATE");
     for (auto &type : types) {
-      // Further overlay settings
-      TH2D *h2hotNew(0);
-      bool overlayNew = true;
-      TFile *hotmap = new TFile(overlayName.c_str());
-      if (!hotmap->IsZombie()) {
-        h2hotNew = static_cast<TH2D*>(static_cast<TH2D*>(hotmap->Get("h2hotfilter"))->Clone("newmap"));
-        assert(h2hotNew && !h2hotNew->IsZombie());
-      } else {
-        cout << "Overlay file " << overlayName << " not found!" << endl;
-        overlayNew = false;
-      }
 
       for (int itrg = 0; itrg < jp::notrigs; ++itrg) {
         din->cd();
@@ -281,7 +279,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
         }
       } // for idxeta
 
-      if (!overlayNew) h2hotNew = static_cast<TH2D*>(h2hot2->Clone("newmap"));
+      if (h2hotNew==0) h2hotNew = static_cast<TH2D*>(h2hot2->Clone("newmap"));
       h2hotNew->SetFillStyle(0);
       h2hotNew->SetLineColor(kBlack);
       h2hotNew->GetZaxis()->SetRangeUser(0,10);
