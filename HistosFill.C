@@ -1252,22 +1252,22 @@ bool HistosFill::AcceptEvent()
     if (doht) pthat = htsum/2.0;
 
     // Check if overweight PU event
-    if (_pass) {
-      // The PU gen jets are not saved => impossible to do this in SingleNeutrino
-      if (jtpt[i0] < 1.5*jtgenpt[i0] or jp::isnu) ++_cnt["09ptgenlim"];
-      else _pass = false;
+    //if (_pass) {
+    //  // The PU gen jets are not saved => impossible to do this in SingleNeutrino
+    //  if (jtpt[i0] < 1.5*jtgenpt[i0] or jp::isnu) ++_cnt["09ptgenlim"];
+    //  else _pass = false;
 
-      if (_pass) {
-        if (doht) {
-          if (jtpt[i0] < 2.0*pthat) ++_cnt["10htlim"];
-          else _pass = false;
-        } else {
-          double lim = (pthat < 100) ? 2.0 : 1.5;
-          if (jtpt[i0] < lim*pthat) ++_cnt["10pthatlim"];
-          else _pass = false;
-        }
-      }
-    }
+    //  if (_pass) {
+    //    if (doht) {
+    //      if (jtpt[i0] < 2.0*pthat) ++_cnt["10htlim"];
+    //      else _pass = false;
+    //    } else {
+    //      double lim = (pthat < 100) ? 2.0 : 1.5;
+    //      if (jtpt[i0] < lim*pthat) ++_cnt["10pthatlim"];
+    //      else _pass = false;
+    //    }
+    //  }
+    //}
   } // MC
 
   _jetids.resize(njt);

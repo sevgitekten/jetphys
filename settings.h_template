@@ -49,7 +49,7 @@ namespace jp {
   //{ BEGIN fundamental settings: these are the ones that need most often changes
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
-  constexpr const char* type = "MC";
+  constexpr const char* type = "DATA";
   // For DATA, set dataset, for MC, set PU. Also chooses hot zone cuts. See eras_ for further info.
   // 16: B/C/D/E/Fe/Fl/G/H/BCD/EF/GH/BCDEFGH
   // 17: B/C/D/E/F/BCDEF
@@ -57,7 +57,7 @@ namespace jp {
   // 18: A/B/C/D/ABCD
   const string run = "F";
   // Which run year are we analyzing?
-  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int yid = 3; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
   //-1; // all
@@ -189,7 +189,7 @@ namespace jp {
   // Trigger ranges (differ from thresholds)
   const array<vector<array<double,2>>,yrs> trigranges_ = {{
     {{{0,49},{49,84},{84,114},{114,196},{196,272},{272,330},{330,395},{395,468},{468,548},{548,6500}          }},
-    {{{0,64},{64,84},{84,114},{114,196},{196,272},{272,330},{330,395},{395,468},{468,548},{548,686},{686,6500}}},
+    {{{0,49},{49,84},{84,114},{114,196},{196,272},{272,330},{330,395},{395,468},{468,548},{548,686},{686,6500}}},
     {{{0,28},{28,37},{37,49},{49,84},{84,114},{114,196},{196,272}}},
     {{{0,64},{64,84},{84,114},{114,196},{196,272},{272,330},{330,395},{395,468},{468,548},{548,686},{686,6500}}}
   }}; // V[5,6], AK4
@@ -313,27 +313,27 @@ namespace jp {
   const string jecgt = jecgt_.at(yid);
   const array<string,yrs> jecversdt_ = {
     "_V20",
-    "_V1",
-    "_V1",
+    "_V4",
+    "_V4",
     //"_V32",
     //"_V32",
-    "_V16h"
+    "_V19"
   };
   const string jecversdt = jecversdt_.at(yid);
   const array<string,yrs> jecversmc_ = {
     "_V20",
-    "_V1",
-    "_V1",
+    "_V4",
+    "_V4",
     //"_V32",
     //"_V3", (RunF 09May2018)
     //"_V32",
-    "_V16h"
+    "_V19"
   };
   const string jecversmc = jecversmc_.at(yid);
   const array<string,yrs> jectag_ = {
     "",
-    "_SimpleL1",
-    "_SimpleL1",
+    "",
+    "",
     ""
   };
   const string jectag = jectag_.at(yid);
@@ -361,7 +361,7 @@ namespace jp {
 
     //{ BEGIN DT: Files
     constexpr const array<const char*,yrs> dtpath_ =
-      {"Data/2016/","Data/2017/UL/","Data/2017/UL/","Data/2018/"};
+      {"Data/2016/","Data/2017/UL/","Data/2017/UL/","Data/2018/UL/"};
     constexpr const char* dtpath = dtpath_.at(yid);
 
     const array<vector<vector<string>>,yrs> dtfiles_ = {{
@@ -407,20 +407,20 @@ namespace jp {
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
         {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2017/NuGun.root"}}
+        {"NuGun",{"MC/UL17/NuGun.root"}}
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
         {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2017/NuGun.root"}}
+        {"NuGun",{"MC/UL17/NuGun.root"}}
       },
       {
-        {"P8CP5",{"MC/2018/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/UL18/P8CP5/FlatPthat_15to7000.root"}},
         {"H7"   ,{"MC/2018/H7/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2018/NuGun.root"}}
+        {"NuGun",{"MC/UL18/NuGun.root"}}
       }
     }};
     const map<string,vector<const char*>> mcfiles = mcfiles_.at(yid);
@@ -430,8 +430,8 @@ namespace jp {
     // All the following values need to be updated, if other source tuples are used.
     const array<const char*,yrs> pthatpath_ = {
       "MC/2016/P8M1/",
-      "MC/UL17/P8CP5/",
-      "MC/UL17/P8CP5/",
+      "MC/2017/P8CP5/",
+      "MC/2017/P8CP5/",
       "MC/2018/P8CP5/"
     };
     const char* pthatpath = pthatpath_.at(yid);
