@@ -17,8 +17,6 @@ namespace uf {
 
   constexpr double fitptmin = 15;
 
-  constexpr double xminpas = 114;
-  
   constexpr double xmin = 15;
   constexpr double xmax = 4037;
 

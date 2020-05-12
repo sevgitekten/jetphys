@@ -50,6 +50,10 @@ Double_t fPtRes(Double_t *x, Double_t *p) { return ptresolution(x[0], p[0]);}
 
 void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
                  bool ismc);
+
+void recurseCustomFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
+                 bool ismc);
+
 void dagostiniUnfold_histo(TH1D *hpt, TH1D *hpt2, TDirectory *outdir,
 			   bool ismc, bool kscale = false, string id = "");
 
@@ -60,8 +64,8 @@ void dagostiniUnfold(string type) {
    assert(fin && !fin->IsZombie());
 
    // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
-   // TFile *fin2 = new TFile(Form("output-%s-2c.root","MC"),"READ");
-   TFile *fin2 = new TFile(uf::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
+   //TFile *fin2 = new TFile("~/cernbox/P8_dijet_5000000_ptw.root","READ");
+  TFile *fin2 = new TFile(uf::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
 
   assert(fin2 && !fin2->IsZombie());
   
@@ -80,6 +84,7 @@ void dagostiniUnfold(string type) {
   bool ismc = jp::ismc;
 
   recurseFile(fin, fin2, fout, ismc);
+  // recurseCustomFile(fin, fin2, fout, ismc);
 
   cout << "Output stored in " << fout->GetName() << endl;
   fout->Close();
@@ -170,6 +175,58 @@ void recurseFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
   curdir->cd();
 } // recurseFile
 
+void recurseCustomFile(TDirectory *indir, TDirectory *indir2, TDirectory *outdir,
+                 bool ismc) {
+
+  TDirectory *curdir = gDirectory;
+
+  // Automatically go through the list of keys (directories)
+  TList *keys = indir->GetListOfKeys();
+  TListIter itkey(keys);
+  TObject *key, *obj;
+
+  while ( (key = itkey.Next()) ) {
+
+    obj = ((TKey*)key)->ReadObj(); assert(obj);
+
+    // Found a subdirectory: copy it to output and go deeper
+    if (obj->InheritsFrom("TDirectory")) {
+
+      if (jp::debug) cout << key->GetName() << endl;
+
+      assert(outdir->mkdir(obj->GetName()));
+      outdir->mkdir(obj->GetName());
+      assert(outdir->cd(obj->GetName()));
+      TDirectory *outdir2 = outdir->GetDirectory(obj->GetName()); assert(outdir2);
+      outdir2->cd();
+
+      assert(indir->cd(obj->GetName()));
+      TDirectory *indir2a = indir->GetDirectory(obj->GetName()); assert(indir2a);
+      indir2a->cd();
+
+
+      recurseCustomFile(indir2a, indir2, outdir2, ismc);
+    
+	      
+     } // inherits from TDirectory
+
+ 
+    // Found hpt plots: call unfolding routine
+ 
+      if (obj->InheritsFrom("TH1") && string(obj->GetName())=="hpt") {
+            cout << "+" << flush;         
+	    TH1D *hpt = (TH1D*)obj;
+	    cout << "Get histogram" << curdir->GetName() << endl;
+	    TH1D *hpt2 = (TH1D*)indir2->Get(curdir->GetName()); assert(hpt2);
+            if (hpt2)
+                dagostiniUnfold_histo(hpt, hpt2, outdir, ismc);       
+    } // hpt plots
+
+  } // while key
+
+  curdir->cd();
+} // recurseCustomFile
+
 
 void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
 			   bool ismc, bool kscale, string id) {
@@ -212,7 +269,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
                       "*pow(1-x*cosh([3])/[4],[2])", //10., 1000.);
 		      uf::ptminnlo, min(uf::xmax, jp::emax/cosh(y1)));
 
-  fnlo->SetParameters(5e10,-5.2,8.9,y1,jp::emax);
+  fnlo->SetParameters(1e10,-5.2,8.9,y1,jp::emax);
   //  fnlo->SetParameters(2e14*2e-10,-18,-5,10,y1,jp::emax);
   fnlo->FixParameter(3,y1);
   fnlo->FixParameter(4,jp::emax);
