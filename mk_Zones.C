@@ -18,7 +18,7 @@ void ZeroBinsToVal(TH2D *h2, double val) {
 }
 
 // Draw 2D plot of jet rates in (eta,phi) to spot issues
-void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
+void mk_Zones(bool quick = true, string overlayName = "") {
 
   const double minsig = 3.0; // For a single trigger, how many sigmas are interpreted as a significant deviation?
   bool phidep = true;
@@ -39,7 +39,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
     {4.2,4.0,3.8,3.4,3.0,2.6},
     {4.899,4.538,4.191,3.489,3.139,2.65,2.5},
     {4.899,4.538,4.191,3.489,3.139,2.65,2.5},
-    {5.0,4.0,3.4,3.2,2.6}
+    {4.899,4.538,4.191,3.489,3.139,2.65,2.5}
   }};
   // Counts of triggers in each eta range
   const vector<double> etalims = etalims_.at(jp::yid);
@@ -47,7 +47,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
     {2,3,4,5,6,10},
     {1,2,4,6,8,9,11},
     {1,2,4,6,8,9,11},
-    {2,4,6,9,11}
+    {1,2,4,6,8,9,11}
   }};
   const vector<int> etatrgs = etatrgs_.at(jp::yid);
   assert(etatrgs.size()==etalims.size());
@@ -87,6 +87,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
   TH2D *h2template = 0;
   TH2D *h2hotNew = 0;
   // Further overlay settings
+  if (overlayName=="") overlayName = Form("hotjets-%srun%s.root",yeartag,jp::run.c_str());
   TFile *hotmap = new TFile(overlayName.c_str());
   if (!hotmap->IsZombie()) {
     h2hotNew = static_cast<TH2D*>(static_cast<TH2D*>(hotmap->Get("h2hotfilter"))->Clone("newmap"));
@@ -95,6 +96,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
     cout << "Overlay file " << overlayName << " not found!" << endl;
   }
   for (int dtmc = 0; dtmc <= 1; ++dtmc) {
+    if (quick and dtmc>0) break;
     TFile *f = (dtmc==0) ? fd : ((dtmc==1) ? fm : fh);
     bool enterdir = f->cd("FullEta_Reco");
     assert(enterdir);
@@ -220,7 +222,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
         hvar->Draw();
         hvar2->SetLineColor(kBlue);
         hvar2->Draw("SAME");
-        cvar->SaveAs(Form("pdf/%s_VarPerMean%s_%s.pdf",nametag.c_str(),type,ctrg));
+        if (!quick) cvar->SaveAs(Form("pdf/%s_VarPerMean%s_%s.pdf",nametag.c_str(),type,ctrg));
       } // itrg
       assert(h2template);
 
@@ -317,7 +319,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
         l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
         gPad->Update();
         gErrorIgnoreLevel = kWarning;
-        c1->SaveAs(Form("pdf/%s_njet%s_%s.pdf",nametag.c_str(),type,ctrg));
+        if (!quick) c1->SaveAs(Form("pdf/%s_njet%s_%s.pdf",nametag.c_str(),type,ctrg));
 
         TCanvas *c2a = new TCanvas(Form("c2a%s%s",ctrg,type),"",600,600);
         gPad->SetLeftMargin(0.10);
@@ -328,7 +330,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
         // For drawing, mark deficit <-8 as -8 (so blue box instead of white)
         h2as[itrg]->SetTitle(Form("Fluctuation w.r.t. #eta -strip #sigma (%s);#eta_{jet};#phi_{jet}",trgNames[ctrg]));
 
-        double minmaxa = max(h2as[itrg]->GetMaximum(),fabs(h2as[itrg]->GetMaximum()));
+        double minmaxa = min(max(h2as[itrg]->GetMaximum(),fabs(h2as[itrg]->GetMaximum())),5.0);
         h2as[itrg]->SetMinimum(-minmaxa);
         h2as[itrg]->SetMaximum(+minmaxa);
         ZeroBinsToVal(h2as[itrg],-2*minmaxa);
@@ -358,8 +360,8 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
         l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
         l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
 
-        c2a->SaveAs(Form("pdf/%s_DiffPerVar%s_%s.pdf",nametag.c_str(),type,ctrg));
-        c2b->SaveAs(Form("pdf/%s_DiffPerMean%s_%s.pdf",nametag.c_str(),type,ctrg));
+        if (!quick) c2a->SaveAs(Form("pdf/%s_DiffPerVar%s_%s.pdf",nametag.c_str(),type,ctrg));
+        if (!quick) c2b->SaveAs(Form("pdf/%s_DiffPerMean%s_%s.pdf",nametag.c_str(),type,ctrg));
       }
       TCanvas *c0 = new TCanvas(Form("c0%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -368,7 +370,7 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
       gPad->SetBottomMargin(0.10);
 
       h2cumul->SetTitle("Cumulative sum of fluctuations;#eta_{jet};#phi_{jet}");
-      double minmaxc = max(h2cumul->GetMaximum(),fabs(h2cumul->GetMaximum()));
+      double minmaxc = min(max(h2cumul->GetMaximum(),fabs(h2cumul->GetMaximum())),5.0);
       h2cumul->SetMinimum(-minmaxc);
       h2cumul->SetMaximum(+minmaxc);
 
@@ -450,11 +452,11 @@ void mk_Zones(string overlayName = "../hotjets-17runBCDEF.root") {
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
       h2hotNew->DrawClone("SAMEBOX");
 
-      c0    ->SaveAs(Form("pdf/%s%s_cumulation.pdf",nametag.c_str(),type));
-      c0p   ->SaveAs(Form("pdf/%s%s_hotcumulation.pdf",nametag.c_str(),type));
-      c0n   ->SaveAs(Form("pdf/%s%s_coldcumulation.pdf",nametag.c_str(),type));
-      c0hot ->SaveAs(Form("pdf/%s%s_hots.pdf",nametag.c_str(),type));
-      c0cold->SaveAs(Form("pdf/%s%s_colds.pdf",nametag.c_str(),type));
+      if (!quick) c0    ->SaveAs(Form("pdf/%s%s_cumulation.pdf",nametag.c_str(),type));
+      if (!quick) c0p   ->SaveAs(Form("pdf/%s%s_hotcumulation.pdf",nametag.c_str(),type));
+      if (!quick) c0n   ->SaveAs(Form("pdf/%s%s_coldcumulation.pdf",nametag.c_str(),type));
+      if (!quick) c0hot ->SaveAs(Form("pdf/%s%s_hots.pdf",nametag.c_str(),type));
+      if (!quick) c0cold->SaveAs(Form("pdf/%s%s_colds.pdf",nametag.c_str(),type));
 
       string typestring = type;
       const char* dirname = typestring=="" ? "all" : string(type).substr(1).c_str();
