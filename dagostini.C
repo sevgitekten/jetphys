@@ -27,9 +27,6 @@
 #include "RooUnfold/src/RooUnfoldResponse.h"
 //#include "RooUnfold.h"
 
-#include "TUnfold.h"
-#include "TUnfoldDensity.h"
-
 #include "tdrstyle_mod18.C"
 #include "ptresolution.h"
 #include "settings.h"
