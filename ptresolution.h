@@ -472,6 +472,13 @@ double ptresolution(double pt, double eta) {
   return res;
 }
 
+// pT-resolution for |eta|<1.3 as weighted avg. of three different bins
+double ptresolutionbarrel(double pt) {
+
+  return 0;
+}
+
+
 // retun ECAL prefire fraction
 //enum ecal_iov {run2016, run2017, run2018};
 TF1 *_fecalpf(0);
@@ -609,7 +616,7 @@ jer_iov prefireIOV() {
       else if (strncmp(jp::run.c_str(),"F",4)) return run2017f;
       else return run2017;
     }
-    else return run2018;
+    return run2018;
 }
 
 jer_iov jerIOVauto() {
@@ -623,8 +630,7 @@ jer_iov jerIOVauto() {
   }
   else if (jp::yid == 2) return run2017;
   else if (jp::yid == 3) return run2018;
-  else return none;
+  return none;
 }
-
 
 #endif // __ptresolution_h__
