@@ -54,13 +54,13 @@ namespace jp {
 
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
-  constexpr const char* type = "MC";
+  constexpr const char* type = "DATA";
   // For DATA, set dataset, for MC, set PU. Also chooses hot zone cuts. See eras_ for further info.
   // 16: B/C/D/E/Fe/Fl/G/H/BCD/EF/GH/BCDEFGH
   // 17: B/C/D/E/F/BCDEF
   // 17 specials: H*Fwd/H,
   // 18: A/B/C/D/ABCD
-  const string run = "F";
+  const string run = "B";
   // Which run year are we analyzing?
   const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   // Number of events to process (-1 for all)
@@ -556,6 +556,16 @@ namespace jp {
     1, 15, 21, 28, 37, 49, 64, 84, 114, 153, 196, 272, 330, 395, 468, 548, 686, 846, 1032, 1248, 1588, 2000, 2500, 3103, 3832, 4713, 5777, 7000
   };
   constexpr const int nwpts = sizeof(wptrange)/sizeof(wptrange[0])-1;
+
+
+  // pt binning with twice as may bins
+ constexpr const double dptrange[] = {
+  10, 11, 12, 13, 15, 16, 18, 19, 21, 23, 24, 26, 28, 30, 32, 34, 37, 40, 43, 46, 49, 53, 56, 60, 64, 69, 74, 79, 84, 90, 97, 105, 114, 123, 133, 143, 153, 163, 174, 185, 196, 208, 220, 232, 245, 258, 272, 286, 300, 315, 330, 346, 362, 378, 395, 412, 430, 449, 468, 487, 507, 527, 548, 570, 592, 614, 638, 662, 686, 711, 737, 763, 790, 818, 846, 875, 905, 935, 967, 999, 1032, 1066, 1101, 1136, 1172, 1209, 1248, 1287, 1327, 1368, 1410, 1453, 1497, 1542, 1588, 1636, 1684, 1733, 1784, 1836, 1890, 1944, 2000, 2057, 2116, 2176, 2238, 2301, 2366, 2432, 2500, 2569, 2640, 2712, 2787, 2863, 2941, 3021, 3103, 3187, 3273, 3360, 3450, 3542, 3637, 3733, 3832, 3933, 4037, 4143, 4252, 4364, 4477, 4594, 4713, 4836, 4961, 5089, 5220, 5355, 5492, 5633, 5777, 5925, 6076, 6231, 6389, 6552, 6717, 6886 */
+    
+ };
+
+ constexpr const int ndpts = sizeof(dptrange)/sizeof(dptrange[0])-1;
+  
 
   // A very wide binning for pt: these should agree with trigger turn-on places (typically 15 GeV is where we cut everything)
   constexpr const double wwptrange[] = {
