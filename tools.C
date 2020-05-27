@@ -125,8 +125,7 @@ TGraphErrors *tools::ratioGraphs(TGraphErrors *g1, TGraphErrors *g2,
         fabs(x1-x2)<=fabs(x2-x1m) && fabs(x1-x2)<=fabs(x2-x1p)) {
 
       int n = g->GetN();
-      SetPoint(g, n, 0.5*(x1+x2), (y2 ? y1/y2 : 0.), 0.5*fabs(x1-x2),
-               oplus(ey1/y1, ey2/y2) * fabs(y2 ? y1/y2 : 0.) * erry);
+      SetPoint(g, n, 0.5*(x1+x2), (y2 ? y1/y2 : 0.), 0.5*fabs(x1-x2), oplus(ey1/y1, ey2/y2) * fabs(y2 ? y1/y2 : 0.) * erry);
       ++i, ++j;
     }
     else
@@ -203,11 +202,9 @@ TH1D *tools::Rebin(TH1D *h, TH1D* href) {
 
 // Add two histograms by averaging
 void tools::Hadd(TH1 *h1, TH1 *h2, double ptmax, bool syserr) {
-
   //assert(h1->GetNbinsX()==h2->GetNbinsX());
 
   for (int i = 1; i != h1->GetNbinsX()+1; ++i) {
-
     double y1 = h1->GetBinContent(i);
     double ey1 = h1->GetBinError(i);
     int j = h2->FindBin(h1->GetBinCenter(i));

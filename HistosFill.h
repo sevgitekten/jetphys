@@ -33,6 +33,8 @@
 #include "TSystem.h"
 #include "TLorentzVector.h"
 #include "TRandom3.h"
+#include "TMatrixD.h"
+#include "TVectorD.h"
 
 #include "settings.h"
 #include "HistosBasic.h"
@@ -159,6 +161,7 @@ public :
   Int_t           PFJetsCHS__mlvTrk_[kMaxPFJetsCHS_];   //[PFJetsCHS__]
   Int_t           PFJetsCHS__mjtTrk_[kMaxPFJetsCHS_];   //[PFJetsCHS__]
 
+  vector<double>  mCorrs;
   /////////////////////////////////////////////////////////////////////////////
   // Following lines added by hand and must come *after* auto-generated header
   /////////////////////////////////////////////////////////////////////////////
@@ -178,7 +181,7 @@ public :
 
   // We don't delete that much stuff here, since ROOT takes care of garbage collection (and gets very easily angry!!!)
   ~HistosFill() {}
-  HistosFill(TChain *tree);
+  HistosFill(TChain *tree, int eraIdx = 0);
   virtual bool     Init(TChain *tree); // custom
 
   virtual void     Loop();
@@ -253,7 +256,6 @@ private:
   vector<string> _availFlts;
   vector<string> _availTrigs;
   vector<unsigned int> _goodTrigs;
-  vector<double> _goodWgts;
   vector<bool> _jetids;
   vector<int> _jkmore;
 
@@ -396,16 +398,24 @@ private:
   Float_t         &metphi;
   Float_t         &metsumet;
 #ifdef NEWMODE
+  Float_t         &met0;
+  Float_t         &metphi0;
+  Float_t         &metsumet0;
   Float_t         &met01;
+  Float_t         &metphi01;
   Float_t         &metsumet01;
 #endif
 
   Float_t         met1;
   Float_t         metphi1;
+  Float_t         metsumet1;
   Float_t         met1_nol2l3;
   Float_t         metphi1_nol2l3;
   Float_t         met2;
   Float_t         metphi2;
+
+  Float_t         mht;
+  Float_t         mhtphi;
 
   string         _runinfo;
 };

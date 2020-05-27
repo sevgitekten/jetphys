@@ -1,15 +1,13 @@
 #include "../../../settings.h"
 
-constexpr const char* Era = "RunF";
 const vector<string> tags = {"500", "450", "400", "320", "260", "200", "140", "80", "60", "40", "0"};
 //const vector<string> tags = {"450", "400", "320", "260", "200", "140", "80", "60", "40", "0"};
 
-void combine() {
+void combine(const char* Era = "B") {
   TFile f("pileup_DTu.root","RECREATE");
   int eraNo = 0;
   for (auto &eraMatch : jp::eras) {
-    if (std::regex_search(Era,eraMatch))
-      break;
+    if (Era==eraMatch) break;
     ++eraNo;
   }
   cout << "Found " << Era << " at the index " << eraNo << endl;

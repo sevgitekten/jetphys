@@ -119,7 +119,7 @@ void IOV::addJEC(string id, int runmin, int runmax) {
     for (auto it = _jecs.begin(); it != _jecs.end(); ++it) assert(runmax<it->low or runmin>it->up);
   }
 
-  _jecname = jp::jecgt + id + (jp::ismc ? jp::jecversmc : jp::jecversdt) + (jp::ismc ? "_MC" : "_DATA");
+  _jecname = jp::jecgt + id + (jp::ismc ? jp::jecversmc : jp::jecversdt) + jp::jectag + (jp::ismc ? "_MC" : "_DATA");
   _jecpath = jp::useJECDB ? (jp::JECDBLoc+"/textFiles/"+_jecname+"/") : "CondFormats/JetMETObjects/data/";
 
   addJECLvl(jec,vpar,"L1FastJet"); // L1Offset for others than AK*PF

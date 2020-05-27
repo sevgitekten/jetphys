@@ -26,7 +26,10 @@ void drawDagostini(string type) {
   TDirectory *curdir = gDirectory;
   setTDRStyle();
 
-  TFile *f = new TFile(Form("output-%s-3.root",type.c_str()),"READ");
+  TFile *f;
+  if(jp::isgluon && !jp::isquark){ f = new TFile(Form("output-%s-3_gluon.root",type.c_str()),"READ");}
+  else if(jp::isquark && !jp::isgluon){ f = new TFile(Form("output-%s-3_quark.root",type.c_str()),"READ");}
+  else{ f = new TFile(Form("output-%s-3.root",type.c_str()),"READ");}
   assert(f && !f->IsZombie());
 
   assert(f->cd("Standard"));
@@ -244,21 +247,37 @@ void drawDagostini(string type) {
   tex->DrawLatex(0.35, 0.85, Form("%s %s",t,a));
   c1->cd(0);
   //cmsPrel(type=="DATA" ? _lumi : 0, true);
-  c1->SaveAs(Form("pdf/roounfold_matrix_%s_%s.pdf",a,t));
-  c1b->SaveAs(Form("pdf/roounfold_matrix0_%s_%s.pdf",a,t));
+  //c1->SaveAs(Form("pdf/roounfold_matrix_%s_%s.pdf",a,t));
+  //c1b->SaveAs(Form("pdf/roounfold_matrix0_%s_%s.pdf",a,t));
 
   c2->cd(2);
   tex->SetTextSize(0.053);
   tex->DrawLatex(0.50, 0.85, Form("%s %s",t,a));
   c2->cd(0);
   //cmsPrel(type=="DATA" ? jp::lumi : 0, true);
-  c2->SaveAs(Form("pdf/roounfold_comparison_%s_%s.pdf",a,t));
+  //c2->SaveAs(Form("pdf/roounfold_comparison_%s_%s.pdf",a,t));
 
   c3->cd(2);
   tex->DrawLatex(0.50, 0.85, Form("%s %s",t,a));
   c3->cd(0);
   //cmsPrel(type=="DATA" ? jp::lumi : 0, true);
-  c3->SaveAs(Form("pdf/roounfold_ratiotofwd_%s_%s.pdf",a,t));
+  //c3->SaveAs(Form("pdf/roounfold_ratiotofwd_%s_%s.pdf",a,t));
 
+  if(jp::isgluon && !jp::isquark){
+    c1->SaveAs(Form("pdf/roounfold_matrix_%s_%s_gluon.pdf",a,t));
+    c1b->SaveAs(Form("pdf/roounfold_matrix0_%s_%s_gluon.pdf",a,t));
+    c2->SaveAs(Form("pdf/roounfold_comparison_%s_%s_gluon.pdf",a,t));
+    c3->SaveAs(Form("pdf/roounfold_ratiotofwd_%s_%s_gluon.pdf",a,t));
+  } else if(jp::isquark && !jp::isgluon){ 
+    c1->SaveAs(Form("pdf/roounfold_matrix_%s_%s_quark.pdf",a,t));
+    c1b->SaveAs(Form("pdf/roounfold_matrix0_%s_%s_quark.pdf",a,t));
+    c2->SaveAs(Form("pdf/roounfold_comparison_%s_%s_quark.pdf",a,t));
+    c3->SaveAs(Form("pdf/roounfold_ratiotofwd_%s_%s_quark.pdf",a,t));
+  } else{ 
+    c1->SaveAs(Form("pdf/roounfold_matrix_%s_%s.pdf",a,t));
+    c1b->SaveAs(Form("pdf/roounfold_matrix0_%s_%s.pdf",a,t));
+    c2->SaveAs(Form("pdf/roounfold_comparison_%s_%s.pdf",a,t));
+    c3->SaveAs(Form("pdf/roounfold_ratiotofwd_%s_%s.pdf",a,t));
+  }
 
 } // drawDagostini
