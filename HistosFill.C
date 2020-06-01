@@ -591,8 +591,7 @@ bool HistosFill::PreRun()
     }
   }
 
-  if (jp::ismc) PrintInfo(Form("Running on MC produced with %1.3g nb-1 (%lld evts)",
-                          1000. * _ntot / jp::xsecMinBias, _ntot),true);
+  if (jp::ismc) PrintInfo(Form("Running on MC produced with %1.3g nb-1 (%lld evts)", 1000. * _ntot / jp::xsecMinBias, _ntot),true);
   if (jp::isdt) PrintInfo(Form("Running on %lld events of data",_ntot),true);
 
   // Initialize histograms for different epochs and DQM selections
@@ -3264,7 +3263,7 @@ bool HistosFill::LoadLumi()
   PrintInfo(string("\nstring: ") + s + " !",true);
 
   // HOX: the lumi file format has been changing. Change the conditions when needed.
-  if (s!="#Data tag : 19v2 , Norm tag: None") return false;
+  if (s!="#Data tag : 19v2 , Norm tag: None" and s!="#Data tag : 19v3 , Norm tag: None") return false;
 
   bool getsuccess2 = static_cast<bool>(getline(f, s, '\n'));
   if (!getsuccess2) return false;

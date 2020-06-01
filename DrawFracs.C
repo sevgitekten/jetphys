@@ -38,9 +38,13 @@ void Fracs::DrawFracs(unsigned mode) {
   if (_vspt) {
     for (auto &ptwi : jp::wptrange) _x.push_back(ptwi);
   } else if (_vspu) {
-    for (int i = 0; i <= 25; ++i) _x.push_back(-0.5+2*i);
+    double jump = 5.0;
+    int maxval = (_rangemax[mode]-0.5)/jump;
+    for (int i = 0; i <= maxval; ++i) _x.push_back(-0.5+jump*i);
   } else if (_vsnpv) {
-    for (int i = 0; i <= 25; ++i) _x.push_back(-0.5+2*i);
+    double jump = 5.0;
+    int maxval = (_rangemax[mode]-0.5)/jump;
+    for (int i = 0; i <= maxval; ++i) _x.push_back(-0.5+jump*i);
   } else if (_vseta) {
     for (auto &ewi : jp::wetarange) _x.push_back(ewi);
   } else if (_vsphi) {
@@ -190,6 +194,11 @@ void Fracs::makeProfile(unsigned mode, TDirectory *dmc, TDirectory *ddt, string 
       pdt->Delete(); pdt = 0;
       pdt = pdtmp;
     }
+    if (_vspu or _vsnpv) {
+      TProfile *pdtmp = dynamic_cast<TProfile*>(pdt->Rebin(4,Form("%s_nu",pdt->GetName())));
+      pdt->Delete(); pdt = 0;
+      pdt = pdtmp;
+    }
     dtHistos[frc] = pdt->ProjectionX(Form("%s_px",pdt->GetName()));
     pdt->Delete();
 
@@ -208,6 +217,11 @@ void Fracs::makeProfile(unsigned mode, TDirectory *dmc, TDirectory *ddt, string 
       pmc->Delete(); pdt = 0;
       pmc = pmcmp;
     }
+    if (_vspu or _vsnpv) {
+      TProfile *pmcmp = dynamic_cast<TProfile*>(pmc->Rebin(4,Form("%s_nu",pmc->GetName())));
+      pmc->Delete(); pmc = 0;
+      pmc = pmcmp;
+    }
     mcHistos[frc] = pmc->ProjectionX(Form("%s_px",pmc->GetName()));
     pmc->Delete();
   } // for frc in _fracs
@@ -221,6 +235,7 @@ void Fracs::makeProfile(unsigned mode, TDirectory *dmc, TDirectory *ddt, string 
 
     TH1D *hmc = dynamic_cast<TH1D*>(mcHistos[frc]->Clone(Form("%sc",mcHistos[frc]->GetName()))); assert(hmc);
     TH1D *hdt = dynamic_cast<TH1D*>(dtHistos[frc]->Clone(Form("%sc",dtHistos[frc]->GetName()))); assert(hmc);
+
     hmc->GetXaxis()->SetRangeUser(_rangemin[mode],_rangemax[mode]);
     hdt->GetXaxis()->SetRangeUser(_rangemin[mode],_rangemax[mode]);
     TH1D *hdf = dynamic_cast<TH1D*>(hdt->Clone(Form("hdf%s",taguniq.c_str()))); assert(hdf);
