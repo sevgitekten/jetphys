@@ -1370,6 +1370,7 @@ void HistosFill::InitBasic(string name)
 
   // Pseudorapidity bins + HF + barrel
   double etas[] = {0., 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.2, 4.7, 0., 1.3};
+  
   const int netas = sizeof(etas)/sizeof(etas[0])-1;
 
   // define triggers
@@ -1829,6 +1830,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           // raw spectrum
           assert(h->hpt); h->hpt->Fill(pt,_w);
           assert(h->hpt0); h->hpt0->Fill(pt, _w); // Finer binning
+	  assert(h->hptd); h->hptd->Fill(pt, _w); // Finer binning
           // leading jets (1,2,3)
           if (jetidx==i0) {
             assert(h->hpt1); h->hpt1->Fill(pt, _w);

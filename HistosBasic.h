@@ -49,8 +49,11 @@ class HistosBasic {
   TH1D *hpt_evt;
   TH1D *hpt_jet;
 
-  // 1 GeV ins
+  // 1 GeV bins
   TH1D *hpt0;
+
+  // Double bins
+  TH1D *hptd;
 
   // leading and non-leading jets
   TH1D *hpt1;
