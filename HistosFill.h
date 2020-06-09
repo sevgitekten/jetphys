@@ -42,6 +42,7 @@
 #include "HistosMC.h"
 #include "HistosRun.h"
 #include "HistosAll.h"
+#include "Histos2D.h"
 #include "tools.h"
 #include "IOV.h"
 
@@ -207,6 +208,11 @@ public :
   void             FillSingleEta(HistosEta *h, Float_t *pt, Float_t *eta, Float_t *phi);
   void             WriteEta();
 
+  void             Init2D(string name);
+  void             Fill2D(string name);
+  void             FillSingle2D(Histos2D *h);
+  void             Write2D();
+  
   void             InitMC(string name);
   void             FillMC(string name, Float_t *recopt, Float_t *genpt, Float_t *pt, Float_t *eta, Float_t *phi);
   void             FillSingleMC(HistosMC *h, Float_t *recopt, Float_t *genpt, Float_t *pt, Float_t *eta, Float_t *phi);
@@ -275,6 +281,7 @@ private:
   map<string, double> _wt; // Trigger pileup and trigger weights
   map<string, vector<HistosBasic*> > _histos;
   map<string, vector<HistosEta*> > _etahistos;
+  map<string, vector<Histos2D*> > _2Dhistos;
   map<string, vector<HistosMC*> > _mchistos;
   map<string, HistosRun*> _runhistos;
   map<string, HistosAll*> _allhistos;

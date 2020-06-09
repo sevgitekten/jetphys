@@ -462,7 +462,8 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double et
           if (jp::dotrigeffsimple and !isgen and !isoth and peff->GetBinContent(binidx)==0 and hpt->GetBinContent(binidx)!=0 and hpt->GetBinCenter(binidx)>jp::recopt and hpt->GetBinCenter(binidx)*cosh(etamid)<3500.)
             cerr << "Hist " << hpt->GetName() << " " << indir->GetName() << " pt=" << hpt->GetBinCenter(binidx) << " etamid = " << etamid << endl << flush;
         } // for binidx
-      } else if (isdt) { // TH3, TH2 and TH1 that is not a hpt object
+      }      
+      else if (isdt) { // TH3, TH2 and TH1 that is not a hpt object
         // This we do only for data - there are no lumi weights to be applied for MC
         TString namehandle(name);
         TRegexp re_profile("^p");
@@ -480,7 +481,21 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double et
             handle->Scale(lumiref/lumi);
           } else if (obj->InheritsFrom("TH2")) {
             TH2D *handle = dynamic_cast<TH2D*>(obj2);
-            handle->Scale(lumiref/lumi);
+
+	    if (namehandle.Contains("hpts")) {
+
+	      int refidx = 0; // For luminosity normalization of inclusive jet spectra
+	      if (jp::yid==0) refidx = 9;
+	      else refidx = 10;
+	      double norm = jp::triglumiera[eraIdx][refidx]/1e6;
+	      norm *= 2; // We look at abs(eta) -> normalize to twice the eta bin width
+	      
+	      handle->Scale(1./norm,"width");  // Normalization with lumi and eta and pt bin widths
+	      
+	    }
+
+	    handle->Scale(lumiref/lumi);
+	    
           } else if (obj->InheritsFrom("TH1")) {
             TH1D *handle = dynamic_cast<TH1D*>(obj2);
             handle->Scale(lumiref/lumi);
@@ -493,7 +508,7 @@ void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double et
       obj2->Delete();
       indir->cd();
       // inherits from TH1
-    } else { // Others
+    }  else { // Others
       // Save the stuff into an identical directory
       TObject *obj2 = obj->Clone(obj->GetName()); // Copy the input object to output
       outdir->cd();

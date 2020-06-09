@@ -425,6 +425,9 @@ void HistosFill::Loop()
                   onehist->Write();
             }
           }
+	  for (auto &manyhists : _2Dhistos)
+	    for (auto & onehist : manyhists.second)
+	      onehist->Write();
       }
       stop.Continue();
     }
@@ -439,7 +442,7 @@ void HistosFill::Loop()
     }
 
     if (jp::doEtaHistos and _pass) {
-      FillEta("FullEta_Reco", jtpt, jteta, jtphi);
+         FillEta("FullEta_Reco", jtpt, jteta, jtphi);
       if (jp::ismc and jp::doEtaHistosMcResponse) {
         FillEta("FullEta_Gen", jtgenpt, jtgeneta, jtgenphi);
         FillMC("FullEta_RecoPerGen_vReco", jtpt, jtgenpt, jtpt,    jteta,    jtphi);
@@ -458,6 +461,17 @@ void HistosFill::Loop()
     if (jp::doMpfHistos and _pass) {
       FillAll("AllTrigs");
     }
+
+    // if (jp::do2Dhistos and _pass){
+    if (_pass) {
+      Fill2D("2Dhistograms");
+    }
+    
+    // Add function that eats pt, eta -> save histograms with two JEC binnings and then analysis binning
+
+    // Could chop the HF bin in two, too?
+
+    
   } // for jentry
   PrintInfo("",true);
 
@@ -469,6 +483,10 @@ void HistosFill::Loop()
   if (jp::doEtaHistos)   WriteEta();
   if (jp::ismc and jp::doEtaHistos and jp::doEtaHistosMcResponse) WriteMC();
   if (jp::doMpfHistos)   WriteAll();
+
+  // write 2D histos
+  Write2D();
+  
   if (jp::doBasicHistos) WriteBasic(); // this needs to be last, output file closed
 
   Report();
@@ -600,6 +618,8 @@ bool HistosFill::PreRun()
     InitBasic("Standard");
   }
 
+  Init2D("2Dhistograms");
+  
   if (jp::doEtaHistos) {
     InitEta("FullEta_Reco");
     if (jp::ismc) {
@@ -1460,7 +1480,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
   _w = _w0 * _wt[h->trigname];
   if (_w <= 0) return;
-
+ 
   bool fired = (_trigs.find(h->trigname)!=_trigs.end());
   if (!fired) return;
 
@@ -2231,6 +2251,131 @@ void HistosFill::InitEta(string name)
   PrintInfo(Form("InitEta(%s) finished:",name.c_str()));
   PrintMemInfo();
 } // InitEta
+
+// Initialize 2D histograms for trigger bins
+void HistosFill::Init2D(string name)
+{
+  // Report memory usage to avoid malloc problems when writing file
+  PrintInfo(Form("Init2D(%s):",name.c_str()));
+  PrintMemInfo();
+
+  TDirectory *curdir = gDirectory;
+
+  // open file for output
+  TFile *f = _outfile;
+  assert(f && !f->IsZombie());
+  f->mkdir(name.c_str());
+  bool enteroutdir = f->cd(name.c_str());
+  assert(enteroutdir);
+  TDirectory *topdir = f->GetDirectory(name.c_str()); assert(topdir);
+  topdir->cd();
+
+  // define triggers
+  vector<string> triggers;
+  // define efficient pT ranges for triggers for control plots
+  map<string, pair<double, double> > pt;
+  // define pT values for triggers
+  map<string, double> pttrg;
+  if (jp::ismc) {
+    triggers.push_back("mc");
+    pt["mc"] = pair<double, double>(jp::recopt, jp::emax);
+    pttrg["mc"] = jp::recopt;
+  }
+  if (jp::isdt or jp::domctrigsim) {
+    for (unsigned itrg = 0; itrg != jp::notrigs; ++itrg) {
+      string trg = jp::triggers[itrg];
+      triggers.push_back(trg);
+      double pt1 = jp::trigranges[itrg][0];
+      double pt2 = jp::trigranges[itrg][1];
+      pt[trg] = pair<double, double>(pt1, pt2);
+      double pt0 = jp::trigthr[itrg];
+      pttrg[trg] = pt0;
+    }
+  }
+
+  assert(topdir);
+
+  for (unsigned int j = 0; j != triggers.size(); ++j) {
+    // subdirectory for trigger
+    const char *trg = triggers[j].c_str();
+    topdir->mkdir(trg);
+    assert(topdir->cd(trg));
+    TDirectory *dir = topdir->GetDirectory(trg);
+    assert(dir);
+    dir->cd();
+
+    // Initialize and store
+    assert(dir);
+    Histos2D *h = new Histos2D(dir, trg,pttrg[trg],pt[trg].first, pt[trg].second, triggers[j]=="mc");
+    _2Dhistos[name].push_back(h);
+  } // for j
+
+  curdir->cd();
+
+  // Report memory usage to avoid malloc problems when writing file
+  PrintInfo(Form("InitEta(%s) finished:",name.c_str()));
+  PrintMemInfo();
+} // Init2D
+
+
+// Loop over 2D histogram containers to fill all
+void HistosFill::Fill2D(string name)
+{
+  for (unsigned int histidx = 0; histidx != _2Dhistos[name].size(); ++histidx)
+    FillSingle2D(_2Dhistos[name][histidx]);
+}
+
+
+// Fill 2D histograms after applying pt, y cuts
+void HistosFill::FillSingle2D(Histos2D *h)
+{
+   _w = _w0 * _wt[h->trigname];
+  if (_w <= 0) return;
+
+  bool fired = (_trigs.find(h->trigname)!=_trigs.end());
+  if (!fired) return;
+
+  for (int jetidx = 0; jetidx != njt; ++jetidx) {
+    double pt = jtpt[jetidx];
+    double eta = fabs(jteta[jetidx]);
+    bool pass_id = _jetids[jetidx];
+    
+    if (pt>jp::recopt) { // pt visible
+	if (_pass_qcdmet and pass_id) { // id OK 
+
+	  h->hptsdef->Fill(pt,eta,_w);
+	  h->hptswid->Fill(pt,eta,_w);
+	  h->hptsnar->Fill(pt,eta,_w);
+
+	}
+    }
+
+  }
+ 
+}
+
+
+// Write and delete histograms
+void HistosFill::Write2D()
+{
+  // Report memory usage to avoid malloc problems when writing file
+  PrintInfo("Write2D():");
+  PrintMemInfo();
+
+  for (auto histit : _2Dhistos) {
+    for (unsigned int histidx = 0; histidx != histit.second.size(); ++histidx) {
+      Histos2D *h = histit.second[histidx];
+      delete h;
+    } // for histidx
+  } // for histit
+
+  PrintInfo(Form("\nOutput (Histos2D) stored in %s",_outfile->GetName()),true);
+
+  // Report memory usage to avoid malloc problems when writing file
+  PrintInfo("Write2D() finished:");
+  PrintMemInfo();
+} // Write2D
+
 
 
 // Loop over basic histogram containers to fill all

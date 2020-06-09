@@ -291,6 +291,10 @@ void HistosCombine(string type = "") {
 
   if (isdt) recurseCombFile(fin, fout, isdt, "peff_new");
 
+ recurseCombFile(fin, fout, isdt, "hptsdef");
+ recurseCombFile(fin, fout, isdt, "hptswid");
+ recurseCombFile(fin, fout, isdt, "hptsnar");
+  
   curdir->cd();
 
   cout << endl;
@@ -430,6 +434,19 @@ void recurseCombFile(TDirectory *indir, TDirectory *outdir, bool isdt, string hn
           TObject *inobj = indir2->Get(Form("%s/%s",isdt ? jp::reftrig : "mc",hname.c_str()));
           if (inobj) {
             if (string(indir2->GetName())!="FullEta_Gen") cout << "FullEta";
+            TH1 *hpt = dynamic_cast<TH1*>(inobj->Clone(hname.c_str()));
+            hpt->Reset();
+            if (hpt) {
+              recurseCombFile(indir2, outdir2, isdt, hname, ptSelect, othProf, 1, etamid);
+              hpt->Write();
+              hpt->Delete();
+              indir2->cd();
+            }
+          }
+        } else if (loclvl==0 and TString(indir2->GetName()).Contains("2Dhistograms")) {
+          outdir2->cd();
+          TObject *inobj = indir2->Get(Form("%s/%s",isdt ? jp::reftrig : "mc",hname.c_str()));
+          if (inobj) {
             TH1 *hpt = dynamic_cast<TH1*>(inobj->Clone(hname.c_str()));
             hpt->Reset();
             if (hpt) {
