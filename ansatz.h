@@ -14,7 +14,7 @@ Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
   const double ptmeas = p[0]; // measured pT
   const double eta = p[1]; // rapidity
 
-  double jes = 1; //(uf::dojes ? ptresponse(pt, eta+1e-3) : 1);
+  double jes = (uf::dojes ? ptresponse(pt, eta+1e-3) : 1);
   double res = ptresolution(pt, eta+1e-3) * pt;
   
   const double s = TMath::Gaus(ptmeas, jes*pt, res, kTRUE);
