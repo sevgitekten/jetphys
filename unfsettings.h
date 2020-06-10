@@ -3,6 +3,9 @@
 
 namespace uf {
 
+  // Time depended JES scaling
+  constexpr bool dojes = true;
+  
   // Use custom MC for generating resolution matrix
   constexpr bool usecustom = false;
   
