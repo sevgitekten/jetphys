@@ -27,9 +27,6 @@
 #include "RooUnfold/src/RooUnfoldResponse.h"
 //#include "RooUnfold.h"
 
-#include "TUnfold.h"
-#include "TUnfoldDensity.h"
-
 #include "tdrstyle_mod18.C"
 #include "ptresolution.h"
 #include "settings.h"
@@ -60,12 +57,19 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hpt2, TDirectory *outdir,
 
 void dagostiniUnfold(string type) {
 
-   TFile *fin = new TFile(Form("output-%s-2b.root","DATA"),"READ");
-   assert(fin && !fin->IsZombie());
+  TFile *fin = new TFile(Form("output-%s-2b.root","DATA"),"READ");
+  assert(fin && !fin->IsZombie());
 
-   // TFile *fin2 = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
-   //TFile *fin2 = new TFile("~/cernbox/P8_dijet_5000000_ptw.root","READ");
-  TFile *fin2 = new TFile(uf::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ"); assert(fin2 && !fin2->IsZombie());
+  TFile *fin2;
+  
+  if (uf::usecustom) {
+    fin2 = new TFile("~/cernbox/CustomMCs/pThat5_P8_incl_5M_pt.root","READ");
+    cout << "Use custom spectra for response matrix generation" << endl;
+  }
+  else {
+    fin2 = new TFile(uf::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root","READ");
+    cout << "Use jetphys output " << Form("%s",uf::dagfile1 ? "output-MC-1.root" : "output-MC-2b.root") << " for response matrix generation" << endl;
+      }
 
   assert(fin2 && !fin2->IsZombie());
   
@@ -83,8 +87,9 @@ void dagostiniUnfold(string type) {
 
   bool ismc = jp::ismc;
 
-  recurseFile(fin, fin2, fout, ismc);
-  // recurseCustomFile(fin, fin2, fout, ismc);
+  if (uf::usecustom) recurseCustomFile(fin, fin2, fout, ismc);
+  else recurseFile(fin, fin2, fout, ismc);
+  
 
   cout << "Output stored in " << fout->GetName() << endl;
   fout->Close();
@@ -242,7 +247,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   // Similar way as in https://github.com/miquork/jecsys/blob/2018_Moriond19/minitools/drawDeltaJEC.C
 
   if (y1 >= 2.0 && y2 <= 3.0 && jp::yid < 2 && uf::doECALprefire) {
-
+    cout << "Correct ECAL prefire" << endl;
     jer_iov runECAL = prefireIOV();
 
     for (int i = 0; i != hpt->GetNbinsX()+1; ++i) {

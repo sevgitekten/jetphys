@@ -42,6 +42,15 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   }
   const int nx = x.size()-1;
 
+  // Double binning
+  vector<double> dx;
+  // Chose ptrange according to eta
+  for (unsigned int i = 0; i < jp::nodpts_eta and jp::dptrangevseta[ieta][i]!=0; ++i) {
+    if (jp::dptrangevseta[ieta][i]<0.001) break; // There are zeros in the end of the array when we're out of barrel
+    dx.push_back(jp::dptrangevseta[ieta][i]);
+  }
+  const int ndx = dx.size()-1;
+
   vector<double> y(51);
   for (unsigned int i = 0; i != y.size(); ++i) y[i] = -5. + 0.2*i;
   const int ny = y.size()-1;
@@ -79,6 +88,9 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
 
   // 1 GeV bins for localizing leading jets
   hpt0 = new TH1D("hpt0","",6500,0.,6500.);
+
+  // Double binning for TUnfold
+  hptd = new TH1D("hptd","",ndx,&dx[0]);
 
   // leading and non-leading jets
   hpt1 = new TH1D("hpt1","",nx,&x[0]);

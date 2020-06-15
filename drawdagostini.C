@@ -67,10 +67,11 @@ void drawDagostini(string type) {
   TLatex *tex = new TLatex();
   tex->SetTextSize(0.045);
 
-  const int ny = 7;
+  const int ny = 8;
   double y1 = 0; double y2 = 0;
   for (int iy = 0; iy != ny; ++iy) {
     if (iy==6) {y1 = 3.2; y2 = 4.7;}
+    else if (iy==7) {y1 = 0.0; y2 = 1.3;}
     else {y1 = 0.5*iy;  y2 = 0.5*(iy+1);}
 
     assert(din->cd(Form("Eta_%1.1f-%1.1f",y1,y2)));
@@ -111,7 +112,7 @@ void drawDagostini(string type) {
     tex->SetTextSize(0.045);
     tex->SetTextAlign(31); // align right
     tex->SetNDC(kTRUE);
-    tex->DrawLatex(0.8, 0.2, y1==0 ? "|y|<0.5" : Form("%1.1f<|y|<%1.1f",y1,y2));
+    tex->DrawLatex(0.8, 0.2, (y2-0.5)==0 ? "|y|<0.5" : Form("%1.1f<|y|<%1.1f",y1,y2));
 
     if (y1==0) {
       c1b->cd();
@@ -196,7 +197,7 @@ void drawDagostini(string type) {
     tex->SetTextSize(iy<3 ? 0.053 : 0.045);
     tex->SetTextAlign(21); // align middle
     tex->SetNDC(kFALSE);
-    tex->DrawLatex(150, 0.5, y1==0 ? "|y|<0.5" : Form("%1.1f<|y|<%1.1f",y1,y2));
+    tex->DrawLatex(150, 0.5, (y2-0.5)==0 ? "|y|<0.5" : Form("%1.1f<|y|<%1.1f",y1,y2));
 
     if (iy==2) {
       leg->AddEntry(gbayes,"RooUnfoldBayes","P");
@@ -228,7 +229,7 @@ void drawDagostini(string type) {
     TGraphErrors *grsvd = tools::ratioGraphs(gsvd, gfwd);
     grsvd->Draw("SAMEPz");
 
-    tex->DrawLatex(150,0.91, y1==0 ? "|y|<0.5" : Form("%1.1f<|y|<%1.1f",y1,y2));
+    tex->DrawLatex(150,0.91, (y2-0.5)==0 ? "|y|<0.5" : Form("%1.1f<|y|<%1.1f",y1,y2));
 
     if (iy==2) leg->Draw();
 

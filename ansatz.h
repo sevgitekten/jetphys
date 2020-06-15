@@ -1,5 +1,7 @@
 // Ansatz functions for inclusive jets
 
+#include "unfsettings.h"
+
 // Ansatz Kernel 
 int cnt_a = 0;
 const int nk = 3; // number of kernel parameters (excluding pt, eta)
@@ -12,9 +14,10 @@ Double_t smearedAnsatzKernel(Double_t *x, Double_t *p) {
   const double ptmeas = p[0]; // measured pT
   const double eta = p[1]; // rapidity
 
+  double jes = (uf::dojes ? ptresponse(pt, eta+1e-3) : 1);
   double res = ptresolution(pt, eta+1e-3) * pt;
   
-  const double s = TMath::Gaus(ptmeas, pt, res, kTRUE);
+  const double s = TMath::Gaus(ptmeas, jes*pt, res, kTRUE);
   const double f = p[2] * pow(pt, p[3]) * pow(1 - pt*cosh(eta) / jp::emax, p[4]);
   
   return (f * s);

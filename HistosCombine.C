@@ -97,6 +97,7 @@ void HistosCombine(string type = "") {
   if (!isdt) recurseCombFile(fin, fout, isdt, "hpt_g0tw");
 
   recurseCombFile(fin, fout, isdt, "hpt0");
+  recurseCombFile(fin, fout, isdt, "hptd");
   recurseCombFile(fin, fout, isdt, "hpt1");
   recurseCombFile(fin, fout, isdt, "hpt2");
   recurseCombFile(fin, fout, isdt, "hpt3");
