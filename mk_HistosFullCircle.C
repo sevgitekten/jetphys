@@ -16,21 +16,21 @@ void mk_HistosFullCircle() {
   // Quick configuration settings:
   bool dooutput = true;
   bool doplots  = true;
-  bool dodt     = false;
+  bool dodt     = true;
   bool dopy     = true;
   bool dohw     = false;
   bool donu     = true;
   bool doht     = false;
   bool doall    = true;
-  // Choose one: 0:16BCD,1:16EF,2:16GH,
-  //             3:17B,4:17C,5:17D,6:17E,7:17F
-  //             8:18A,9:18B,10:18C,11:18D
-  int lumidx = 6;
+  // Choose one: 0:16BCD,1:16EF,2:16GH,3:16BCDEFGH
+  //             4:17B,5:17C,6:17D,7:17E,8:17F,9:17BCDEF
+  //             10:18A,11:18B,12:18C,13:18D,14:18ABCD
+  int lumidx = 9;
 
   // Output-*-2*.root files:
   if (dooutput) {
     if (dodt) {
-      HistosNormalize("DATA");
+      //HistosNormalize("DATA");
       HistosCombine("DATA");
     }
     if (donu) {
@@ -111,44 +111,53 @@ void mk_HistosFullCircle() {
     // Picking luminosity info for the plots.
     string title, lumit;
     if (lumidx==0) { // 2016 IOV's: tot. 35.86 fb^{-1}
-      title="Run2016BCD";
+      title="2016BCD";
       lumit="12.6 fb^{-1}";
     } else if (lumidx==1) {
-      title="Run2016EF";
+      title="2016EF";
       lumit="6.7 fb^{-1}";
     } else if (lumidx==2) {
-      title="Run2016GH";
+      title="2016GH";
       lumit="16.5 fb^{-1}";
-    } else if (lumidx==3) { // 2017 IOV's: tot. 41.52 fb^{-1}
-      title="Run2017B";
+    } else if (lumidx==3) {
+      title="2016BCDEFGH";
+      lumit="35.86 fb^{-1}";
+    } else if (lumidx==4) { // 2017 IOV's: tot. 41.52 fb^{-1}
+      title="2017B";
       lumit="4.8 fb^{-1}";
-    } else if (lumidx==4) {
-      title="Run2017C";
-      lumit="9.6 fb^{-1}";
     } else if (lumidx==5) {
-      title="Run2017D";
-      lumit="4.2 fb^{-1}";
+      title="2017C";
+      lumit="9.6 fb^{-1}";
     } else if (lumidx==6) {
-      title="Run2017E";
+      title="2017D";
+      lumit="4.2 fb^{-1}";
+    } else if (lumidx==7) {
+      title="2017E";
       lumit="9.3 fb^{-1}";
     //} else if (lumidx==5) {
-    //  title="Run2017DE";
+    //  title="2017DE";
     //  lumit="13.6 fb^{-1}";
-    } else if (lumidx==7) {
-      title="Run2017F";
+    } else if (lumidx==8) {
+      title="2017F";
       lumit="13.5 fb^{-1}";
-    } else if (lumidx==8) { // 2018 IOV's: tot. 53.27 fb^{-1}
-      title="Run2018A";
-      lumit="14.1 fb^{-1}";
     } else if (lumidx==9) {
-      title="Run2018B";
-      lumit="7.1 fb^{-1}";
-    } else if (lumidx==10) {
-      title="Run2018C";
-      lumit="6.9 fb^{-1}";
+      title="2017BCDEF";
+      lumit="41.52 fb^{-1}";
+    } else if (lumidx==10) { // 2018 IOV's: tot. 53.27 fb^{-1}
+      title="2018A";
+      lumit="14.1 fb^{-1}";
     } else if (lumidx==11) {
-      title="Run2018D";
+      title="2018B";
+      lumit="7.1 fb^{-1}";
+    } else if (lumidx==12) {
+      title="2018C";
+      lumit="6.9 fb^{-1}";
+    } else if (lumidx==13) {
+      title="2018D";
       lumit="29.2 fb^{-1}";
+    } else if (lumidx==14) {
+      title="2018ABCD";
+      lumit="53.27 fb^{-1}";
     } else {
       cout << "Lumi index erroneous, check your value: " << lumidx << endl;
       return;

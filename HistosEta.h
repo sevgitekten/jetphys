@@ -73,6 +73,22 @@ class HistosEta {
 
   TH1D *heta;
   TH2D *hetaphi;
+  TH2D *hetaphi_chf;
+  TH2D *hetaphi_nef;
+  TH2D *hetaphi_nhf;
+  TH2D *hetaphi_cef;
+  TH2D *hetaphi_muf;
+  TH2D *hetaphi_hhf;
+  TH2D *hetaphi_hef;
+  TH2D *hetaphi_puf;
+  TProfile2D *petaphi_chf;
+  TProfile2D *petaphi_nef;
+  TProfile2D *petaphi_nhf;
+  TProfile2D *petaphi_cef;
+  TProfile2D *petaphi_muf;
+  TProfile2D *petaphi_hhf;
+  TProfile2D *petaphi_hef;
+  TProfile2D *petaphi_puf;
 
   TProfile3D *p3rvsnpv;
   TProfile3D *p3rvsnpvW;

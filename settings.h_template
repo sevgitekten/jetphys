@@ -62,7 +62,7 @@ namespace jp {
   // 18: A/B/C/D/ABCD
   const string run = "D";
   // Which run year are we analyzing?
-  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int yid = 3; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
   //-1; // all
@@ -141,7 +141,7 @@ namespace jp {
   constexpr bool dojson = true;
   const constexpr array<const char*,yrs> json_ = {
     "lumicalc/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt",
-    "lumicalc/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1mod.txt",
+    "lumicalc/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSONmod.txt",
     "lumicalc/Cert_306896-307082_13TeV_EOY2017ReReco_Collisions17_JSON_LowPU.txt",
     "lumicalc/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt"
   };
@@ -151,7 +151,7 @@ namespace jp {
   constexpr bool dolumi = true;
   const constexpr array<const char*,yrs> lumifile_ = {
     "lumicalc/lumibyls16.csv",
-    "lumicalc/lumibyls17.csv",
+    "lumicalc/lumibylsul17.csv",
     "lumicalc/lumibyls17h.csv",
     "lumicalc/lumibyls18.csv"
   };
@@ -194,7 +194,7 @@ namespace jp {
   // Trigger ranges (differ from thresholds)
   const array<vector<array<double,2>>,yrs> trigranges_ = {{
     {{{0,49},{49,84},{84,114},{114,196},{196,272},{272,330},{330,395},{395,468},{468,548},{548,6500}          }},
-    {{{0,64},{64,84},{84,114},{114,196},{196,272},{272,330},{330,395},{395,468},{468,548},{548,686},{686,6500}}},
+    {{{0,49},{49,84},{84,114},{114,196},{196,272},{272,330},{330,395},{395,468},{468,548},{548,686},{686,6500}}},
     {{{0,28},{28,37},{37,49},{49,84},{84,114},{114,196},{196,272}}},
     {{{0,64},{64,84},{84,114},{114,196},{196,272},{272,330},{330,395},{395,468},{468,548},{548,686},{686,6500}}}
   }}; // V[5,6], AK4
@@ -204,7 +204,8 @@ namespace jp {
   const array<vector<double>,yrs> triglumi_ = {{
   // ZB         PFJ40      PFJ60       PFJ80       PFJ140       PFJ200        PFJ260        PFJ320         PFJ400         PFJ450          PFJ500
     { 29036.821,250019.11 , 676345.122,2602658.803,22609385.05 , 96089534.929,559334225.38 ,1663980103.656,4870543838.98 ,34184232596.775                }, // 2016
-    { 75086.268,340487.186, 998075.452,4171433.311,39740193.824,218749681.165,555199860.716,1407215678.758,4213837750.579,10451819594.184,41521111348.432}, // 2017
+    { 75027.459,340221.288, 997084.982,4168897.983,39722550.447,218677919.676,554867541.537,1406384811.894,4211720261.534,10453579017.756,41471176941.094}, // UL17
+//  { 75086.268,340487.186, 998075.452,4171433.311,39740193.824,218749681.165,555199860.716,1407215678.758,4213837750.579,10451819594.184,41521111348.432}, // 2017
     {     1.   ,     1.   ,      1.   ,      1.   ,       1.   ,        1.   ,        1.}, // H Dummy values
     { 75831.608,231122.765, 764683.719,4998554.8  ,46417090.061,199877328.665,455315402.462,1751671521.33 ,3618303294.319, 7193355038.764,57269453309.189}  // 2018
   }}; // in /ub
@@ -244,11 +245,16 @@ namespace jp {
   // 2017 values: (zb,jt40-jt500)
     {{
   //   ZB         PFJ40      PFJ60      PFJ80       PFJ140       PFJ200        PFJ260        PFJ320        PFJ400         PFJ450         PFJ500               Era
-      {  7539.226, 96664.998, 26622.936, 189826.043,12534821.364,100732085.583, 86579973.307,217989804.268, 850535229.404,4433502069.149, 4793979607.968}, // B
-      { 12918.576, 57596.329,229617.920,2205841.654, 7557872.755, 31535667.322,134501668.374,335987447.077,1010919949.001,1746883754.461, 9631323656.448}, // C
-      {  9652.826, 48475.568,209759.897, 386611.391, 4041221.865, 15774605.427, 70855229.555,180113633.815, 483431612.818, 887087743.403, 4247564824.502}, // D
-      { 18436.289, 65480.301,273870.786, 602425.276, 6245719.204, 25002871.020,110449169.249,280091604.472, 761298045.169,1355996073.006, 9313989713.752}, // E
-      { 26539.351, 72269.990,258203.913, 786728.947, 9360558.636, 45704451.813,152813820.231,393033189.126,1107652914.187,2028349954.165,13534253545.762}, // F
+      {  7558.553, 96743.791, 26673.811, 190207.645,12550069.342,100808202.603, 86763162.740,218447771.062, 852367191.107,4442661081.162, 4803137031.478}, // B UL
+  //  {  7539.226, 96664.998, 26622.936, 189826.043,12534821.364,100732085.583, 86579973.307,217989804.268, 850535229.404,4433502069.149, 4793979607.968}, // B
+      { 12845.351, 57253.681,228585.005,2202942.731, 7525165.004, 31388501.217,133989488.068,334706928.370,1006993268.070,1739523723.121, 9572498263.748}, // C UL
+  //  { 12918.576, 57596.329,229617.920,2205841.654, 7557872.755, 31535667.322,134501668.374,335987447.077,1010919949.001,1746883754.461, 9631323656.448}, // C
+      {  9652.767, 48475.272,209758.690, 386609.167, 4041198.616, 15774514.638, 70854821.929,180112597.395, 483428831.523, 887082640.511, 4247540384.302}, // D UL
+  //  {  9652.826, 48475.568,209759.897, 386611.391, 4041221.865, 15774605.427, 70855229.555,180113633.815, 483431612.818, 887087743.403, 4247564824.502}, // D
+      { 18436.210, 65478.556,273863.562, 602409.494, 6245558.849, 25002249.405,110446248.569,280084325.940, 761278056.646,1355961618.797, 9313747715.805}, // E UL
+  //  { 18436.289, 65480.301,273870.786, 602425.276, 6245719.204, 25002871.020,110449169.249,280091604.472, 761298045.169,1355996073.006, 9313989713.752}, // E
+      { 26534.578, 72269.990,258203.913, 786728.946, 9360558.636, 45704451.813,152813820.231,393033189.127,1107652914.188,2028349954.165,13534253545.762}, // F UL
+  //  { 26539.351, 72269.990,258203.913, 786728.947, 9360558.636, 45704451.813,152813820.231,393033189.126,1107652914.187,2028349954.165,13534253545.762}, // F
     }},
   // 2017 RunH values (dummy)
     {{
@@ -317,22 +323,22 @@ namespace jp {
   const string jecgt = jecgt_.at(yid);
   const array<string,yrs> jecversdt_ = {
     "_V20",
-    "_V5",
-    "_V5",
-    "_V16h"
+    "_V4",
+    "_V4",
+    "_V19"
   };
   const string jecversdt = jecversdt_.at(yid);
   const array<string,yrs> jecversmc_ = {
     "_V20",
-    "_V5",
-    "_V5",
-    "_V16h"
+    "_V4",
+    "_V4",
+    "_V19"
   };
   const string jecversmc = jecversmc_.at(yid);
   const array<string,yrs> jectag_ = {
     "",
     "",
-    "_SimpleL1",
+    "",
     ""
   };
   const string jectag = jectag_.at(yid);
@@ -360,7 +366,7 @@ namespace jp {
 
     //{ BEGIN DT: Files
     constexpr const array<const char*,yrs> dtpath_ =
-      {"Data/2016/","UL17SMPJ/","Data/2017/UL/","Data/2018/"};
+      {"Data/2016/","Data/2017/UL/","Data/2017/UL/","Data/2018/UL/"};
     constexpr const char* dtpath = dtpath_.at(yid);
 
     const array<vector<vector<string>>,yrs> dtfiles_ = {{
@@ -406,20 +412,20 @@ namespace jp {
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
         {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2017/NuGun.root"}}
+        {"NuGun",{"MC/UL17/NuGun.root"}}
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/2017/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
         {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2017/NuGun.root"}}
+        {"NuGun",{"MC/UL17/NuGun.root"}}
       },
       {
-        {"P8CP5",{"MC/2018/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"MC/UL18/P8CP5/FlatPthat_15to7000.root"}},
         {"H7"   ,{"MC/2018/H7/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2018/NuGun.root"}}
+        {"NuGun",{"MC/UL18/NuGun.root"}}
       }
     }};
     const map<string,vector<const char*>> mcfiles = mcfiles_.at(yid);
@@ -429,8 +435,8 @@ namespace jp {
     // All the following values need to be updated, if other source tuples are used.
     const array<const char*,yrs> pthatpath_ = {
       "MC/2016/P8M1/",
-      "MC/UL17/P8CP5/",
-      "MC/UL17/P8CP5/",
+      "MC/2017/P8CP5/",
+      "MC/2017/P8CP5/",
       "MC/2018/P8CP5/"
     };
     const char* pthatpath = pthatpath_.at(yid);
@@ -520,10 +526,10 @@ namespace jp {
     constexpr const double maxpu = 80.0;
 
     const array<string,yrs> pudtpath_ =
-      {"pileup/DT/16_LRRAUG/","pileup/DT/17_RRMAR/","pileup/DT/17_RRMAR/","pileup/DT/18_Impro/"};
+      {"pileup/DT/16_LRRAUG/","pileup/DT/17_UL/","pileup/DT/17_RRMAR/","pileup/DT/18_Impro/"};
     const string pudtpath = pudtpath_.at(yid);
     const array<string,yrs> pumcpath_ =
-      {"pileup/MC/16/","pileup/MC/17/","pileup/MC/17/","pileup/MC/18/"};
+      {"pileup/MC/16/","pileup/MC/ul17/","pileup/MC/17/","pileup/MC/ul18/"};
     const string pumcpath = pumcpath_.at(yid);
     const array<string,yrs> pup8file_ =
       {"pileup_P8M1.root","pileup_P8CP5.root","pileup_P8CP5.root","pileup_P8CP5.root"};
