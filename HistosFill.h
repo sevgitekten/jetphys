@@ -250,7 +250,7 @@ private:
   Long64_t _ntot ;
   Long64_t _nskip;;
   double _xsecMinBias;
-  double _w, _w0;
+  double _w, _w0, _w80;
   double _binnedmcweight;
   int    _binnedmcrepeats;
 
@@ -274,6 +274,7 @@ private:
   map<int, map<int, float> > _lums;
   map<int, map<int, float> > _lums2;
   map<string, double> _wt; // Trigger pileup and trigger weights
+  map<string, double> _wt80; // Trigger pileup and trigger weights
   map<string, vector<HistosBasic*> > _histos;
   map<string, vector<HistosEta*> > _etahistos;
   map<string, vector<HistosMC*> > _mchistos;

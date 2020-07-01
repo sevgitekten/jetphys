@@ -583,7 +583,7 @@ bool HistosFill::PreRun()
       PrintInfo("Issues loading the PU histograms for reweighting; aborting...",true);
       return false;
     }
-    _do80mb = LoadPUProfiles();
+    _do80mb = LoadPUProfiles(true);
   }
 
   // load luminosity tables
@@ -995,7 +995,7 @@ bool HistosFill::AcceptEvent()
         // MET 2: record unclustered energy (more or less deprecated).
         // Keep track of remaining pT in unclustered energy, add to MET l1corr jets, from which ue is substracted.
         // Effectively this means substracting jets (without their PU and UE) from MET (=> homogeneous background).
-        double ue = 1.068 * jta[jetidx]; // CAUTION: One should check this magical coefficient is good.
+        double ue = 1.068 * jta[jetidx]; // CAUTION: One should check that this magical coefficient is good.
         double dptu = -ue + l1corr*jtptu[jetidx];
         ucx += dptu * cos(jtphi[jetidx]);
         ucy += dptu * sin(jtphi[jetidx]);
@@ -1105,6 +1105,7 @@ bool HistosFill::AcceptEvent()
             int k = _pudist[trg_name]->FindBin(PUVal);
             wtrue = _pudist[trg_name]->GetBinContent(k);
             _wt[trg_name] *= wtrue;
+            if (_do80mb) _wt80[trg_name] = _pudist80[trg_name]->GetBinContent(k);
             wcond |= wtrue!=0;
           }
           found = true;
@@ -1126,6 +1127,7 @@ bool HistosFill::AcceptEvent()
     if (jp::reweighPU) {
       int k = _pudist[jp::reftrig]->FindBin(PUVal);
       _wt["mc"] *= _pudist[jp::reftrig]->GetBinContent(k);
+      if (_do80mb) _wt80["mc"] = _pudist80[jp::reftrig]->GetBinContent(k);
     }
   } else if (jp::isdt) {
     // For data, check trigger bits
@@ -1454,6 +1456,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
   _w = _w0 * _wt[h->trigname];
   if (_w <= 0) return;
+  if (_do80mb) _w80 = _w0 * _wt80[h->trigname];
   double wtrig = _wt[h->trigname];
   if (jp::pthatbins or jp::htbins) wtrig *= _binnedmcweight;
 
@@ -1599,22 +1602,38 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
               assert(h->h2pttagmu); h->h2pttagmu->Fill(pttag,trpu, _w);
               //{ Composition vs pt tag pt
               // Fractions vs pt: we do pt selection later in HistosCombine
-              assert(h->pncandtp);    h->pncandtp->Fill(pttag, jtn[iprobe]  , _w);
-              assert(h->pnchtp);      h->pnchtp  ->Fill(pttag, jtnch[iprobe], _w);
-              assert(h->pnnetp);      h->pnnetp  ->Fill(pttag, jtnne[iprobe]-jtnhe[iprobe], _w);
-              assert(h->pnnhtp);      h->pnnhtp  ->Fill(pttag, jtnnh[iprobe]-jtnhh[iprobe], _w);
-              assert(h->pncetp);      h->pncetp  ->Fill(pttag, jtnce[iprobe], _w);
-              assert(h->pnmutp);      h->pnmutp  ->Fill(pttag, jtnmu[iprobe], _w);
+              assert(h->pncandtp); h->pncandtp->Fill(pttag, jtn[iprobe]  , _w);
+              assert(h->pnchtp);   h->pnchtp  ->Fill(pttag, jtnch[iprobe], _w);
+              assert(h->pnnetp);   h->pnnetp  ->Fill(pttag, jtnne[iprobe]-jtnhe[iprobe], _w);
+              assert(h->pnnhtp);   h->pnnhtp  ->Fill(pttag, jtnnh[iprobe]-jtnhh[iprobe], _w);
+              assert(h->pncetp);   h->pncetp  ->Fill(pttag, jtnce[iprobe], _w);
+              assert(h->pnmutp);   h->pnmutp  ->Fill(pttag, jtnmu[iprobe], _w);
 
-              assert(h->pchftp);      h->pchftp  ->Fill(pttag, jtchf[iprobe], _w);
-              assert(h->pneftp);      h->pneftp  ->Fill(pttag, (jtnef[iprobe]-jthef[iprobe]), _w);
-              assert(h->pnhftp);      h->pnhftp  ->Fill(pttag, (jtnhf[iprobe]-jthhf[iprobe]), _w);
-              assert(h->pceftp);      h->pceftp  ->Fill(pttag, jtcef[iprobe], _w);
-              assert(h->pmuftp);      h->pmuftp  ->Fill(pttag, jtmuf[iprobe], _w);
-              assert(h->phhftp);      h->phhftp  ->Fill(pttag, jthhf[iprobe], _w);
-              assert(h->pheftp);      h->pheftp  ->Fill(pttag, jthef[iprobe], _w);
-              assert(h->ppuftp);      h->ppuftp  ->Fill(pttag, jtbetaprime[iprobe], _w);
+              assert(h->pchftp);   h->pchftp  ->Fill(pttag, jtchf[iprobe], _w);
+              assert(h->pneftp);   h->pneftp  ->Fill(pttag, (jtnef[iprobe]-jthef[iprobe]), _w);
+              assert(h->pnhftp);   h->pnhftp  ->Fill(pttag, (jtnhf[iprobe]-jthhf[iprobe]), _w);
+              assert(h->pceftp);   h->pceftp  ->Fill(pttag, jtcef[iprobe], _w);
+              assert(h->pmuftp);   h->pmuftp  ->Fill(pttag, jtmuf[iprobe], _w);
+              assert(h->phhftp);   h->phhftp  ->Fill(pttag, jthhf[iprobe], _w);
+              assert(h->pheftp);   h->pheftp  ->Fill(pttag, jthef[iprobe], _w);
+              assert(h->ppuftp);   h->ppuftp  ->Fill(pttag, jtbetaprime[iprobe], _w);
+              if (_do80mb and _w80>0) {
+                assert(h->pncandtp80); h->pncandtp80->Fill(pttag, jtn[iprobe]  , _w80);
+                assert(h->pnchtp80);   h->pnchtp80  ->Fill(pttag, jtnch[iprobe], _w80);
+                assert(h->pnnetp80);   h->pnnetp80  ->Fill(pttag, jtnne[iprobe]-jtnhe[iprobe], _w80);
+                assert(h->pnnhtp80);   h->pnnhtp80  ->Fill(pttag, jtnnh[iprobe]-jtnhh[iprobe], _w80);
+                assert(h->pncetp80);   h->pncetp80  ->Fill(pttag, jtnce[iprobe], _w80);
+                assert(h->pnmutp80);   h->pnmutp80  ->Fill(pttag, jtnmu[iprobe], _w80);
 
+                assert(h->pchftp80);   h->pchftp80  ->Fill(pttag, jtchf[iprobe], _w);
+                assert(h->pneftp80);   h->pneftp80  ->Fill(pttag, (jtnef[iprobe]-jthef[iprobe]), _w80);
+                assert(h->pnhftp80);   h->pnhftp80  ->Fill(pttag, (jtnhf[iprobe]-jthhf[iprobe]), _w80);
+                assert(h->pceftp80);   h->pceftp80  ->Fill(pttag, jtcef[iprobe], _w80);
+                assert(h->pmuftp80);   h->pmuftp80  ->Fill(pttag, jtmuf[iprobe], _w80);
+                assert(h->phhftp80);   h->phhftp80  ->Fill(pttag, jthhf[iprobe], _w80);
+                assert(h->pheftp80);   h->pheftp80  ->Fill(pttag, jthef[iprobe], _w80);
+                assert(h->ppuftp80);   h->ppuftp80  ->Fill(pttag, jtbetaprime[iprobe], _w80);
+              }
               assert(h->ppt_probepertag); h->ppt_probepertag->Fill(pttag,ptprobe/pttag,_w);
 
               double metstuff = met1 * cos(DPhi(metphi1, phiprobe));
@@ -1649,22 +1668,22 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
                 assert(h->hpuftp);      h->hpuftp->Fill(jtbetaprime[iprobe], _w);
 
                 // Fractions vs number of primary vertices
-                assert(h->pncandtp_vsnpv);    h->pncandtp_vsnpv->Fill(npvgood, jtn[iprobe], _w);
-                assert(h->pnchtp_vsnpv);      h->pnchtp_vsnpv->Fill(npvgood, jtnch[iprobe], _w);
-                assert(h->pnnetp_vsnpv);      h->pnnetp_vsnpv->Fill(npvgood, jtnne[iprobe]-jtnhe[iprobe], _w);
-                assert(h->pnnhtp_vsnpv);      h->pnnhtp_vsnpv->Fill(npvgood, jtnnh[iprobe]-jtnhh[iprobe], _w);
-                assert(h->pncetp_vsnpv);      h->pncetp_vsnpv->Fill(npvgood, jtnce[iprobe], _w);
-                assert(h->pnmutp_vsnpv);      h->pnmutp_vsnpv->Fill(npvgood, jtnmu[iprobe], _w);
-                assert(h->pnhhtp_vsnpv);      h->pnhhtp_vsnpv->Fill(npvgood, jtnhh[iprobe], _w);
-                assert(h->pnhetp_vsnpv);      h->pnhetp_vsnpv->Fill(npvgood, jtnhe[iprobe], _w);
-                assert(h->pchftp_vsnpv);      h->pchftp_vsnpv->Fill(npvgood, jtchf[iprobe], _w);
-                assert(h->pneftp_vsnpv);      h->pneftp_vsnpv->Fill(npvgood, (jtnef[iprobe]-jthef[iprobe]), _w);
-                assert(h->pnhftp_vsnpv);      h->pnhftp_vsnpv->Fill(npvgood, (jtnhf[iprobe]-jthhf[iprobe]), _w);
-                assert(h->pceftp_vsnpv);      h->pceftp_vsnpv->Fill(npvgood, jtcef[iprobe], _w);
-                assert(h->pmuftp_vsnpv);      h->pmuftp_vsnpv->Fill(npvgood, jtmuf[iprobe], _w);
-                assert(h->phhftp_vsnpv);      h->phhftp_vsnpv->Fill(npvgood, jthhf[iprobe], _w);
-                assert(h->pheftp_vsnpv);      h->pheftp_vsnpv->Fill(npvgood, jthef[iprobe], _w);
-                assert(h->ppuftp_vsnpv);      h->ppuftp_vsnpv->Fill(npvgood, jtbetaprime[iprobe], _w);
+                assert(h->pncandtp_vsnpv); h->pncandtp_vsnpv->Fill(npvgood, jtn[iprobe], _w);
+                assert(h->pnchtp_vsnpv);   h->pnchtp_vsnpv->Fill(npvgood, jtnch[iprobe], _w);
+                assert(h->pnnetp_vsnpv);   h->pnnetp_vsnpv->Fill(npvgood, jtnne[iprobe]-jtnhe[iprobe], _w);
+                assert(h->pnnhtp_vsnpv);   h->pnnhtp_vsnpv->Fill(npvgood, jtnnh[iprobe]-jtnhh[iprobe], _w);
+                assert(h->pncetp_vsnpv);   h->pncetp_vsnpv->Fill(npvgood, jtnce[iprobe], _w);
+                assert(h->pnmutp_vsnpv);   h->pnmutp_vsnpv->Fill(npvgood, jtnmu[iprobe], _w);
+                assert(h->pnhhtp_vsnpv);   h->pnhhtp_vsnpv->Fill(npvgood, jtnhh[iprobe], _w);
+                assert(h->pnhetp_vsnpv);   h->pnhetp_vsnpv->Fill(npvgood, jtnhe[iprobe], _w);
+                assert(h->pchftp_vsnpv);   h->pchftp_vsnpv->Fill(npvgood, jtchf[iprobe], _w);
+                assert(h->pneftp_vsnpv);   h->pneftp_vsnpv->Fill(npvgood, (jtnef[iprobe]-jthef[iprobe]), _w);
+                assert(h->pnhftp_vsnpv);   h->pnhftp_vsnpv->Fill(npvgood, (jtnhf[iprobe]-jthhf[iprobe]), _w);
+                assert(h->pceftp_vsnpv);   h->pceftp_vsnpv->Fill(npvgood, jtcef[iprobe], _w);
+                assert(h->pmuftp_vsnpv);   h->pmuftp_vsnpv->Fill(npvgood, jtmuf[iprobe], _w);
+                assert(h->phhftp_vsnpv);   h->phhftp_vsnpv->Fill(npvgood, jthhf[iprobe], _w);
+                assert(h->pheftp_vsnpv);   h->pheftp_vsnpv->Fill(npvgood, jthef[iprobe], _w);
+                assert(h->ppuftp_vsnpv);   h->ppuftp_vsnpv->Fill(npvgood, jtbetaprime[iprobe], _w);
 
                 // Fractions vs true pileup
                 assert(h->pchftp_vstrpu);      h->pchftp_vstrpu->Fill(trpu, jtchf[iprobe], _w);
@@ -1876,6 +1895,25 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           assert(h->phhf); h->phhf->Fill(pt, jthhf[jetidx], _w);
           assert(h->phhf); h->phef->Fill(pt, jthef[jetidx], _w);
           assert(h->ppuf); h->ppuf->Fill(pt, jtbetaprime[jetidx], _w);
+          if (_do80mb and _w80>0) {
+            assert(h->pncand80); h->pncand80->Fill(pt, jtn[jetidx], _w80);
+            assert(h->pnch80);   h->pnch80  ->Fill(pt, jtnch[jetidx], _w80);
+            assert(h->pnne80);   h->pnne80  ->Fill(pt, jtnne[jetidx]-jtnhe[jetidx], _w80);
+            assert(h->pnnh80);   h->pnnh80  ->Fill(pt, jtnnh[jetidx]-jtnhh[jetidx], _w80);
+            assert(h->pnce80);   h->pnce80  ->Fill(pt, jtnce[jetidx], _w80);
+            assert(h->pnmu80);   h->pnmu80  ->Fill(pt, jtnmu[jetidx], _w80);
+            assert(h->pnhh80);   h->pnhh80  ->Fill(pt, jtnhh[jetidx], _w80);
+            assert(h->pnhe80);   h->pnhe80  ->Fill(pt, jtnhe[jetidx], _w80);
+            //
+            assert(h->pchf80);   h->pchf80  ->Fill(pt, jtchf[jetidx], _w80);
+            assert(h->pnef80);   h->pnef80  ->Fill(pt, jtnef[jetidx]-jthef[jetidx], _w80);
+            assert(h->pnhf80);   h->pnhf80  ->Fill(pt, jtnhf[jetidx]-jthhf[jetidx], _w80);
+            assert(h->pcef80);   h->pcef80  ->Fill(pt, jtcef[jetidx], _w80);
+            assert(h->pmuf80);   h->pmuf80  ->Fill(pt, jtmuf[jetidx], _w80);
+            assert(h->phhf80);   h->phhf80  ->Fill(pt, jthhf[jetidx], _w80);
+            assert(h->phhf80);   h->phef80  ->Fill(pt, jthef[jetidx], _w80);
+            assert(h->ppuf80);   h->ppuf80  ->Fill(pt, jtbetaprime[jetidx], _w80);
+          }
 
           // control plots for topology (JEC)
           h->pa->Fill(pt, jta[jetidx], _w);
