@@ -3401,8 +3401,8 @@ bool HistosFill::LoadLumi()
 
 bool HistosFill::LoadPUProfiles(bool do80)
 {
-  string datafile = jp::pudtpath + jp::run + "/pileup_DT" + (do80 ? "80mb" : "") + ".root";
-  string mcfile   = jp::pumcpath;
+  string datafile = jp::pudtpath + (do80 ? "80mb/" : "/") + jp::run + "/pileup_DT.root";
+  string mcfile   = jp::pumcpath + "/";
   if (jp::isnu)      mcfile += "pileup_NU.root";
   else if (jp::ishw) mcfile += jp::puhwfile;
   else if (jp::ispy) {
