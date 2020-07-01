@@ -1070,67 +1070,13 @@ bool HistosFill::AcceptEvent()
   }
 
   // Reset prescales (dynamic can change within run)
-  for (auto &scaleit : _prescales)
-    scaleit.second[run] = 0;
+  for (auto &scaleit : _prescales) scaleit.second[run] = 0;
 
   // Fill trigger information
   _trigs.clear();
 
-  // Simulate other triggers for MC, if so wished
-  // (this is slow, though)
-  if (jp::ismc) {
-    // Always insert the generic mc trigger
-    if (jp::debug) PrintInfo("Entering PU weight calculation!",true);
-#ifdef NEWMODE
-      // The PU gen jets are not saved => impossible to do this in SingleNeutrino
-    if (_pass and (jtgenidx[i0]!=-1 or jp::isnu)) ++_cnt["07mcgenjet"];
-    else return false;
-#endif
-    // In SingleNeutrino, there is one extra PV. See also LoadPUProfiles
-    double PUVal = trpu;
-    if (jp::domctrigsim and njt>0) {
-      // Only add the greatest trigger present; calculate trigger PU weight
-      bool found = false;
-      bool wcond = false;
-      for (unsigned itrg = 0; itrg < jp::triggers.size(); ++itrg) {
-        double wtrue = 1.0;
-        // We fire all the triggers up to the unfeasible turn-on point
-        if (jtpt[i0]>jp::trigranges.at(itrg).at(0)) {
-          string trg_name = jp::triggers.at(itrg);
-          _trigs.insert(trg_name);
-          _wt[trg_name] = 1.;
-
-          // Reweight in-time pile-up
-          if (jp::reweighPU) {
-            int k = _pudist[trg_name]->FindBin(PUVal);
-            wtrue = _pudist[trg_name]->GetBinContent(k);
-            _wt[trg_name] *= wtrue;
-            if (_do80mb) _wt80[trg_name] = _pudist80[trg_name]->GetBinContent(k);
-            wcond |= wtrue!=0;
-          }
-          found = true;
-        } else {
-          break;
-        }
-      }
-      _pass = _pass and found;
-      if (_pass) ++_cnt["07mctrg"];
-      else return false; // Leading jet is weak
-
-      // check for non-zero PU weight
-      _pass = _pass and wcond;
-      if (_pass) ++_cnt["07puw"];
-      else return false; // Bad pu areas with zero weight excluded
-    } // jp::domctrigsim
-    _trigs.insert("mc");
-    _wt["mc"] = 1.0;
-    if (jp::reweighPU) {
-      int k = _pudist[jp::reftrig]->FindBin(PUVal);
-      _wt["mc"] *= _pudist[jp::reftrig]->GetBinContent(k);
-      if (_do80mb) _wt80["mc"] = _pudist80[jp::reftrig]->GetBinContent(k);
-    }
-  } else if (jp::isdt) {
-    // For data, check trigger bits
+  bool wcond = false; // For MC runs
+  if (jp::isdt or jp::loadMCTrigs) { // For data (and MC), check trigger bits
     if (jp::debug) {
       PrintInfo(Form("TriggerDecision_.size()==%zu",TriggerDecision_.size()));
       PrintInfo(Form("_availTrigs.size()==%zu",_availTrigs.size()));
@@ -1140,18 +1086,14 @@ bool HistosFill::AcceptEvent()
     assert(TriggerDecision_.size()==_availTrigs.size());
     #endif
 
-    // New and old mode: TriggerDecision and L1/HLT Prescales have the same indexing.
-    for (auto itrg = 0u; itrg != jp::notrigs; ++itrg) _wt[jp::triggers[itrg]] = 1.0;
-
     #ifdef NEWMODE
     for (unsigned itrg = 0; itrg<TriggerDecision_.size(); ++itrg) {
       unsigned TDec = TriggerDecision_[itrg]; // Location of the current place
       assert(TDec<_availTrigs.size());
       auto &TName = _availTrigs[TDec];
 
-      auto trgPlace = std::find(_goodTrigs.begin(),_goodTrigs.end(),TDec);
-      if (trgPlace==_goodTrigs.end()) continue;
-      unsigned goodIdx = static_cast<unsigned int>(trgPlace-_goodTrigs.begin());
+      // Make sure that the current trigger is listed as "good" (i.e. known and desired)
+      if (std::find(_goodTrigs.begin(),_goodTrigs.end(),TDec)==_goodTrigs.end()) continue;
     #else
     for (auto goodIdx = 0u; goodIdx < _goodTrigs.size(); ++goodIdx) {
       auto &itrg = _goodTrigs[goodIdx];
@@ -1166,10 +1108,10 @@ bool HistosFill::AcceptEvent()
       #else
       if (jp::debug and TDec>0)
       #endif
-      PrintInfo(Form("%s %d %d %d %d",TName.c_str(),itrg,TDec,L1Prescale_[itrg],HLTPrescale_[itrg]),true);
+        PrintInfo(Form("%s %d %d %d %d",TName.c_str(),itrg,TDec,L1Prescale_[itrg],HLTPrescale_[itrg]),true);
 
       // Set prescale from event for now
-      int l1 =  L1Prescale_[itrg];
+      int l1 =  L1Prescale_ [itrg];
       int hlt = HLTPrescale_[itrg];
       //if (l1>0 and hlt>0) {
       if (hlt>0 or l1>0) { // There's trouble in 2017 L1, so we let it pass
@@ -1192,12 +1134,87 @@ bool HistosFill::AcceptEvent()
         // Set trigger only if prescale information is known
         _trigs.insert(TName);
         _wt[TName] = 1.0;
+        // Reweight in-time pile-up
+        if (jp::ismc and jp::reweighPU) {
+          int k       = _pudist[TName]->FindBin(trpu);
+          _wt[TName] *= _pudist[TName]->GetBinContent(k);
+          if (_do80mb) _wt80[TName] = _pudist80[TName]->GetBinContent(k);
+        }
+        wcond |= _wt[TName]!=0;
       } else {
         // Make sure all info is good! This is crucial if there is something odd with the tuples
         PrintInfo(Form("Missing prescale for %s in run %d",TName.c_str(),run),true);
       }
     } // for itrg (FilterDecision or _goodTrigs)
-  } // if isdt
+  } else if (jp::doMCTrigSim and njt>0) { // Simulate other triggers for MC, if so wished (this is slow, though)
+    if (jp::debug) PrintInfo("Entering PU weight calculation!",true);
+    // Calculate trigger PU weight
+    for (unsigned itrg = 0; itrg < jp::triggers.size(); ++itrg) {
+      // We fire all the triggers up to the unfeasible turn-on point
+      if (jtpt[i0]>jp::trigranges.at(itrg).at(0)) {
+        string TName = jp::triggers.at(itrg);
+        _trigs.insert(TName);
+        _wt[TName] = 1.;
+
+        // Reweight in-time pile-up
+        if (jp::reweighPU) {
+          int k       = _pudist[TName]->FindBin(trpu);
+          _wt[TName] *= _pudist[TName]->GetBinContent(k);
+          if (_do80mb) _wt80[TName] = _pudist80[TName]->GetBinContent(k);
+        }
+        wcond |= _wt[TName]!=0;
+      } else {
+        break;
+      }
+    }
+  }
+  if (jp::isdt) {
+    // check for trigger presense
+    _pass = _pass and wcond;
+    if (_pass) ++_cnt["07dttrg"];
+    else return false; // Missing trigger
+  } else {
+    // Due to an accident in trigger listing, the ZeroBias trigger was not added to some productions.
+    // If the event has been saved with zero triggers, this means implicitly that ZeroBias should be added.
+    if (jp::loadMCTrigs and !wcond) {
+      string TName = "jt0";
+      _trigs.insert(TName);
+      _wt[TName] = 1.;
+      _prescales[TName][run] = 1.;
+
+      // Reweight in-time pile-up
+      if (jp::reweighPU) {
+        int k       = _pudist[TName]->FindBin(trpu);
+        _wt[TName] *= _pudist[TName]->GetBinContent(k);
+        if (_do80mb) _wt80[TName] = _pudist80[TName]->GetBinContent(k);
+      }
+      wcond |= _wt[TName]!=0;
+    }
+    if (jp::reweighPU) {
+      // check for non-zero PU weight at some trigger
+      _pass = _pass and wcond;
+      if (_pass) ++_cnt["07puwtrg"];
+      else return false; // Bad pu areas with zero weight excluded
+    } else {
+      // check for trigger presense
+      _pass = _pass and wcond;
+      if (_pass) ++_cnt["07mctrg"];
+      else return false; // Missing trigger
+    }
+#ifdef NEWMODE
+    //// The PU gen jets are not saved => impossible to do this in SingleNeutrino
+    //if (_pass and (jtgenidx[i0]!=-1 or jp::isnu)) ++_cnt["07mcgenjet"];
+    //else return false;
+#endif
+    // Always insert the generic mc trigger
+    _trigs.insert("mc");
+    _wt["mc"] = 1.0;
+    if (jp::reweighPU) {
+      int k      = _pudist[jp::reftrig]->FindBin(trpu);
+      _wt["mc"] *= _pudist[jp::reftrig]->GetBinContent(k);
+      if (_do80mb) _wt80["mc"] = _pudist80[jp::reftrig]->GetBinContent(k);
+    }
+  }
 
   ++_totcounter;
   if (_pass) ++_evtcounter;
@@ -1379,7 +1396,7 @@ void HistosFill::InitBasic(string name)
     pt["mc"] = pair<double, double>(jp::recopt, jp::emax);
     pttrg["mc"] = jp::recopt;
   }
-  if (jp::isdt or jp::domctrigsim) {
+  if (jp::isdt or jp::doMCTrigSim) {
     // This is done both for data and MC, because why not?
     for (unsigned itrg = 0; itrg != jp::notrigs; ++itrg) {
       string trg = jp::triggers[itrg];
@@ -2241,7 +2258,7 @@ void HistosFill::InitEta(string name)
     pt["mc"] = pair<double, double>(jp::recopt, jp::emax);
     pttrg["mc"] = jp::recopt;
   }
-  if (jp::isdt or jp::domctrigsim) {
+  if (jp::isdt or jp::doMCTrigSim) {
     // This is done both for data and MC, because why not?
     for (unsigned itrg = 0; itrg != jp::notrigs; ++itrg) {
       string trg = jp::triggers[itrg];
@@ -2476,7 +2493,7 @@ void HistosFill::InitMC(string name)
     pt["mc"] = pair<double, double>(jp::recopt, jp::emax);
     pttrg["mc"] = jp::recopt;
   }
-  if (jp::isdt or jp::domctrigsim) {
+  if (jp::isdt or jp::doMCTrigSim) {
     // This is done both for data and MC, because why not?
     for (unsigned itrg = 0; itrg != jp::notrigs; ++itrg) {
       string trg = jp::triggers[itrg];
@@ -3029,7 +3046,7 @@ void HistosFill::FillAll(string name)
       //if (ptbin>0 and (njt<2 or _jetids[1]) and (njt<3 or _jetids[2]) and (njt<4 or _jetids[3]) and (njt<5 or _jetids[4])) {
       //  // This code sector is separated from standard weighting strategies: for data, no weight is applied
       //  double wt = 1.0;
-      //  if (!jp::isdt) wt = _w;
+      //  if (jp::ismc) wt = _w;
 
       //  // Let's create a universal tag unit vector
       //  double ju_px = cos(jtphi[0]);
@@ -3494,12 +3511,11 @@ Long64_t HistosFill::LoadTree(Long64_t entry)
 
   // A new tree is opened
   if (fChain->GetTreeNumber() != fCurrent) {
-
     fCurrent = fChain->GetTreeNumber();
     PrintInfo(Form("Opening tree number %d", fChain->GetTreeNumber()));
 
     if (jp::fetchMETFilters) {
-      // Reload the MET filters and print them
+      // Load the MET filters and print them
       if (!GetFilters()) {
         PrintInfo("Failed to load DT filters. Check that the SMPJ tuple has the required histograms. Aborting...");
         return -4;
@@ -3508,8 +3524,8 @@ Long64_t HistosFill::LoadTree(Long64_t entry)
       for (auto &flt : _availFlts) PrintInfo(flt,true);
     }
 
-    if (jp::isdt) {
-      // Reload the triggers and print them
+    if (jp::isdt or jp::loadMCTrigs) {
+      // Load the triggers and print them
       if (!GetTriggers()) {
         PrintInfo("Failed to load DT triggers. Check that the SMPJ tuple has the required histograms. Aborting...");
         return -4;
@@ -3524,7 +3540,9 @@ Long64_t HistosFill::LoadTree(Long64_t entry)
         if (trigi%(jp::notrigs+1)==jp::notrigs) *ferr << endl;
       }
       *ferr << endl << flush;
-    } else if (jp::pthatbins or jp::htbins) {
+    }
+
+    if (jp::ismc and (jp::pthatbins or jp::htbins)) {
       // If there are two pthat files with the same pthat range, we convey this information through "prevweight"
       bool htmode = !jp::pthatbins;
       const char* bintag = htmode ? "HT" : "Pthat";
@@ -3578,8 +3596,7 @@ Long64_t HistosFill::LoadTree(Long64_t entry)
         PrintInfo(Form("%s bin remains the same while file is changing.\nFile %s\nWeight: %f",
                   bintag,fChain->GetCurrentFile()->GetName(),_binnedmcweight),true);
       }
-    }
-    // slices with PtHat/HT bins
+    } // slices with PtHat/HT bins
   }
   return centry;
 }

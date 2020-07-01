@@ -49,7 +49,7 @@ namespace jp {
   //{ BEGIN fundamental settings: these are the ones that need most often changes
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
-  constexpr const char* type = "DATA";
+  constexpr const char* type = "NU";
   // For DATA, set dataset, for MC, set PU. Also chooses hot zone cuts. See eras_ for further info.
   // 16: B/C/D/E/Fe/Fl/G/H/BCD/EF/GH/BCDEFGH
   // 17: B/C/D/E/F/BCDEF
@@ -57,15 +57,15 @@ namespace jp {
   // 18: A/B/C/D/ABCD
   const string run = "F";
   // Which run year are we analyzing?
-  const unsigned int yid = 3; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
   //-1; // all
   //10; // debug
   //100; //debug
   //1000;
-  10000; // shorter test run
-  //100000; // short test run
+  //10000; // shorter test run
+  100000; // short test run
   //1000000; // shortish test run
   //2500000; // shortish test run
   //10000000;
@@ -138,7 +138,7 @@ namespace jp {
     "lumicalc/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt",
     "lumicalc/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSONmod.txt",
     "lumicalc/Cert_306896-307082_13TeV_EOY2017ReReco_Collisions17_JSON_LowPU.txt",
-    "lumicalc/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt"
+    "lumicalc/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt"
   };
   const constexpr char* json = json_.at(yid);
 
@@ -154,10 +154,12 @@ namespace jp {
 
   // For debugging, allows the user to skip L2L3Res JEC in Data.
   constexpr bool skipl2l3res = false;
-  // Decide whether or not to simulate triggers from MC (this is slow)
-  constexpr bool domctrigsim = true;
+  // Load MC triggers from the file
+  constexpr bool loadMCTrigs = true;
+  // Decide whether or not to simulate triggers from MC (this is slow, used only if loadMCTrigs is not set)
+  constexpr bool doMCTrigSim = true;
   // Use "mc" trigger for whole pT range instead of stiching triggers together in HistosCombine (false requires trigsim)
-  constexpr bool usemctrig = false;
+  constexpr bool useMCTrig = false;
 
   const array<vector<const char*>,yrs> triggers_ = {{
     {"jt0","jt40","jt60","jt80","jt140","jt200","jt260","jt320","jt400","jt450"},
@@ -319,8 +321,8 @@ namespace jp {
   const string jecgt = jecgt_.at(yid);
   const array<string,yrs> jecversdt_ = {
     "_V20",
-    "_V4",
-    "_V4",
+    "_V5",
+    "_V5",
     //"_V32",
     //"_V32",
     "_V19"
@@ -328,8 +330,8 @@ namespace jp {
   const string jecversdt = jecversdt_.at(yid);
   const array<string,yrs> jecversmc_ = {
     "_V20",
-    "_V4",
-    "_V4",
+    "_V5",
+    "_V5",
     //"_V32",
     //"_V3", (RunF 09May2018)
     //"_V32",
@@ -527,7 +529,7 @@ namespace jp {
     constexpr const double maxpu = 80.0;
 
     const array<string,yrs> pudtpath_ =
-      {"pileup/DT/16_LRRAUG/","pileup/DT/17_UL/","pileup/DT/17_RRMAR/","pileup/DT/18_Impro/"};
+      {"pileup/DT/16_LRRAUG/","pileup/DT/17_UL80mb/","pileup/DT/17_RRMAR/","pileup/DT/18_Impro/"};
     const string pudtpath = pudtpath_.at(yid);
     const array<string,yrs> pumcpath_ =
       {"pileup/MC/16/","pileup/MC/ul17/","pileup/MC/17/","pileup/MC/ul18/"};
@@ -729,7 +731,7 @@ namespace jp {
   constexpr double sqrts = 13000.; // GeV
   constexpr double emax = sqrts/2.; // Max possible jet pt
   constexpr double recopt = 15; // Min observed jet pt
-  constexpr double xsecMinBias = 7.126E+10;
+  constexpr double xsecMinBias = 6.92E+10;
   constexpr double lumi = -4; // Unprescaled luminosity for plots in /fb
   //} END Run2
 
