@@ -390,6 +390,8 @@ class HistosBasic {
   TH2D *h2r_g;
   TProfile *p2r_r;
   TProfile *p2r_g;
+  TProfile *p2r_rpuw;
+  TProfile *p2r_gpuw;
   TProfile *p2r_ruw;
   TProfile *p2r_guw;
 
@@ -397,6 +399,8 @@ class HistosBasic {
   TH2D     *h2r_g_g;
   TProfile *p2r_g_r;
   TProfile *p2r_g_g;
+  TProfile *p2r_g_rpuw;
+  TProfile *p2r_g_gpuw;
   TProfile *p2r_g_ruw;
   TProfile *p2r_g_guw;
 
@@ -404,6 +408,8 @@ class HistosBasic {
   TH2D     *h2r_q_g;
   TProfile *p2r_q_r;
   TProfile *p2r_q_g;
+  TProfile *p2r_q_rpuw;
+  TProfile *p2r_q_gpuw;
   TProfile *p2r_q_ruw;
   TProfile *p2r_q_guw;
 
@@ -411,16 +417,20 @@ class HistosBasic {
   TH2D     *h2r_u_g;
   TProfile *p2r_u_r;
   TProfile *p2r_u_g;
+  TProfile *p2r_u_rpuw;
+  TProfile *p2r_u_gpuw;
   TProfile *p2r_u_ruw;
   TProfile *p2r_u_guw;
 
   //Rapidity closure
-  TH2D *h2dy_r;
-  TH2D *h2dy_g;
-  TProfile *p2dy_r;
-  TProfile *p2dy_g;
-  TProfile *p2dy_ruw;
-  TProfile *p2dy_guw;
+  TH2D       *h2dy_r;
+  TH2D       *h2dy_g;
+  TProfile   *p2dy_r;
+  TProfile   *p2dy_g;
+  TProfile   *p2dy_rpuw;
+  TProfile   *p2dy_gpuw;
+  TProfile   *p2dy_ruw;
+  TProfile   *p2dy_guw;
   TProfile2D *pdy_r;
   TProfile2D *pdy_g;
 

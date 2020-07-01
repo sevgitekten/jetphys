@@ -67,6 +67,8 @@ void HistosFill::PrintMemInfo(bool printcout)
 // Mostly setting up the root tree and its branches
 bool HistosFill::Init(TChain *tree)
 {
+  _do80mb = true;
+
   ferr = 0;
   ferr = new ofstream(Form("reports/HistosFill-%s.log",jp::type),ios::out);
 
@@ -415,16 +417,16 @@ void HistosFill::Loop()
         for (auto &manyhists : _histos)
           for (auto &onehist : manyhists.second)
             onehist->Write();
-          if (jp::doEtaHistos) {
-            for (auto &manyhists : _etahistos)
+        if (jp::doEtaHistos) {
+          for (auto &manyhists : _etahistos)
+            for (auto & onehist : manyhists.second)
+              onehist->Write();
+          if (jp::doEtaHistosMcResponse) {
+            for (auto &manyhists : _mchistos)
               for (auto & onehist : manyhists.second)
                 onehist->Write();
-            if (jp::doEtaHistosMcResponse) {
-              for (auto &manyhists : _mchistos)
-                for (auto & onehist : manyhists.second)
-                  onehist->Write();
-            }
           }
+        }
       }
       stop.Continue();
     }
@@ -577,13 +579,14 @@ bool HistosFill::PreRun()
 
   // Load PU profiles for MC reweighing
   if (jp::ismc and jp::reweighPU) {
-    if (!LoadPuProfiles()) {
+    if (!LoadPUProfiles()) {
       PrintInfo("Issues loading the PU histograms for reweighting; aborting...",true);
       return false;
     }
+    _do80mb = LoadPUProfiles();
   }
 
-  // load luminosity tables (prescales now stored in event)
+  // load luminosity tables
   if (jp::isdt and jp::dolumi) {
     if (!LoadLumi()) {
       PrintInfo("Issues loading the Lumi file; aborting...",true);
@@ -679,9 +682,7 @@ bool HistosFill::PreRun()
     const int nqgl = 101; double vqgl[nqgl+1];
     for (int qglidx = 0; qglidx != nqgl+1; ++qglidx) vqgl[qglidx] = 0. + 0.01*qglidx;
 
-    _h3probg = new TH3D("_h3probg","Gluon prob.;#eta_{jet};p_{T,jet};QGL",
-                        //6,0,3.0, 10,0,1000, 101,0,1.01);
-                        neta,veta, npt,vpt, nqgl,vqgl); //101,0,1.01);
+    _h3probg = new TH3D("_h3probg","Gluon prob.;#eta_{jet};p_{T,jet};QGL", neta,veta,npt,vpt,nqgl,vqgl); //6,0,3.0, 10,0,1000, 101,0,1.01);//101,0,1.01);
 
     // Loop over pt and eta bins in the gql histos
     for (int ieta = 1; ieta != _h3probg->GetNbinsX()+1; ++ieta) {
@@ -1085,11 +1086,10 @@ bool HistosFill::AcceptEvent()
     if (_pass and (jtgenidx[i0]!=-1 or jp::isnu)) ++_cnt["07mcgenjet"];
     else return false;
 #endif
-    // In SingleNeutrino, there is one extra PV. See also LoadPuProfiles
+    // In SingleNeutrino, there is one extra PV. See also LoadPUProfiles
     double PUVal = trpu;
     if (jp::domctrigsim and njt>0) {
-      // Only add the greatest trigger present
-      // Calculate trigger PU weight
+      // Only add the greatest trigger present; calculate trigger PU weight
       bool found = false;
       bool wcond = false;
       for (unsigned itrg = 0; itrg < jp::triggers.size(); ++itrg) {
@@ -1167,21 +1167,20 @@ bool HistosFill::AcceptEvent()
       PrintInfo(Form("%s %d %d %d %d",TName.c_str(),itrg,TDec,L1Prescale_[itrg],HLTPrescale_[itrg]),true);
 
       // Set prescale from event for now
-      //if (L1Prescale_[itrg]>0 and HLTPrescale_[itrg]>0) { There's trouble in 2017 L1, so we let it pass
-      if (HLTPrescale_[itrg]>0 or L1Prescale_[itrg]>0) {
-        double l1 = L1Prescale_[itrg];
-        double hlt = HLTPrescale_[itrg];
-        if (l1==0) l1 = 1;
+      int l1 =  L1Prescale_[itrg];
+      int hlt = HLTPrescale_[itrg];
+      //if (l1>0 and hlt>0) {
+      if (hlt>0 or l1>0) { // There's trouble in 2017 L1, so we let it pass
+        if (l1==0)  l1  = 1;
         if (hlt==0) hlt = 1;
         _prescales[TName][run] = l1 * hlt;
       } else {
-        PrintInfo(Form("Error for trigger %s prescales: L1 = %d HLT = %d",TName.c_str(),L1Prescale_[itrg],HLTPrescale_[itrg]));
+        PrintInfo(Form("Error for trigger %s prescales: L1 = %d HLT = %d",TName.c_str(),l1,hlt));
         _prescales[TName][run] = 0;
         if (jp::debug) { // check prescale
-          double prescale = _prescales[TName][run];
-          if (L1Prescale_[itrg]*HLTPrescale_[itrg]!=prescale) {
-            PrintInfo(Form("Trigger %s, Prescale (txt file) = %f",TName.c_str(),prescale),true);
-            PrintInfo(Form("L1 = %d, HLT = %d",L1Prescale_[itrg],HLTPrescale_[itrg]),true);
+          if (l1*hlt!=0) {
+            PrintInfo(Form("Trigger %s, Prescale (txt file) = 0",TName.c_str()),true);
+            PrintInfo(Form("L1 = %d, HLT = %d",l1,hlt),true);
             assert(false);
           }
         } // debug
@@ -1256,15 +1255,11 @@ bool HistosFill::AcceptEvent()
       //if (jtpt[i0] < 1.5*jtgenpt[i0] or jp::isnu) ++_cnt["09ptgenlim"];
       //else _pass = false;
 
-      if (_pass) {
-        if (doht) {
-          if (jtpt[i0] < 4.0*pthat) ++_cnt["10htlim"];
-          else _pass = false;
-        } else {
-          double lim = (pthat < 100) ? 4.0 : 3.5;
-          if (jtpt[i0] < lim*pthat) ++_cnt["10pthatlim"];
-          else _pass = false;
-        }
+      if (jtpt[i0] < 10.0*pthat) {
+        if (doht) ++_cnt["10htlim"];
+        else      ++_cnt["10pthatlim"];
+      } else {
+        _pass = false;
       }
     }
   } // MC
@@ -1459,6 +1454,8 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
 
   _w = _w0 * _wt[h->trigname];
   if (_w <= 0) return;
+  double wtrig = _wt[h->trigname];
+  if (jp::pthatbins or jp::htbins) wtrig *= _binnedmcweight;
 
   bool fired = (_trigs.find(h->trigname)!=_trigs.end());
   if (!fired) return;
@@ -1481,7 +1478,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
       }
     }
 
-    h->lumsum += lum / prescale;
+    h->lumsum  += lum  / prescale;
     h->lumsum2 += lum2 / prescale;
     h->lums[run][lbn] = 1;
 
@@ -2039,38 +2036,48 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
               h->h2r_g->Fill(ptgen, r, _w);
               h->p2r_r->Fill(pt, r, _w);
               h->p2r_g->Fill(ptgen, r, _w);
-              h->p2r_ruw->Fill(pt, r); // unweighted!
-              h->p2r_guw->Fill(ptgen, r); // unweighted!
+              h->p2r_rpuw->Fill(pt, r, wtrig);    // PU weighted!
+              h->p2r_gpuw->Fill(ptgen, r, wtrig); // PU weighted!
+              h->p2r_ruw->Fill(pt, r);            // unweighted!
+              h->p2r_guw->Fill(ptgen, r);         // unweighted!
 
               if(fabs(partonflavorphys[jetidx]-21)<0.5){
                   h->h2r_g_r->Fill(pt, r, _w);
                   h->h2r_g_g->Fill(ptgen, r, _w);
                   h->p2r_g_r->Fill(pt, r, _w);
                   h->p2r_g_g->Fill(ptgen, r, _w);
-                  h->p2r_g_ruw->Fill(pt, r); // unweighted!
-                  h->p2r_g_guw->Fill(ptgen, r); // unweighted!
+                  h->p2r_g_rpuw->Fill(pt, r, wtrig);    // PU weighted!
+                  h->p2r_g_gpuw->Fill(ptgen, r, wtrig); // PU weighted!
+                  h->p2r_g_ruw->Fill(pt, r);            // unweighted!
+                  h->p2r_g_guw->Fill(ptgen, r);         // unweighted!
               }
               if(fabs(partonflavorphys[jetidx])<6 && partonflavorphys[jetidx]!=0){
                   h->h2r_q_r->Fill(pt, r, _w);
                   h->h2r_q_g->Fill(ptgen, r, _w);
                   h->p2r_q_r->Fill(pt, r, _w);
                   h->p2r_q_g->Fill(ptgen, r, _w);
-                  h->p2r_q_ruw->Fill(pt, r); // unweighted!
-                  h->p2r_q_guw->Fill(ptgen, r); // unweighted!
+                  h->p2r_q_ruw->Fill(pt, r, wtrig);    // PU weighted!
+                  h->p2r_q_guw->Fill(ptgen, r, wtrig); // PU weighted!
+                  h->p2r_q_ruw->Fill(pt, r);           // unweighted!
+                  h->p2r_q_guw->Fill(ptgen, r);        // unweighted!
               }
               if ((fabs(partonflavorphys[jetidx])>=6 && partonflavorphys[jetidx]!=21) || partonflavorphys[jetidx]==0){
-                   /*h->h2r_u_r->Fill(pt, r, _w);
-                   h->h2r_u_g->Fill(ptgen, r, _w);
-                   h->p2r_u_r->Fill(pt, r, _w);
-                   h->p2r_u_g->Fill(ptgen, r, _w);
-                   h->p2r_u_ruw->Fill(pt, r); // unweighted!
-                   h->p2r_u_guw->Fill(ptgen, r); // unweighted!*/
+                   //h->h2r_u_r->Fill(pt, r, _w);
+                   //h->h2r_u_g->Fill(ptgen, r, _w);
+                   //h->p2r_u_r->Fill(pt, r, _w);
+                   //h->p2r_u_g->Fill(ptgen, r, _w);
+                   //h->p2r_u_rpuw->Fill(pt, r, wtrig);    // PU weighted!
+                   //h->p2r_u_gpuw->Fill(ptgen, r, wtrig); // PU weighted!
+                   //h->p2r_u_ruw->Fill(pt, r);            // unweighted!
+                   //h->p2r_u_guw->Fill(ptgen, r);         // unweighted!
                    h->h2r_g_r->Fill(pt, r, _w);
                    h->h2r_g_g->Fill(ptgen, r, _w);
                    h->p2r_g_r->Fill(pt, r, _w);
                    h->p2r_g_g->Fill(ptgen, r, _w);
-                   h->p2r_g_ruw->Fill(pt, r); // unweighted!
-                   h->p2r_g_guw->Fill(ptgen, r); // unweighted!
+                   h->p2r_g_rpuw->Fill(pt, r, wtrig);    // PU weighted!
+                   h->p2r_g_gpuw->Fill(ptgen, r, wtrig); // PU weighted!
+                   h->p2r_g_ruw->Fill(pt, r);            // unweighted!
+                   h->p2r_g_guw->Fill(ptgen, r);         // unweighted!
               }
 
               // Rapidity closure
@@ -2078,8 +2085,10 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
               h->h2dy_g->Fill(ptgen, dy, _w);
               h->p2dy_r->Fill(pt, dy, _w);
               h->p2dy_g->Fill(ptgen, dy, _w);
-              h->p2dy_ruw->Fill(pt, dy); // unweighted
-              h->p2dy_guw->Fill(ptgen, dy); // unweighted
+              h->p2dy_rpuw->Fill(pt, dy);    // PU weighted
+              h->p2dy_gpuw->Fill(ptgen, dy); // PU weighted
+              h->p2dy_ruw->Fill(pt, dy);     // unweighted
+              h->p2dy_guw->Fill(ptgen, dy);  // unweighted
               h->pdy_r->Fill(pt, fabs(y), dy, _w);
               h->pdy_g->Fill(ptgen, fabs(y), dy, _w);
             }
@@ -2478,8 +2487,7 @@ void HistosFill::FillMC(string name,  Float_t* _recopt, Float_t* _genpt,
 
 
 // Fill basic histograms after applying pt, y cuts
-void HistosFill::FillSingleMC(HistosMC *h,  Float_t* _recopt,  Float_t* _genpt,
-                             Float_t* _pt, Float_t* _eta,     Float_t* _phi)
+void HistosFill::FillSingleMC(HistosMC *h,  Float_t* _recopt,  Float_t* _genpt, Float_t* _pt, Float_t* _eta, Float_t* _phi)
 {
   assert(h);
 
@@ -2615,8 +2623,7 @@ void HistosFill::FillRun(string name)
       double prescale(0);
       if (_prescales[t].find(run)==_prescales[t].end()) {
         if (_trigs.find(t)!=_trigs.end()) {
-          PrintInfo(Form("Prescale not found for trigger %s run %d",
-                         t.c_str(),run));
+          PrintInfo(Form("Prescale not found for trigger %s run %d", t.c_str(),run));
           assert(false);
         }
       } else prescale = _prescales[t][run];
@@ -2666,8 +2673,8 @@ void HistosFill::FillRun(string name)
         if (pt > 18.) ++h->p_trg[t][run];
         if (pt > h->pt[t]) {
           ++h->t_trg[t][run]; // unweighted events
-          h->tw_trg[t][run] += _prescales[t][run]; // prescale weighted events
-          h->npv_trg[t][run] += npv;
+          h->tw_trg[t][run]      += _prescales[t][run]; // prescale weighted events
+          h->npv_trg[t][run]     += npv;
           h->npvgood_trg[t][run] += npvgood;
           h->c_chf[t][run]       += jtchf[jetidx];
           h->c_nef[t][run]       += (jtnef[jetidx]-jthef[jetidx]);
@@ -3337,9 +3344,9 @@ bool HistosFill::LoadLumi()
 } // LoadLumi
 
 
-bool HistosFill::LoadPuProfiles()
+bool HistosFill::LoadPUProfiles(bool do80)
 {
-  string datafile = jp::pudtpath + jp::run + "/pileup_DT.root";
+  string datafile = jp::pudtpath + jp::run + "/pileup_DT" + (do80 ? "80mb" : "") + ".root";
   string mcfile   = jp::pumcpath;
   if (jp::isnu)      mcfile += "pileup_NU.root";
   else if (jp::ishw) mcfile += jp::puhwfile;
@@ -3352,7 +3359,7 @@ bool HistosFill::LoadPuProfiles()
     return false;
   }
 
-  PrintInfo(Form("Processing LoadPuProfiles() using %s and %s ...",datafile.c_str(),mcfile.c_str()),true);
+  PrintInfo(Form("Processing LoadPUProfiles() using %s and %s ...",datafile.c_str(),mcfile.c_str()),true);
 
   TDirectory *curdir = gDirectory;
   // Load pile-up files and hists from them
@@ -3375,39 +3382,39 @@ bool HistosFill::LoadPuProfiles()
 
   // For data, load each trigger separately
   for (auto &t : jp::triggers) {
-    auto *tmpPU = dynamic_cast<TH1D*>(f_pudist->Get(t));
-    if (!tmpPU) {
+    TH1D *tmpPU0 = dynamic_cast<TH1D*>(f_pudist->Get(t));
+    if (!tmpPU0) {
       PrintInfo(Form("The trigger %s was not found in the DT pileup file!",t),true);
       return false;
     }
-    _pudist[t] = dynamic_cast<TH1D*>(tmpPU->Clone(Form("pu%s",t)));
-    int nbinsdt = _pudist[t]->GetNbinsX();
-    int kdt = _pudist[t]->FindBin(33);
+    TH1D *tmpPU = dynamic_cast<TH1D*>(tmpPU0->Clone(Form("pu%s",t)));
+    int nbinsdt = tmpPU->GetNbinsX();
+    int kdt = tmpPU->FindBin(33);
     if (kdt!=kmc or nbinsdt!=nbinsmc) {
       PrintInfo("The pileup histogram dt vs mc binning or range do not match (dt left mc right):",true);
       PrintInfo(Form(" Bins: dt:%d mc:%d",nbinsdt,nbinsmc),true);
       PrintInfo(Form(" Pu=33 bin: dt:%d mc:%d",kdt,kmc),true);
       return false;
     }
-    double maxdtpu = _pudist[t]->GetMaximum();
-    int lodtlim    = _pudist[t]->FindFirstBinAbove(maxdtpu/100.0);
-    int updtlim    = _pudist[t]->FindLastBinAbove (maxdtpu/100.0);
-    int maxdtbin   = _pudist[t]->FindFirstBinAbove(0.999*maxdtpu);
+    double maxdtpu = tmpPU->GetMaximum();
+    int lodtlim    = tmpPU->FindFirstBinAbove(maxdtpu/100.0);
+    int updtlim    = tmpPU->FindLastBinAbove (maxdtpu/100.0);
+    int maxdtbin   = tmpPU->FindFirstBinAbove(0.999*maxdtpu);
 
-    for (int bin = 0; bin < lomclim; ++bin) // Set fore-tail to zero
-      _pudist[t]->SetBinContent(bin,0.0);
-    for (int bin = upmclim+1; bin <= nbinsdt; ++bin) // Set aft-tail to zero
-      _pudist[t]->SetBinContent(bin,0.0);
+    for (int bin = 0; bin < lomclim; ++bin) tmpPU->SetBinContent(bin,0.0); // Set fore-tail to zero
+    for (int bin = upmclim+1; bin <= nbinsdt; ++bin) tmpPU->SetBinContent(bin,0.0); // Set aft-tail to zero
 
     PrintInfo(Form("Maximum bin: %d for DT trg %s",maxdtbin,t),true);
-    PrintInfo(Form("Hazardous pu below & above: %f, %f",_pudist[t]->GetBinLowEdge(lodtlim),_pudist[t]->GetBinLowEdge(updtlim+1)),true);
-    _pudist[t]->Divide(_pumc);
+    PrintInfo(Form("Hazardous pu below & above: %f, %f",tmpPU->GetBinLowEdge(lodtlim),tmpPU->GetBinLowEdge(updtlim+1)),true);
+    tmpPU->Divide(_pumc);
+    if (do80) _pudist80[t] = tmpPU;
+    else      _pudist[t] = tmpPU;
   }
   PrintInfo("Finished processing pileup histos!",true);
 
   curdir->cd();
   return true;
-} // LoadPuProfiles
+} // LoadPUProfiles
 
 
 Int_t HistosFill::FindMCSliceIdx(string filename)

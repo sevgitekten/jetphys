@@ -409,44 +409,54 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
 
     // Response closure
     p2rvsnpv = new TProfile2D("p2rvsnpv","",nx,&x[0],jp::npvs,0,jp::npvs);
-    h2r_r = new TH2D("h2r_r","",nx,&x[0],600,0,3);
-    h2r_g = new TH2D("h2r_g","",nx,&x[0],600,0,3);
-    p2r_r = new TProfile("p2r_r","",nx,&x[0]);
-    p2r_g = new TProfile("p2r_g","",nx,&x[0]);
-    p2r_ruw = new TProfile("p2r_ruw","",nx,&x[0]);
-    p2r_guw = new TProfile("p2r_guw","",nx,&x[0]);
+    h2r_r    = new TH2D("h2r_r","",nx,&x[0],600,0,3);
+    h2r_g    = new TH2D("h2r_g","",nx,&x[0],600,0,3);
+    p2r_r    = new TProfile("p2r_r","",nx,&x[0]);
+    p2r_g    = new TProfile("p2r_g","",nx,&x[0]);
+    p2r_rpuw = new TProfile("p2r_rpuw","",nx,&x[0]);
+    p2r_gpuw = new TProfile("p2r_gpuw","",nx,&x[0]);
+    p2r_ruw  = new TProfile("p2r_ruw","",nx,&x[0]);
+    p2r_guw  = new TProfile("p2r_guw","",nx,&x[0]);
 
-    h2r_g_r = new TH2D("h2r_g_r","",nx,&x[0],600,0,3);
-    h2r_g_g = new TH2D("h2r_g_g","",nx,&x[0],600,0,3);
-    p2r_g_r = new TProfile("p2r_g_r","",nx,&x[0]);
-    p2r_g_g = new TProfile("p2r_g_g","",nx,&x[0]);
-    p2r_g_ruw = new TProfile("p2r_g_ruw","",nx,&x[0]);
-    p2r_g_guw = new TProfile("p2r_g_guw","",nx,&x[0]);
+    h2r_g_r    = new TH2D("h2r_g_r","",nx,&x[0],600,0,3);
+    h2r_g_g    = new TH2D("h2r_g_g","",nx,&x[0],600,0,3);
+    p2r_g_r    = new TProfile("p2r_g_r","",nx,&x[0]);
+    p2r_g_g    = new TProfile("p2r_g_g","",nx,&x[0]);
+    p2r_g_rpuw = new TProfile("p2r_g_rpuw","",nx,&x[0]);
+    p2r_g_gpuw = new TProfile("p2r_g_gpuw","",nx,&x[0]);
+    p2r_g_ruw  = new TProfile("p2r_g_ruw","",nx,&x[0]);
+    p2r_g_guw  = new TProfile("p2r_g_guw","",nx,&x[0]);
 
 
-    h2r_q_r = new TH2D("h2r_q_r","",nx,&x[0],600,0,3);
-    h2r_q_g = new TH2D("h2r_q_g","",nx,&x[0],600,0,3);
-    p2r_q_r = new TProfile("p2r_q_r","",nx,&x[0]);
-    p2r_q_g = new TProfile("p2r_q_g","",nx,&x[0]);
-    p2r_q_ruw = new TProfile("p2r_q_ruw","",nx,&x[0]);
-    p2r_q_guw = new TProfile("p2r_q_guw","",nx,&x[0]);
+    h2r_q_r    = new TH2D("h2r_q_r","",nx,&x[0],600,0,3);
+    h2r_q_g    = new TH2D("h2r_q_g","",nx,&x[0],600,0,3);
+    p2r_q_r    = new TProfile("p2r_q_r","",nx,&x[0]);
+    p2r_q_g    = new TProfile("p2r_q_g","",nx,&x[0]);
+    p2r_q_rpuw = new TProfile("p2r_q_rpuw","",nx,&x[0]);
+    p2r_q_gpuw = new TProfile("p2r_q_gpuw","",nx,&x[0]);
+    p2r_q_ruw  = new TProfile("p2r_q_ruw","",nx,&x[0]);
+    p2r_q_guw  = new TProfile("p2r_q_guw","",nx,&x[0]);
 
-    h2r_u_r = new TH2D("h2r_u_r","",nx,&x[0],600,0,3);
-    h2r_u_g = new TH2D("h2r_u_g","",nx,&x[0],600,0,3);
-    p2r_u_r = new TProfile("p2r_u_r","",nx,&x[0]);
-    p2r_u_g = new TProfile("p2r_u_g","",nx,&x[0]);
-    p2r_u_ruw = new TProfile("p2r_u_ruw","",nx,&x[0]);
-    p2r_u_guw = new TProfile("p2r_u_guw","",nx,&x[0]);
+    h2r_u_r    = new TH2D("h2r_u_r","",nx,&x[0],600,0,3);
+    h2r_u_g    = new TH2D("h2r_u_g","",nx,&x[0],600,0,3);
+    p2r_u_r    = new TProfile("p2r_u_r","",nx,&x[0]);
+    p2r_u_g    = new TProfile("p2r_u_g","",nx,&x[0]);
+    p2r_u_rpuw = new TProfile("p2r_u_rpuw","",nx,&x[0]);
+    p2r_u_gpuw = new TProfile("p2r_u_gpuw","",nx,&x[0]);
+    p2r_u_ruw  = new TProfile("p2r_u_ruw","",nx,&x[0]);
+    p2r_u_guw  = new TProfile("p2r_u_guw","",nx,&x[0]);
 
     // Rapidity closure
-    h2dy_r = new TH2D("h2dy_r","",nx,&x[0],200,-0.5,0.5);
-    h2dy_g = new TH2D("h2dy_g","",nx,&x[0],200,-0.5,0.5);
-    p2dy_r = new TProfile("p2dy_r","",nx,&x[0]);
-    p2dy_g = new TProfile("p2dy_g","",nx,&x[0]);
-    p2dy_ruw = new TProfile("p2dy_ruw","",nx,&x[0]);
-    p2dy_guw = new TProfile("p2dy_guw","",nx,&x[0]);
-    pdy_r = new TProfile2D("pdy_r","",nx,&x[0],jp::nposphis,jp::posphirange);
-    pdy_g = new TProfile2D("pdy_g","",nx,&x[0],jp::nposphis,jp::posphirange);
+    h2dy_r    = new TH2D("h2dy_r","",nx,&x[0],200,-0.5,0.5);
+    h2dy_g    = new TH2D("h2dy_g","",nx,&x[0],200,-0.5,0.5);
+    p2dy_r    = new TProfile("p2dy_r","",nx,&x[0]);
+    p2dy_g    = new TProfile("p2dy_g","",nx,&x[0]);
+    p2dy_rpuw = new TProfile("p2dy_rpuw","",nx,&x[0]);
+    p2dy_gpuw = new TProfile("p2dy_gpuw","",nx,&x[0]);
+    p2dy_ruw  = new TProfile("p2dy_ruw","",nx,&x[0]);
+    p2dy_guw  = new TProfile("p2dy_guw","",nx,&x[0]);
+    pdy_r     = new TProfile2D("pdy_r","",nx,&x[0],jp::nposphis,jp::posphirange);
+    pdy_g     = new TProfile2D("pdy_g","",nx,&x[0],jp::nposphis,jp::posphirange);
   } // ismcdir
 
   curdir->cd();

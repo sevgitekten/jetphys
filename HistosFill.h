@@ -195,7 +195,7 @@ public :
 
   bool             LoadJSON();
   bool             LoadLumi();
-  bool             LoadPuProfiles();
+  bool             LoadPUProfiles(bool do80 = false);
 
   void             InitBasic(string name);
   void             FillBasic(string name);
@@ -229,6 +229,7 @@ private:
   bool   _pass;
   bool   _pass_qcdmet;
   bool   _initsuccess;
+  bool   _do80mb;
 
   int _eraIdx;
   int _nbadevts_dup;
@@ -278,7 +279,7 @@ private:
   map<string, vector<HistosMC*> > _mchistos;
   map<string, HistosRun*> _runhistos;
   map<string, HistosAll*> _allhistos;
-  map<string, TH1D*> _pudist;
+  map<string, TH1D*> _pudist, _pudist80;
   map<string, int> _cnt; // efficiency counters
 
   TH1D *_pumc;
