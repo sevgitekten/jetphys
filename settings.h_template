@@ -416,26 +416,26 @@ namespace jp {
       {
         {"P8M1" ,{"MC/2016/P8M1/FlatPthat_15to7000.root"}},
         {"H7CH3",{"MC/2016/HS1/FlatPthat_15to7000.root"}},
-        {"Nu"   ,{"MC/2016/NuGun.root"}}
+        {"NU"   ,{"MC/2016/NuGun.root"}}
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
         {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
         {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"Nu"   ,{"MC/UL17/NuGun.root"}}
+        {"NU"   ,{"MC/UL17/NuGun.root"}}
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
         {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
         {"H7CH3",{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"Nu"   ,{"MC/UL17/NuGun.root"}}
+        {"NU"   ,{"MC/UL17/NuGun.root"}}
       },
       {
         {"P8CP5"   ,{"MC/UL18/P8CP5/FlatPthat_15to7000.root"}},
         {"P8CP5HEM",{"MC/UL18/P8CP5/FlatPthat_15to7000_HEM.root"}},
         {"H7CH3"   ,{"MC/2018/H7CH3/FlatPthat_15to7000.root"}},
-        {"Nu"      ,{"MC/UL18/NuGun.root"}},
-        {"NuHEM"   ,{"MC/UL18/NuGun_HEM.root"}}
+        {"NU"      ,{"MC/UL18/NuGun.root"}},
+        {"NUHEM"   ,{"MC/UL18/NuGun_HEM.root"}}
       }
     }};
     const map<string,vector<const char*>> mcfiles = mcfiles_.at(yid);
@@ -754,7 +754,7 @@ namespace jp {
   // In case of a flat MC, choose file (all options given in mcfiles).
   constexpr const char* p8file = yid==0 ? "P8M1" : "P8CP5";
   constexpr const char* hwfile = "H7CH3";
-  constexpr const char* nufile = "NuGun";
+  constexpr const char* nufile = "NU";
 
   // Luminosity weighting options (DATA)
   // Do we use trigger lumi weighting (see triglumi or triglumiera)
