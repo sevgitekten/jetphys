@@ -18,7 +18,6 @@ void normalize() {
     TH1D* handle = dynamic_cast<TH1D*>(dhandle->Clone(name.Data()));
     if (handle) {
       if (i==0) scale = 1.0/handle->GetMaximum(); // The reference tag needs to be first so that the weights line up
-//      if (tags[i]=="450") scale = 1.0/handle->GetMaximum(); // The reference tag needs to be first so that the weights line up
       handle->Scale(scale);
       handle->SetTitle(name.Data());
       handle->Write();

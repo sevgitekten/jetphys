@@ -183,7 +183,7 @@ void mk_HistosFill() {
     } else {
       cout << "Running over pythia flat sample" << endl;
 
-      for (auto &fname : jp::mcfiles.at(jp::mcfile))
+      for (auto &fname : jp::mcfiles.at(jp::p8file))
         files.push_back(Form("%s%s",p,fname));
     }
   } else if (jp::ishw) {
@@ -217,7 +217,7 @@ void mk_HistosFill() {
         cout << "Problems with ht file logic!" << endl;
       } else {
         cout << "Enter a proper value for MC tag!" << endl;
-        cout << "Entered: " << jp::mcfile << endl << "Options:";
+        cout << "Entered: " << jp::p8file << endl << "Options:";
         for (auto &fname : jp::mcfiles) cout << " " << fname.first;
         cout << endl;
       }

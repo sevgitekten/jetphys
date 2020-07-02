@@ -64,8 +64,8 @@ namespace jp {
   //10; // debug
   //100; //debug
   //1000;
-  //10000; // shorter test run
-  100000; // short test run
+  10000; // shorter test run
+  //100000; // short test run
   //1000000; // shortish test run
   //2500000; // shortish test run
   //10000000;
@@ -416,26 +416,26 @@ namespace jp {
       {
         {"P8M1" ,{"MC/2016/P8M1/FlatPthat_15to7000.root"}},
         {"H7CH3",{"MC/2016/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/2016/NuGun.root"}}
+        {"Nu"   ,{"MC/2016/NuGun.root"}}
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
         {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
         {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/UL17/NuGun.root"}}
+        {"Nu"   ,{"MC/UL17/NuGun.root"}}
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
         {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
         {"H7CH3",{"MC/2017/HS1/FlatPthat_15to7000.root"}},
-        {"NuGun",{"MC/UL17/NuGun.root"}}
+        {"Nu"   ,{"MC/UL17/NuGun.root"}}
       },
       {
         {"P8CP5"   ,{"MC/UL18/P8CP5/FlatPthat_15to7000.root"}},
         {"P8CP5HEM",{"MC/UL18/P8CP5/FlatPthat_15to7000_HEM.root"}},
         {"H7CH3"   ,{"MC/2018/H7CH3/FlatPthat_15to7000.root"}},
-        {"NuGun"   ,{"MC/UL18/NuGun.root"}},
-        {"NuGunHEM",{"MC/UL18/NuGun_HEM.root"}}
+        {"Nu"      ,{"MC/UL18/NuGun.root"}},
+        {"NuHEM"   ,{"MC/UL18/NuGun_HEM.root"}}
       }
     }};
     const map<string,vector<const char*>> mcfiles = mcfiles_.at(yid);
@@ -541,12 +541,6 @@ namespace jp {
     const array<string,yrs> pumcpath_ =
       {"pileup/MC/16","pileup/MC/ul17","pileup/MC/17","pileup/MC/ul18"};
     const string pumcpath = pumcpath_.at(yid);
-    const array<string,yrs> pup8file_ =
-      {"pileup_P8M1.root","pileup_P8CP5.root","pileup_P8CP5.root","pileup_P8CP5.root"};
-    const string pup8file = pup8file_.at(yid);
-    const array<string,yrs> puhwfile_ =
-      {"pileup_HS1.root","pileup_HS1.root","pileup_HS1.root","pileup_H7.root"};
-    const string puhwfile = puhwfile_.at(yid);
     //} END MC pileup files
 
   //} END DT/MC: File names
@@ -758,7 +752,7 @@ namespace jp {
   constexpr bool ishw = strings_equal(type,"HW");
   constexpr bool isnu = strings_equal(type,"NU");
   // In case of a flat MC, choose file (all options given in mcfiles).
-  constexpr const char* mcfile = yid==0 ? "P8M1" : "P8CP5";
+  constexpr const char* p8file = yid==0 ? "P8M1" : "P8CP5";
   constexpr const char* hwfile = "H7CH3";
   constexpr const char* nufile = "NuGun";
 

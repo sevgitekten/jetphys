@@ -3402,17 +3402,18 @@ bool HistosFill::LoadLumi()
 bool HistosFill::LoadPUProfiles(bool do80)
 {
   string datafile = jp::pudtpath + (do80 ? "80mb/" : "/") + jp::run + "/pileup_DT.root";
-  string mcfile   = jp::pumcpath + "/";
-  if (jp::isnu)      mcfile += "pileup_NU.root";
-  else if (jp::ishw) mcfile += jp::puhwfile;
+  string mcfile   = jp::pumcpath + "/pileup_";
+  if (jp::isnu)      mcfile += jp::nufile;
+  else if (jp::ishw) mcfile += jp::hwfile;
   else if (jp::ispy) {
-    if (jp::pthatbins)   mcfile += "pileup_Pthat.root";
-    else if (jp::htbins) mcfile += "pileup_P8MG.root";
-    else                 mcfile += jp::pup8file;
+    if (jp::pthatbins)   mcfile += "P8Bins";
+    else if (jp::htbins) mcfile += "P8MG";
+    else                 mcfile += jp::p8file;
   } else {
     PrintInfo("Problems with PU file types!",true);
     return false;
   }
+  mcfile += ".root";
 
   PrintInfo(Form("Processing LoadPUProfiles() using %s and %s ...",datafile.c_str(),mcfile.c_str()),true);
 

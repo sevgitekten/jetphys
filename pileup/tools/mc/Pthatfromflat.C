@@ -32,7 +32,7 @@
 void Pthatfromflat() {
   int bins = 100;
   int max = 6000;
-  TString filename="/work/jet_tuples/MC/2017/HS1/Flat.root";
+  TString filename="/work/jet_tuples/MC/UL18/P8CP5/FlatPthat_15to7000.root";
   TFile *output = new TFile("pthat.root","RECREATE");
   TFile *f = new TFile((filename).Data());
   TTree *t = (TTree*) f->Get("ak4/ProcessedTree");
