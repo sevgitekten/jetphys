@@ -1176,7 +1176,7 @@ bool HistosFill::AcceptEvent()
   } else {
     // Due to an accident in trigger listing, the ZeroBias trigger was not added to some productions.
     // If the event has been saved with zero triggers, this means implicitly that ZeroBias should be added.
-    if (jp::loadMCTrigs and !wcond) {
+    if (jp::loadMCTrigs and _trigs.count("jt0")==0) {
       string TName = "jt0";
       _trigs.insert(TName);
       _wt[TName] = 1.;
@@ -1274,7 +1274,11 @@ bool HistosFill::AcceptEvent()
       //if (jtpt[i0] < 1.5*jtgenpt[i0] or jp::isnu) ++_cnt["09ptgenlim"];
       //else _pass = false;
 
-      if (jtpt[i0] < 10.0*pthat) {
+      // This is the only notable Gen cut in use - and not entirely unproblematic.
+      // The intention is to exclude events with jets that spoil bin contents with large weights.
+      // However, this can cut too much material, in some cases.
+      double lim = pthat<100. ? 3.5 : 5.0;
+      if (jtpt[i0] < lim*pthat) {
         if (doht) ++_cnt["10htlim"];
         else      ++_cnt["10pthatlim"];
       } else {
@@ -1396,7 +1400,7 @@ void HistosFill::InitBasic(string name)
     pt["mc"] = pair<double, double>(jp::recopt, jp::emax);
     pttrg["mc"] = jp::recopt;
   }
-  if (jp::isdt or jp::doMCTrigSim) {
+  if (jp::isdt or jp::loadMCTrigs or jp::doMCTrigSim) {
     // This is done both for data and MC, because why not?
     for (unsigned itrg = 0; itrg != jp::notrigs; ++itrg) {
       string trg = jp::triggers[itrg];
@@ -2258,7 +2262,7 @@ void HistosFill::InitEta(string name)
     pt["mc"] = pair<double, double>(jp::recopt, jp::emax);
     pttrg["mc"] = jp::recopt;
   }
-  if (jp::isdt or jp::doMCTrigSim) {
+  if (jp::isdt or jp::loadMCTrigs or jp::doMCTrigSim) {
     // This is done both for data and MC, because why not?
     for (unsigned itrg = 0; itrg != jp::notrigs; ++itrg) {
       string trg = jp::triggers[itrg];
@@ -2493,7 +2497,7 @@ void HistosFill::InitMC(string name)
     pt["mc"] = pair<double, double>(jp::recopt, jp::emax);
     pttrg["mc"] = jp::recopt;
   }
-  if (jp::isdt or jp::doMCTrigSim) {
+  if (jp::loadMCTrigs or jp::doMCTrigSim) {
     // This is done both for data and MC, because why not?
     for (unsigned itrg = 0; itrg != jp::notrigs; ++itrg) {
       string trg = jp::triggers[itrg];
@@ -3659,12 +3663,10 @@ bool HistosFill::GetTriggers()
 
   // List triggers with actual contents
   map<string,unsigned int> utrigs;
-  bool zbcase = false;
   for (int trgidx = uxax->GetFirst(); trgidx <= uxax->GetLast(); ++trgidx) {
     string trgName = uxax->GetBinLabel(trgidx);
     if (trgName=="") continue;
     utrigs[trgName] = usedtrigs->GetBinContent(trgidx);
-    if (std::regex_match(trgName,zbs)) zbcase = true;
   }
 
   _availTrigs.clear();
@@ -3674,9 +3676,9 @@ bool HistosFill::GetTriggers()
     if (trgName.compare("")==0) continue; // Ignore empty places on x-axis
 
     string trigger = "x"; // HLT_PFJet are given non-empty trigger names
-    if (std::regex_match(trgName,zbs)) {
-      trigger = "jt0"; // Zero for ZeroBias
-      if (zbcase and utrigs.find(trgName) != utrigs.end()) {
+    if (utrigs.find(trgName) != utrigs.end()) {
+      if (std::regex_match(trgName,zbs)) {
+        trigger = "jt0"; // Zero for ZeroBias
         unsigned thrplace = 0;
         if (thrplace < jp::notrigs) {
           _goodTrigs.push_back(_availTrigs.size());
@@ -3684,38 +3686,36 @@ bool HistosFill::GetTriggers()
         } else { // No trig era weighting: no relative weights
           PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
         }
-      }
-    } else if (std::regex_match(trgName,hiak8)) {
-      trigger=std::regex_replace(trgName, hiak8, "ak8jt$1", std::regex_constants::format_no_copy);
-    } else if (std::regex_match(trgName,hiak8fwd)) {
-      trigger=std::regex_replace(trgName, hiak8fwd, "ak8jt$1fwd", std::regex_constants::format_no_copy);
-    } else if (std::regex_match(trgName,hipfjet)) {
-      trigger=std::regex_replace(trgName, hipfjet, "jt$1", std::regex_constants::format_no_copy);
-      if (_eraIdx==1 and jp::yid==2 and !zbcase and utrigs.find(trgName) != utrigs.end()) {
-        double trigthr = std::stod(std::regex_replace(trgName, hipfjet, "$1", std::regex_constants::format_no_copy));
-        unsigned thrplace = static_cast<unsigned>(std::find(jp::trigthr.begin()+1,jp::trigthr.end(),trigthr)-jp::trigthr.begin());
-        if (thrplace < jp::notrigs) {
-          _goodTrigs.push_back(_availTrigs.size());
-          PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
-        } else {
-          PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
+      } else if (std::regex_match(trgName,hiak8)) {
+        trigger=std::regex_replace(trgName, hiak8, "ak8jt$1", std::regex_constants::format_no_copy);
+      } else if (std::regex_match(trgName,hiak8fwd)) {
+        trigger=std::regex_replace(trgName, hiak8fwd, "ak8jt$1fwd", std::regex_constants::format_no_copy);
+      } else if (std::regex_match(trgName,hipfjet)) {
+        trigger=std::regex_replace(trgName, hipfjet, "jt$1", std::regex_constants::format_no_copy);
+        if (_eraIdx==1 and jp::yid==2) {
+          double trigthr = std::stod(std::regex_replace(trgName, hipfjet, "$1", std::regex_constants::format_no_copy));
+          unsigned thrplace = static_cast<unsigned>(std::find(jp::trigthr.begin()+1,jp::trigthr.end(),trigthr)-jp::trigthr.begin());
+          if (thrplace < jp::notrigs) {
+            _goodTrigs.push_back(_availTrigs.size());
+            PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
+          } else {
+            PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
+          }
         }
-      }
-    } else if (std::regex_match(trgName,hipfjetfwd)) {
-      trigger=std::regex_replace(trgName, hipfjetfwd, "jt$1fwd", std::regex_constants::format_no_copy);
-      if (_eraIdx==0 and jp::yid==2 and !zbcase and utrigs.find(trgName) != utrigs.end()) {
-        double trigthr = std::stod(std::regex_replace(trgName, hipfjetfwd, "$1", std::regex_constants::format_no_copy));
-        unsigned thrplace = static_cast<unsigned>(std::find(jp::trigthr.begin()+1,jp::trigthr.end(),trigthr)-jp::trigthr.begin());
-        if (thrplace < jp::notrigs) {
-          _goodTrigs.push_back(_availTrigs.size());
-          PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
-        } else {
-          PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
+      } else if (std::regex_match(trgName,hipfjetfwd)) {
+        trigger=std::regex_replace(trgName, hipfjetfwd, "jt$1fwd", std::regex_constants::format_no_copy);
+        if (_eraIdx==0 and jp::yid==2) {
+          double trigthr = std::stod(std::regex_replace(trgName, hipfjetfwd, "$1", std::regex_constants::format_no_copy));
+          unsigned thrplace = static_cast<unsigned>(std::find(jp::trigthr.begin()+1,jp::trigthr.end(),trigthr)-jp::trigthr.begin());
+          if (thrplace < jp::notrigs) {
+            _goodTrigs.push_back(_availTrigs.size());
+            PrintInfo(Form("Trigger %s responding loud and clear with %u events!",trgName.c_str(),utrigs[trgName]),true);
+          } else {
+            PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
+          }
         }
-      }
-    } else if (std::regex_match(trgName,pfjet)) {
-      trigger=std::regex_replace(trgName, pfjet, "jt$1", std::regex_constants::format_no_copy);
-      if (!zbcase and utrigs.find(trgName) != utrigs.end()) {
+      } else if (std::regex_match(trgName,pfjet)) {
+        trigger=std::regex_replace(trgName, pfjet, "jt$1", std::regex_constants::format_no_copy);
         double trigthr = std::stod(std::regex_replace(trgName, pfjet, "$1", std::regex_constants::format_no_copy));
         unsigned thrplace = static_cast<unsigned>(std::find(jp::trigthr.begin()+1,jp::trigthr.end(),trigthr)-jp::trigthr.begin());
         if (thrplace < jp::notrigs) {
@@ -3724,13 +3724,13 @@ bool HistosFill::GetTriggers()
         } else { // No trig era weighting: no relative weights
           PrintInfo(Form("The trigger %s is available, but not supported",trgName.c_str()),true);
         }
+      } else if (std::regex_match(trgName,ak8)) {
+        trigger=std::regex_replace(trgName, ak8, "ak8jt$1", std::regex_constants::format_no_copy);
+      } else if (std::regex_match(trgName,jetht)) {
+        trigger=std::regex_replace(trgName, jetht, "jetht$1", std::regex_constants::format_no_copy);
+      } else {
+        PrintInfo(Form("Unknown trigger type %s",trgName.c_str()),true);
       }
-    } else if (std::regex_match(trgName,ak8)) {
-      trigger=std::regex_replace(trgName, ak8, "ak8jt$1", std::regex_constants::format_no_copy);
-    } else if (std::regex_match(trgName,jetht)) {
-      trigger=std::regex_replace(trgName, jetht, "jetht$1", std::regex_constants::format_no_copy);
-    } else {
-      PrintInfo(Form("Unknown trigger type %s",trgName.c_str()),true);
     }
 
     _availTrigs.push_back(trigger);

@@ -17,6 +17,25 @@ void ZeroBinsToVal(TH2D *h2, double val) {
   }
 }
 
+void Shift(TH2D *h2, double shift) {
+  for (int i = 1, Nx = h2->GetNbinsX(); i <= Nx; ++i) {
+    for (int j = 1, Ny = h2->GetNbinsY(); j <= Ny; ++j) {
+      h2->SetBinContent(i,j, h2->GetBinContent(i,j) + shift);
+    }
+  }
+}
+
+TH2D *Span(TH2D *h2, const char *name, double min, double max) {
+  TH2D* h2nu = static_cast<TH2D*>(h2->Clone(name));
+  double cmin = h2nu->GetMinimum();
+  double cmax = h2nu->GetMaximum();
+  Shift(h2nu, -cmin);
+  h2nu->Scale( (max-min)/(cmax-cmin) );
+  Shift(h2nu, min);
+  h2nu->Scale(100000);
+  return h2nu;
+}
+
 // Draw 2D plot of jet rates in (eta,phi) to spot issues
 void mk_Zones(bool quick = true, string overlayName = "") {
 
@@ -53,10 +72,10 @@ void mk_Zones(bool quick = true, string overlayName = "") {
   assert(etatrgs.size()==etalims.size());
 
   map<string,const char*> trgNames = {
-    {"jt0","ZeroBias"},
-    {"jt40","PFJet40"},
-    {"jt60","PFJet60"},
-    {"jt80","PFJet80"},
+    {"jt0"  ,"ZeroBias"},
+    {"jt40" ,"PFJet40"},
+    {"jt60" ,"PFJet60"},
+    {"jt80" ,"PFJet80"},
     {"jt140","PFJet140"},
     {"jt200","PFJet200"},
     {"jt260","PFJet260"},
@@ -67,6 +86,8 @@ void mk_Zones(bool quick = true, string overlayName = "") {
     {"jt550","PFJet550"}
   };
 
+  const vector<string> modes = {"dt","mc","hw","ht"};
+
   TDirectory *curdir = gDirectory;
   setTDRStyle();
   gStyle->SetOptTitle();
@@ -74,14 +95,6 @@ void mk_Zones(bool quick = true, string overlayName = "") {
   //gStyle->SetPalette(kLightTemperature);
 
   TFile *fd = new TFile("./output-DATA-2a.root","READ");
-  assert(fd && !fd->IsZombie());
-
-  TFile *fm = new TFile("./output-MCNU-2a.root","READ");
-  assert(fm && !fm->IsZombie());
-
-  TFile *fh = 0;
-  //TFile *fh = new TFile("./output-HWNU-2a.root","READ");
-  //assert(fh && !fh->IsZombie());
 
   TH2D *h2s[jp::notrigs], *h2as[jp::notrigs], *h2bs[jp::notrigs], *h2hots[jp::notrigs], *h2colds[jp::notrigs];
   TH2D *h2template = 0;
@@ -95,22 +108,29 @@ void mk_Zones(bool quick = true, string overlayName = "") {
   } else {
     cout << "Overlay file " << overlayName << " not found!" << endl;
   }
-  for (int dtmc = 0; dtmc <= 1; ++dtmc) {
-    if (quick and dtmc>0) break;
-    TFile *f = (dtmc==0) ? fd : ((dtmc==1) ? fm : fh);
+  for (size_t imode = 0; imode < modes.size(); ++imode) {
+    TFile *f = 0;
+    const string mode = modes[imode];
+    if (imode==0) {
+      f = fd;
+    } else {
+      if (quick) break;
+      string mctag = mode=="mc" ? "MC" : (mode=="hw" ? "HW" : (mode=="ht" ? "HT" : ""));
+      f = new TFile(Form("./output-%sNU-2a.root",mctag.c_str()),"READ");
+    }
+    if (!f or f->IsZombie()) continue;
     bool enterdir = f->cd("FullEta_Reco");
     assert(enterdir);
     TDirectory *din = gDirectory;
-    string nametag = (dtmc==0) ? "data" : ((dtmc==1) ? "mc" : "hw");
-    string roottag = (dtmc==0) ? "" : ((dtmc==1) ? "mc" : "hw");
+    string nametag = (imode==0) ? "data" : mode;
+    string roottag = (imode==0) ? ""     : mode;
     TFile *phifile = phidep ? new TFile("pdf/phifile.root","RECREATE") : 0;
 
     TH2D *h2hotComb(0), *h2hotComb2(0);
 
-    TFile *fouthot = new TFile(Form("%s/hotjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str()),"RECREATE");
+    TFile *fouthot  = new TFile(Form("%s/hotjets%s-%srun%s.root" ,savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str()),"RECREATE");
     TFile *foutcold = new TFile(Form("%s/coldjets%s-%srun%s.root",savedir.c_str(),roottag.c_str(),yeartag,jp::run.c_str()),"RECREATE");
     for (auto &type : types) {
-
       for (int itrg = 0; itrg < jp::notrigs; ++itrg) {
         din->cd();
         const char *ctrg = jp::triggers[itrg];
@@ -285,7 +305,6 @@ void mk_Zones(bool quick = true, string overlayName = "") {
       h2hotNew->SetFillStyle(0);
       h2hotNew->SetLineColor(kBlack);
       h2hotNew->GetZaxis()->SetRangeUser(0,10);
-      h2hotNew->Scale(h2s[jp::notrigs-1]->Integral());
 
       TLine *l = new TLine();
       l->SetLineColor(kBlack);
@@ -294,11 +313,9 @@ void mk_Zones(bool quick = true, string overlayName = "") {
         h2hots[itrg]->SetFillStyle(0);
         h2hots[itrg]->SetLineColor(kBlack);
         h2hots[itrg]->GetZaxis()->SetRangeUser(0,10);
-        h2hots[itrg]->Scale(h2s[jp::notrigs-1]->Integral());
         h2colds[itrg]->SetFillStyle(0);
         h2colds[itrg]->SetLineColor(kWhite);
         h2colds[itrg]->GetZaxis()->SetRangeUser(0,10);
-        h2colds[itrg]->Scale(h2s[jp::notrigs-1]->Integral());
         const char *ctrg = jp::triggers[itrg];
 
         TCanvas *c1 = new TCanvas(Form("c1%s%s",ctrg,type),"",600,600);
@@ -311,13 +328,12 @@ void mk_Zones(bool quick = true, string overlayName = "") {
 
         c1->SetLogz();
         h2s[itrg]->Draw("COLZ");
-        h2hots[itrg]->Draw("SAMEBOX");
-        h2colds[itrg]->Draw("SAMEBOX");
+        Span(h2hots[itrg], "h2ashot", h2s[itrg]->GetMinimum(), h2s[itrg]->GetMaximum())->Draw("SAMEBOX");
+        Span(h2colds[itrg], "h2ashot", h2s[itrg]->GetMinimum(), h2s[itrg]->GetMaximum())->Draw("SAMEBOX");
         l->DrawLine(1.305,-TMath::Pi(),1.305,TMath::Pi());
         l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
         l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
         l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-        gPad->Update();
         gErrorIgnoreLevel = kWarning;
         if (!quick) c1->SaveAs(Form("pdf/%s_njet%s_%s.pdf",nametag.c_str(),type,ctrg));
 
@@ -330,13 +346,12 @@ void mk_Zones(bool quick = true, string overlayName = "") {
         // For drawing, mark deficit <-8 as -8 (so blue box instead of white)
         h2as[itrg]->SetTitle(Form("Fluctuation w.r.t. #eta -strip #sigma (%s);#eta_{jet};#phi_{jet}",trgNames[ctrg]));
 
-        double minmaxa = min(max(h2as[itrg]->GetMaximum(),fabs(h2as[itrg]->GetMaximum())),5.0);
-        h2as[itrg]->SetMinimum(-minmaxa);
-        h2as[itrg]->SetMaximum(+minmaxa);
-        ZeroBinsToVal(h2as[itrg],-2*minmaxa);
+        h2as[itrg]->SetMinimum(-5);
+        h2as[itrg]->SetMaximum(+5);
+        ZeroBinsToVal(h2as[itrg],-10);
 
         h2as[itrg]->Draw("COLZ");
-        h2hotNew->DrawClone("SAMEBOX");
+        Span(h2hotNew, "h2ashot", h2as[itrg]->GetMinimum(), h2as[itrg]->GetMaximum())->Draw("SAMEBOX");
         l->DrawLine(1.305,-TMath::Pi(),1.305,TMath::Pi());
         l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
         l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
@@ -354,7 +369,7 @@ void mk_Zones(bool quick = true, string overlayName = "") {
         ZeroBinsToVal(h2bs[itrg],-2);
 
         h2bs[itrg]->Draw("COLZ");
-        h2hotNew->DrawClone("SAMEBOX");
+        Span(h2hotNew, "h2bshot", h2bs[itrg]->GetMinimum(), h2bs[itrg]->GetMaximum())->Draw("SAMEBOX");
         l->DrawLine(1.305,-TMath::Pi(),1.305,TMath::Pi());
         l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
         l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
@@ -370,9 +385,8 @@ void mk_Zones(bool quick = true, string overlayName = "") {
       gPad->SetBottomMargin(0.10);
 
       h2cumul->SetTitle("Cumulative sum of fluctuations;#eta_{jet};#phi_{jet}");
-      double minmaxc = min(max(h2cumul->GetMaximum(),fabs(h2cumul->GetMaximum())),5.0);
-      h2cumul->SetMinimum(-minmaxc);
-      h2cumul->SetMaximum(+minmaxc);
+      h2cumul->SetMinimum(-5);
+      h2cumul->SetMaximum(+5);
 
       h2cumul->Draw("COLZ");
 
@@ -380,7 +394,7 @@ void mk_Zones(bool quick = true, string overlayName = "") {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      h2hotNew->DrawClone("SAMEBOX");
+      Span(h2hotNew, "h2cumulhot", h2cumul->GetMinimum(), h2cumul->GetMaximum())->Draw("SAMEBOX");
 
       TCanvas *c0p = new TCanvas(Form("c0p%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -398,7 +412,7 @@ void mk_Zones(bool quick = true, string overlayName = "") {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      h2hotNew->DrawClone("SAMEBOX");
+      Span(h2hotNew, "h2pcumulhot", h2pcumul->GetMinimum(), h2pcumul->GetMaximum())->Draw("SAMEBOX");
 
       TCanvas *c0n = new TCanvas(Form("c0n%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -415,7 +429,7 @@ void mk_Zones(bool quick = true, string overlayName = "") {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      h2hotNew->DrawClone("SAMEBOX");
+      Span(h2hotNew, "h2ncumulhot", h2ncumul->GetMinimum(), h2ncumul->GetMaximum())->Draw("SAMEBOX");
 
       TCanvas *c0hot = new TCanvas(Form("c0hot%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -433,7 +447,7 @@ void mk_Zones(bool quick = true, string overlayName = "") {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      h2hotNew->DrawClone("SAMEBOX");
+      Span(h2hotNew, "h2hot", h2hot->GetMinimum(), h2hot->GetMaximum())->Draw("SAMEBOX");
 
       TCanvas *c0cold = new TCanvas(Form("c0cold%s",type),"",600,600);
       gPad->SetLeftMargin(0.10);
@@ -450,7 +464,7 @@ void mk_Zones(bool quick = true, string overlayName = "") {
       l->DrawLine(2.964,-TMath::Pi(),2.964,TMath::Pi());
       l->DrawLine(-1.305,-TMath::Pi(),-1.305,TMath::Pi());
       l->DrawLine(-2.964,-TMath::Pi(),-2.964,TMath::Pi());
-      h2hotNew->DrawClone("SAMEBOX");
+      Span(h2hotNew, "h2cold", h2cold->GetMinimum(), h2cold->GetMaximum())->Draw("SAMEBOX");
 
       if (!quick) c0    ->SaveAs(Form("pdf/%s%s_cumulation.pdf",nametag.c_str(),type));
       if (!quick) c0p   ->SaveAs(Form("pdf/%s%s_hotcumulation.pdf",nametag.c_str(),type));
@@ -462,12 +476,12 @@ void mk_Zones(bool quick = true, string overlayName = "") {
       const char* dirname = typestring=="" ? "all" : string(type).substr(1).c_str();
       fouthot->mkdir(dirname);
       fouthot->cd(dirname);
-      h2hot->Write("h2hot");
-      h2hot2->Write("h2hotfilter");
+      h2hot->Write(Form("h2hot%s",type));
+      h2hot2->Write(Form("h2hotfilter%s",type));
       foutcold->mkdir(dirname);
       foutcold->cd(dirname);
-      h2cold->Write("h2cold");
-      h2cold2->Write("h2hole");
+      h2cold->Write(Form("h2cold%s",type));
+      h2cold2->Write(Form("h2hole%s",type));
 
       if (typestring=="" or typestring=="_chf" or typestring=="_nhf") {
         h2hotComb ->Add(h2hot);
