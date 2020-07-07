@@ -49,15 +49,15 @@ namespace jp {
   //{ BEGIN fundamental settings: these are the ones that need most often changes
   // Data type "DATA"/"MC"/"HW"/"NU".
   // "MC" stands for Pythia8 for flat ntuples and pthat binned ntuples, and Madgraph+Pythia8 for htbinned ntuples.
-  constexpr const char* type = "MC";
+  constexpr const char* type = "DATA";
   // For DATA, set dataset, for MC, set PU. Also chooses hot zone cuts. See eras_ for further info.
   // 16: B/C/D/E/Fe/Fl/G/H/BCD/EF/GH/BCDEFGH
   // 17: B/C/D/E/F/BCDEF
   // 17 specials: H*Fwd/H,
   // 18: A/B/C/D/ABCD
-  const string run = "AB";
+  const string run = "A";
   // Which run year are we analyzing?
-  const unsigned int yid = 3; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
   //-1; // all
@@ -374,7 +374,7 @@ namespace jp {
 
     //{ BEGIN DT: Files
     constexpr const array<const char*,yrs> dtpath_ =
-      {"Data/2016/","Data/2017/UL/","Data/2017/UL/","Data/2018/UL/"};
+      {"Data/2016/","Data/UL17/","Data/UL17/","Data/UL18/"};
     constexpr const char* dtpath = dtpath_.at(yid);
 
     const array<vector<vector<string>>,yrs> dtfiles_ = {{
@@ -431,11 +431,11 @@ namespace jp {
         {"NU"   ,{"MC/UL17/NuGun.root"}}
       },
       {
-        {"P8CP5"   ,{"MC/UL18/P8CP5/FlatPthat_15to7000.root"}},
-        {"P8CP5HEM",{"MC/UL18/P8CP5/FlatPthat_15to7000_HEM.root"}},
-        {"H7CH3"   ,{"MC/2018/H7CH3/FlatPthat_15to7000.root"}},
-        {"NU"      ,{"MC/UL18/NuGun.root"}},
-        {"NUHEM"   ,{"MC/UL18/NuGun_HEM.root"}}
+        {"P8CP5"   ,{"MC/UL18/P8CP5/FlatPthat_15to7000.root"}}, // Still flat PU, for AB
+        {"P8CP5HEM",{"MC/UL18/P8CP5/FlatPthat_15to7000_HEM.root"}}, // Still flat PU, for CD
+        {"H7CH3"   ,{"MC/UL18/H7CH3/FlatPthat_15to7000.root"}},
+        {"NU"      ,{"MC/UL18/NuGun.root"}}, // Still flat PU, for AB
+        {"NUHEM"   ,{"MC/UL18/NuGun_HEM.root"}} // Still flat PU, for CD
       }
     }};
     const map<string,vector<const char*>> mcfiles = mcfiles_.at(yid);
@@ -491,7 +491,7 @@ namespace jp {
     const array<const char*,yrs> htpath_ = {
       "MC/2016/MGP8M1/",
       "MC/UL17/MGP8CP5/",
-      "MC/2017/MGP8CP5/",
+      "MC/UL17/MGP8CP5/",
       "MC/UL18/MGP8CP5/"
     };
     const char* htpath = htpath_.at(yid);
