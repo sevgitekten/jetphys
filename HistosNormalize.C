@@ -100,7 +100,8 @@ void HistosNormalize(string type = "")
         return;
       }
       cout << "Using weights according to the run era " << jp::run << "!" << endl;
-    }
+    
+
     auto &lumiHandle = (jp::usetriglumiera ? jp::triglumiera[eraIdx] : jp::triglumi);
 
     for (unsigned int i = 0; i < jp::notrigs; ++i) {
@@ -109,7 +110,7 @@ void HistosNormalize(string type = "")
       triglumi[jp::triggers[i]] = lumi;
     }
   
-
+  }
   cout << "Calling HistosNormalize("<<type<<");" << endl;
   cout << "Input file " << fin->GetName() << endl;
   cout << "Output file " << fout->GetName() << endl;
@@ -133,7 +134,7 @@ void HistosNormalize(string type = "")
 
 void recurseNormFile(TDirectory *indir, TDirectory *outdir, bool isdt, double etawid, double etamid, int lvl) {
   TDirectory *curdir = gDirectory;
-
+  
   // Automatically go through the list of keys (directories)
   TList *keys = indir->GetListOfKeys();
   TListIter itkey(keys);
