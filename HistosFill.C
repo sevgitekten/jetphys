@@ -3412,7 +3412,7 @@ bool HistosFill::LoadLumi()
   PrintInfo(string("\nstring: ") + s + " !",true);
 
   // HOX: the lumi file format has been changing. Change the conditions when needed.
-  if (s!="#Data tag : 19v2 , Norm tag: None") return false;
+  if (s!="#Data tag : 19v3 , Norm tag: None") return false;
 
   bool getsuccess2 = static_cast<bool>(getline(f, s, '\n'));
   if (!getsuccess2) return false;
