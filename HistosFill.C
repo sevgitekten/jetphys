@@ -462,15 +462,9 @@ void HistosFill::Loop()
       FillAll("AllTrigs");
     }
 
-    // if (jp::do2Dhistos and _pass){
-    if (_pass) {
+    if (jp::do2dHistos and _pass){
       Fill2D("2Dhistograms");
     }
-    
-    // Add function that eats pt, eta -> save histograms with two JEC binnings and then analysis binning
-
-    // Could chop the HF bin in two, too?
-
     
   } // for jentry
   PrintInfo("",true);
@@ -487,7 +481,7 @@ void HistosFill::Loop()
   // write 2D histos
   Write2D();
   
-  if (jp::doBasicHistos) WriteBasic(); // this needs to be last, output file closed
+  if (jp::doBasicHistos) WriteBasic();
 
   Report();
 
@@ -618,7 +612,9 @@ bool HistosFill::PreRun()
     InitBasic("Standard");
   }
 
-  Init2D("2Dhistograms");
+  if (jp::do2dHistos) {
+    Init2D("2Dhistograms");
+  }
   
   if (jp::doEtaHistos) {
     InitEta("FullEta_Reco");

@@ -41,12 +41,7 @@ Histos2D::Histos2D(TDirectory *dir, string trigname, double pttrg, double ptmin,
   hptsdef = new TH2D("hptsdef","", nx, &x[0], netas,etas);    // ptrange: default 0-0.5, "default" eta range for cross-checking
   hptswid = new TH2D("hptswid","", nx, &x[0], netaswid,etaswid);    // ptrange: default 0-0.5, wider eta bins
   hptsnar = new TH2D("hptsnar","", nx, &x[0], netasnar,etasnar);    // ptrange: default 0-0.5, narrower eta bins
-
-  /* hptsdef = new TH2D("hptsdef","", netas,etas, nx, &x[0]);    // ptrange: default 0-0.5, "default" eta range for cross-checking
-  hptswid = new TH2D("hptswid","", netaswid,etaswid, nx, &x[0]);    // ptrange: default 0-0.5, wider eta bins
-  hptsnar = new TH2D("hptsnar","", netasnar,etasnar, nx, &x[0]);    // ptrange: default 0-0.5, narrower eta bins */
-
-
+  
   curdir->cd();
 }
 

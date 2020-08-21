@@ -62,7 +62,7 @@ namespace jp {
   // 18: A/B/C/D/ABCD
   const string run = "D";
   // Which run year are we analyzing?
-  const unsigned int yid = 3; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
+  const unsigned int yid = 1; // 0:2016, 1:2017, 2:2017 LowPU, 3:2018
   // Number of events to process (-1 for all)
   constexpr Long64_t nentries =
   //-1; // all
@@ -82,7 +82,7 @@ namespace jp {
 
   // The base location of files that are to be used. The user should check that the listings under "*path_" and "*files_" are found
   // under this base location. The complete path is of the form 'filepath+dt/mcpath+filename' (see mk_HistosFill.C).
-  constexpr const char* filepath = "/home/laura/Data/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
+  constexpr const char* filepath = "/home/laura/"; // "root://eoscms.cern.ch//eos/cms/store/group/phys_smp/Multijet/13TeV/";
 
   // Number of events to skip from the beginning (for debugging)
   constexpr Long64_t nskip = 0;
@@ -111,7 +111,9 @@ namespace jp {
   constexpr bool doPhiHistos = false;
   // Toggle development histos
   constexpr bool doMpfHistos = false;
-
+  // Produce 2D histograms containing inclusive jets spectra with different eta binnings (for JEC studies)
+  constexpr bool do2dHistos = false;
+  
   // In the newest ntuples (19 onwards), MET filters may be saved separately, as before these.
   // Hence, it is essential to keep the MET filtering manually on (except if the user knows what (s)he is doing).
   constexpr bool fetchMETFilters = true;
@@ -364,7 +366,7 @@ namespace jp {
 
     //{ BEGIN DT: Files
     constexpr const array<const char*,yrs> dtpath_ =
-      {"Data/2016/","Data/2017/UL/","Data/2017/UL/","Data/2018/UL/"};
+      {"Data/2016/","Data/UL17SMPJ/","Data/2017/UL/","Data/2018/UL/"};
     constexpr const char* dtpath = dtpath_.at(yid);
 
     const array<vector<vector<string>>,yrs> dtfiles_ = {{
@@ -410,7 +412,7 @@ namespace jp {
       },
       {
         {"P8M1" ,{"MC/2017/P8M1/FlatPthat_15to7000.root"}},
-        {"P8CP5",{"MC/UL17/P8CP5/FlatPthat_15to7000.root"}},
+        {"P8CP5",{"Data/UL17SMPJ/FlatPthat_15to7000.root"}},
         {"HS1"  ,{"MC/2017/HS1/FlatPthat_15to7000.root"}},
         {"NuGun",{"MC/UL17/NuGun.root"}}
       },
