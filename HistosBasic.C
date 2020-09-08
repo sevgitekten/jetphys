@@ -175,6 +175,22 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   phhf = new TProfile("phhf","",jp::npts,&jp::ptrange[0]);
   phef = new TProfile("phef","",jp::npts,&jp::ptrange[0]);
   ppuf = new TProfile("ppuf","",jp::npts,&jp::ptrange[0]);
+  pncand80 = new TProfile("pncand80","",jp::npts,&jp::ptrange[0]);
+  pnch80 = new TProfile("pnch80","",jp::npts,&jp::ptrange[0]);
+  pnne80 = new TProfile("pnne80","",jp::npts,&jp::ptrange[0]);
+  pnnh80 = new TProfile("pnnh80","",jp::npts,&jp::ptrange[0]);
+  pnce80 = new TProfile("pnce80","",jp::npts,&jp::ptrange[0]);
+  pnmu80 = new TProfile("pnmu80","",jp::npts,&jp::ptrange[0]);
+  pnhh80 = new TProfile("pnhh80","",jp::npts,&jp::ptrange[0]);
+  pnhe80 = new TProfile("pnhe80","",jp::npts,&jp::ptrange[0]);
+  pchf80 = new TProfile("pchf80","",jp::npts,&jp::ptrange[0]);
+  pnef80 = new TProfile("pnef80","",jp::npts,&jp::ptrange[0]);
+  pnhf80 = new TProfile("pnhf80","",jp::npts,&jp::ptrange[0]);
+  pcef80 = new TProfile("pcef80","",jp::npts,&jp::ptrange[0]);
+  pmuf80 = new TProfile("pmuf80","",jp::npts,&jp::ptrange[0]);
+  phhf80 = new TProfile("phhf80","",jp::npts,&jp::ptrange[0]);
+  phef80 = new TProfile("phef80","",jp::npts,&jp::ptrange[0]);
+  ppuf80 = new TProfile("ppuf80","",jp::npts,&jp::ptrange[0]);
 
   ppttagptprobe = new TProfile("ppttagptprobe","",jp::npts,&jp::ptrange[0]);
   ppttageff = new TProfile("ppttageff","",jp::npts,&jp::ptrange[0]);
@@ -209,7 +225,6 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   pnnhtp = new TProfile("pnnhtp","",jp::npts,&jp::ptrange[0]);
   pncetp = new TProfile("pncetp","",jp::npts,&jp::ptrange[0]);
   pnmutp = new TProfile("pnmutp","",jp::npts,&jp::ptrange[0]);
-
   pchftp = new TProfile("pchftp","",jp::npts,&jp::ptrange[0]);
   pneftp = new TProfile("pneftp","",jp::npts,&jp::ptrange[0]);
   pnhftp = new TProfile("pnhftp","",jp::npts,&jp::ptrange[0]);
@@ -218,6 +233,20 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
   phhftp = new TProfile("phhftp","",jp::npts,&jp::ptrange[0]);
   pheftp = new TProfile("pheftp","",jp::npts,&jp::ptrange[0]);
   ppuftp = new TProfile("ppuftp","",jp::npts,&jp::ptrange[0]);
+  pncandtp80 = new TProfile("pncandtp80","",jp::npts,&jp::ptrange[0]);
+  pnchtp80 = new TProfile("pnchtp80","",jp::npts,&jp::ptrange[0]);
+  pnnetp80 = new TProfile("pnnetp80","",jp::npts,&jp::ptrange[0]);
+  pnnhtp80 = new TProfile("pnnhtp80","",jp::npts,&jp::ptrange[0]);
+  pncetp80 = new TProfile("pncetp80","",jp::npts,&jp::ptrange[0]);
+  pnmutp80 = new TProfile("pnmutp80","",jp::npts,&jp::ptrange[0]);
+  pchftp80 = new TProfile("pchftp80","",jp::npts,&jp::ptrange[0]);
+  pneftp80 = new TProfile("pneftp80","",jp::npts,&jp::ptrange[0]);
+  pnhftp80 = new TProfile("pnhftp80","",jp::npts,&jp::ptrange[0]);
+  pceftp80 = new TProfile("pceftp80","",jp::npts,&jp::ptrange[0]);
+  pmuftp80 = new TProfile("pmuftp80","",jp::npts,&jp::ptrange[0]);
+  phhftp80 = new TProfile("phhftp80","",jp::npts,&jp::ptrange[0]);
+  pheftp80 = new TProfile("pheftp80","",jp::npts,&jp::ptrange[0]);
+  ppuftp80 = new TProfile("ppuftp80","",jp::npts,&jp::ptrange[0]);
   //
   hncandtp = new TH1D("hncandtp","",300,-0.5,299.5);
   hnchtp = new TH1D("hnchtp","",300,-0.5,299.5);
@@ -421,44 +450,54 @@ HistosBasic::HistosBasic(TDirectory *dir, string trigname, double etamin, double
 
     // Response closure
     p2rvsnpv = new TProfile2D("p2rvsnpv","",nx,&x[0],jp::npvs,0,jp::npvs);
-    h2r_r = new TH2D("h2r_r","",nx,&x[0],600,0,3);
-    h2r_g = new TH2D("h2r_g","",nx,&x[0],600,0,3);
-    p2r_r = new TProfile("p2r_r","",nx,&x[0]);
-    p2r_g = new TProfile("p2r_g","",nx,&x[0]);
-    p2r_ruw = new TProfile("p2r_ruw","",nx,&x[0]);
-    p2r_guw = new TProfile("p2r_guw","",nx,&x[0]);
+    h2r_r    = new TH2D("h2r_r","",nx,&x[0],600,0,3);
+    h2r_g    = new TH2D("h2r_g","",nx,&x[0],600,0,3);
+    p2r_r    = new TProfile("p2r_r","",nx,&x[0]);
+    p2r_g    = new TProfile("p2r_g","",nx,&x[0]);
+    p2r_rpuw = new TProfile("p2r_rpuw","",nx,&x[0]);
+    p2r_gpuw = new TProfile("p2r_gpuw","",nx,&x[0]);
+    p2r_ruw  = new TProfile("p2r_ruw","",nx,&x[0]);
+    p2r_guw  = new TProfile("p2r_guw","",nx,&x[0]);
 
-    h2r_g_r = new TH2D("h2r_g_r","",nx,&x[0],600,0,3);
-    h2r_g_g = new TH2D("h2r_g_g","",nx,&x[0],600,0,3);
-    p2r_g_r = new TProfile("p2r_g_r","",nx,&x[0]);
-    p2r_g_g = new TProfile("p2r_g_g","",nx,&x[0]);
-    p2r_g_ruw = new TProfile("p2r_g_ruw","",nx,&x[0]);
-    p2r_g_guw = new TProfile("p2r_g_guw","",nx,&x[0]);
+    h2r_g_r    = new TH2D("h2r_g_r","",nx,&x[0],600,0,3);
+    h2r_g_g    = new TH2D("h2r_g_g","",nx,&x[0],600,0,3);
+    p2r_g_r    = new TProfile("p2r_g_r","",nx,&x[0]);
+    p2r_g_g    = new TProfile("p2r_g_g","",nx,&x[0]);
+    p2r_g_rpuw = new TProfile("p2r_g_rpuw","",nx,&x[0]);
+    p2r_g_gpuw = new TProfile("p2r_g_gpuw","",nx,&x[0]);
+    p2r_g_ruw  = new TProfile("p2r_g_ruw","",nx,&x[0]);
+    p2r_g_guw  = new TProfile("p2r_g_guw","",nx,&x[0]);
 
 
-    h2r_q_r = new TH2D("h2r_q_r","",nx,&x[0],600,0,3);
-    h2r_q_g = new TH2D("h2r_q_g","",nx,&x[0],600,0,3);
-    p2r_q_r = new TProfile("p2r_q_r","",nx,&x[0]);
-    p2r_q_g = new TProfile("p2r_q_g","",nx,&x[0]);
-    p2r_q_ruw = new TProfile("p2r_q_ruw","",nx,&x[0]);
-    p2r_q_guw = new TProfile("p2r_q_guw","",nx,&x[0]);
+    h2r_q_r    = new TH2D("h2r_q_r","",nx,&x[0],600,0,3);
+    h2r_q_g    = new TH2D("h2r_q_g","",nx,&x[0],600,0,3);
+    p2r_q_r    = new TProfile("p2r_q_r","",nx,&x[0]);
+    p2r_q_g    = new TProfile("p2r_q_g","",nx,&x[0]);
+    p2r_q_rpuw = new TProfile("p2r_q_rpuw","",nx,&x[0]);
+    p2r_q_gpuw = new TProfile("p2r_q_gpuw","",nx,&x[0]);
+    p2r_q_ruw  = new TProfile("p2r_q_ruw","",nx,&x[0]);
+    p2r_q_guw  = new TProfile("p2r_q_guw","",nx,&x[0]);
 
-    h2r_u_r = new TH2D("h2r_u_r","",nx,&x[0],600,0,3);
-    h2r_u_g = new TH2D("h2r_u_g","",nx,&x[0],600,0,3);
-    p2r_u_r = new TProfile("p2r_u_r","",nx,&x[0]);
-    p2r_u_g = new TProfile("p2r_u_g","",nx,&x[0]);
-    p2r_u_ruw = new TProfile("p2r_u_ruw","",nx,&x[0]);
-    p2r_u_guw = new TProfile("p2r_u_guw","",nx,&x[0]);
+    h2r_u_r    = new TH2D("h2r_u_r","",nx,&x[0],600,0,3);
+    h2r_u_g    = new TH2D("h2r_u_g","",nx,&x[0],600,0,3);
+    p2r_u_r    = new TProfile("p2r_u_r","",nx,&x[0]);
+    p2r_u_g    = new TProfile("p2r_u_g","",nx,&x[0]);
+    p2r_u_rpuw = new TProfile("p2r_u_rpuw","",nx,&x[0]);
+    p2r_u_gpuw = new TProfile("p2r_u_gpuw","",nx,&x[0]);
+    p2r_u_ruw  = new TProfile("p2r_u_ruw","",nx,&x[0]);
+    p2r_u_guw  = new TProfile("p2r_u_guw","",nx,&x[0]);
 
     // Rapidity closure
-    h2dy_r = new TH2D("h2dy_r","",nx,&x[0],200,-0.5,0.5);
-    h2dy_g = new TH2D("h2dy_g","",nx,&x[0],200,-0.5,0.5);
-    p2dy_r = new TProfile("p2dy_r","",nx,&x[0]);
-    p2dy_g = new TProfile("p2dy_g","",nx,&x[0]);
-    p2dy_ruw = new TProfile("p2dy_ruw","",nx,&x[0]);
-    p2dy_guw = new TProfile("p2dy_guw","",nx,&x[0]);
-    pdy_r = new TProfile2D("pdy_r","",nx,&x[0],jp::nposphis,jp::posphirange);
-    pdy_g = new TProfile2D("pdy_g","",nx,&x[0],jp::nposphis,jp::posphirange);
+    h2dy_r    = new TH2D("h2dy_r","",nx,&x[0],200,-0.5,0.5);
+    h2dy_g    = new TH2D("h2dy_g","",nx,&x[0],200,-0.5,0.5);
+    p2dy_r    = new TProfile("p2dy_r","",nx,&x[0]);
+    p2dy_g    = new TProfile("p2dy_g","",nx,&x[0]);
+    p2dy_rpuw = new TProfile("p2dy_rpuw","",nx,&x[0]);
+    p2dy_gpuw = new TProfile("p2dy_gpuw","",nx,&x[0]);
+    p2dy_ruw  = new TProfile("p2dy_ruw","",nx,&x[0]);
+    p2dy_guw  = new TProfile("p2dy_guw","",nx,&x[0]);
+    pdy_r     = new TProfile2D("pdy_r","",nx,&x[0],jp::nposphis,jp::posphirange);
+    pdy_g     = new TProfile2D("pdy_g","",nx,&x[0],jp::nposphis,jp::posphirange);
   } // ismcdir
 
   curdir->cd();

@@ -59,7 +59,7 @@ void HistosCombine(string type = "") {
 
   // Store pT ranges to a nice map
   if (!isdt) {
-    if (jp::usemctrig) {
+    if (jp::useMCTrig) {
       _ptranges["mc"] = pair<double,double>(0., jp::sqrts/2.);
     } else {
       _ptranges["mc"] = pair<double,double>(0., 0.);
@@ -69,7 +69,7 @@ void HistosCombine(string type = "") {
   for (auto itrg = 0u; itrg != jp::notrigs; ++itrg) {
     _ptranges[jp::triggers[itrg]] = pair<double, double>(jp::trigranges[itrg][0], jp::trigranges[itrg][1]);
 
-    if (!isdt and jp::usemctrig) { // When in mc, we need to know how to use trigger weighting. Either mc or triggers are ignored
+    if (!isdt and jp::useMCTrig) { // When in mc, we need to know how to use trigger weighting. Either mc or triggers are ignored
       _ptranges[jp::triggers[itrg]] = pair<double,double>(0.,0.);
       _ignoretrgs.push_back(jp::triggers[itrg]);
     }

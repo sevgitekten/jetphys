@@ -196,7 +196,7 @@ public :
 
   bool             LoadJSON();
   bool             LoadLumi();
-  bool             LoadPuProfiles();
+  bool             LoadPUProfiles(bool do80 = false);
 
   void             InitBasic(string name);
   void             FillBasic(string name);
@@ -235,6 +235,7 @@ private:
   bool   _pass;
   bool   _pass_qcdmet;
   bool   _initsuccess;
+  bool   _do80mb;
 
   int _eraIdx;
   int _nbadevts_dup;
@@ -255,7 +256,7 @@ private:
   Long64_t _ntot ;
   Long64_t _nskip;;
   double _xsecMinBias;
-  double _w, _w0;
+  double _w, _w0, _w80;
   double _binnedmcweight;
   int    _binnedmcrepeats;
 
@@ -279,13 +280,14 @@ private:
   map<int, map<int, float> > _lums;
   map<int, map<int, float> > _lums2;
   map<string, double> _wt; // Trigger pileup and trigger weights
+  map<string, double> _wt80; // Trigger pileup and trigger weights
   map<string, vector<HistosBasic*> > _histos;
   map<string, vector<HistosEta*> > _etahistos;
   map<string, vector<Histos2D*> > _2Dhistos;
   map<string, vector<HistosMC*> > _mchistos;
   map<string, HistosRun*> _runhistos;
   map<string, HistosAll*> _allhistos;
-  map<string, TH1D*> _pudist;
+  map<string, TH1D*> _pudist, _pudist80;
   map<string, int> _cnt; // efficiency counters
 
   TH1D *_pumc;
