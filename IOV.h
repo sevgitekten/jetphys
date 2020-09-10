@@ -127,8 +127,8 @@ void IOV::addJEC(string id, int runmin, int runmax) {
   addJECLvl(jec,vpar,"L3Absolute");
 
   if (jp::isdt) {
-    if (!jp::skipl2l3res) addJECLvl(jec,vpar,"L2L3Residual");
-    addJECLvl(jec,vpar,"Uncertainty",true);
+    if (!jp::skipl2l3res) addJECLvl(jec,vpar,jp::usel2res ? "L2Residual" : "L2L3Residual");
+    if (!jp::usel2res) addJECLvl(jec,vpar,"Uncertainty",true);
   }
   jec.corr = new FactorizedJetCorrector(vpar);
 
@@ -151,7 +151,7 @@ bool IOV::setJEC(FactorizedJetCorrector** corr,FactorizedJetCorrector** l1rc,Jet
     cout << endl << "Loading a single JEC" << endl;
     *corr = _jecs[0].corr;
     *l1rc = _jecs[0].l1rc;
-    if (jp::isdt) *unc = _jecs[0].unc;
+    if (jp::isdt and !jp::usel2res) *unc = _jecs[0].unc;
     for (auto &name: _jecs[0].names) cout << "Loading ... " << name << endl;
     return true;
   } else {
@@ -163,7 +163,7 @@ bool IOV::setJEC(FactorizedJetCorrector** corr,FactorizedJetCorrector** l1rc,Jet
           _currentJEC = i;
           *corr = it->corr;
           *l1rc = it->l1rc;
-          *unc = it->unc;
+          if (jp::usel2res) *unc = it->unc;
           cout << endl << "IOV handling in use." << endl;
           for (auto &name: it->names)
             cout << "Loading ... " << name << endl;

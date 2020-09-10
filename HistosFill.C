@@ -633,35 +633,11 @@ bool HistosFill::PreRun()
   }
 
   if (jp::doVetoHot) {
-    string HotTag = "";
-    string HotYr = "";
-    if (jp::yid==0) {
-      HotYr = "16";
-      if      (std::regex_search(jp::run,regex("^[BCD]"))) HotTag = "BCD";
-      else if (std::regex_search(jp::run,regex("^E")))     HotTag = "EF";
-      else if (std::regex_search(jp::run,regex("^Fe")))    HotTag = "EF";
-      else if (std::regex_search(jp::run,regex("^Fl")))    HotTag = "GH";
-      else if (std::regex_search(jp::run,regex("^[GH]")))  HotTag = "GH";
-    } else if (jp::yid==1 or jp::yid==2) {
-      HotYr = "17";
-      if      (std::regex_search(jp::run,regex("^B"))) HotTag = "B";
-      else if (std::regex_search(jp::run,regex("^C"))) HotTag = "C";
-      else if (std::regex_search(jp::run,regex("^D"))) HotTag = "D";
-      else if (std::regex_search(jp::run,regex("^E"))) HotTag = "E";
-      else if (std::regex_search(jp::run,regex("^F"))) HotTag = "F";
-    } else if (jp::yid==3) {
-      HotYr = "18";
-      if      (std::regex_search(jp::run,regex("^A"))) HotTag = "A";
-      else if (std::regex_search(jp::run,regex("^B"))) HotTag = "B";
-      else if (std::regex_search(jp::run,regex("^C"))) HotTag = "C";
-      else if (std::regex_search(jp::run,regex("^D"))) HotTag = "D";
-    }
-    assert(HotTag!="");
-    fHotExcl = new TFile(Form("rootfiles/hotjets-%srun%s.root",HotYr.c_str(),HotTag.c_str()),"READ");
-    assert(fHotExcl and !fHotExcl->IsZombie() and Form("file rootfiles/hotjets-run%s.root missing",HotTag.c_str()));
-    h2HotExcl = (TH2D*)fHotExcl->Get(Form("h2hot%s",jp::HotType));
+    fHotExcl = new TFile(jp::hotfile,"READ");
+    assert(fHotExcl and !fHotExcl->IsZombie() and Form("file %s missing",jp::hotfile));
+    h2HotExcl = (TH2D*)fHotExcl->Get(Form("h2hot_%s",jp::hottype));
     assert(h2HotExcl and "erroneous eta-phi exclusion type");
-    PrintInfo(Form("Loading hot zone corrections rootfiles/hotjets-run%s.root with h2hot %s",HotTag.c_str(),jp::HotType));
+    PrintInfo(Form("Loading hot zone corrections %s with h2hot_%s",jp::hotfile,jp::hottype),true);
   }
   // Qgl: load quark/gluon probability histos (Ozlem)
   // 1. open the previous output-MC-1_iteration1.root in the beginning
@@ -845,7 +821,7 @@ bool HistosFill::AcceptEvent()
   // load correct IOV for JEC
   if (jp::redojes and jp::isdt and jp::useIOV) {
     bool setcorrection = _iov.setJEC(&_JEC,&_L1RC,&_jecUnc,run);
-    if (!setcorrection or !_JEC or !_L1RC or !_jecUnc) {
+    if (!setcorrection or !_JEC or !_L1RC or (!jp::usel2res and !_jecUnc)) {
       PrintInfo("Issues while loading JEC; aborting...",true);
       assert(false);
     }
@@ -1837,7 +1813,7 @@ void HistosFill::FillSingleBasic(HistosBasic *h)
           if (jp::debug) PrintInfo("..jec uncertainty",true);
           // Get JEC uncertainty
           double unc = 0.01; // default for MC
-          if (jp::isdt and _jecUnc) {
+          if (jp::isdt and !jp::usel2res and _jecUnc) {
             _jecUnc->setJetEta(eta);
             _jecUnc->setJetPt(pt);
             unc = _jecUnc->getUncertainty(true);
