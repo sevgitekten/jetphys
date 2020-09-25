@@ -163,7 +163,7 @@ bool IOV::setJEC(FactorizedJetCorrector** corr,FactorizedJetCorrector** l1rc,Jet
           _currentJEC = i;
           *corr = it->corr;
           *l1rc = it->l1rc;
-          if (jp::usel2res) *unc = it->unc;
+          if (!jp::usel2res) *unc = it->unc;
           cout << endl << "IOV handling in use." << endl;
           for (auto &name: it->names)
             cout << "Loading ... " << name << endl;
