@@ -3820,7 +3820,8 @@ bool HistosFill::GetTriggers()
         trigger=std::regex_replace(trgName, hiak8fwd, "ak8jt$1fwd", std::regex_constants::format_no_copy);
       } else if (std::regex_match(trgName,hipfjet)) {
         trigger=std::regex_replace(trgName, hipfjet, "jt$1", std::regex_constants::format_no_copy);
-        if (_eraIdx==1 and jp::yid==2) {
+        //if (_eraIdx==1 and jp::yid==2) {
+          if (jp::yid==2){
           double trigthr = std::stod(std::regex_replace(trgName, hipfjet, "$1", std::regex_constants::format_no_copy));
           unsigned thrplace = static_cast<unsigned>(std::find(jp::trigthr.begin()+1,jp::trigthr.end(),trigthr)-jp::trigthr.begin());
           if (thrplace < jp::notrigs) {
