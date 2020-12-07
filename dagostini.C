@@ -57,13 +57,13 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hpt2, TDirectory *outdir,
 
 void dagostiniUnfold(string type) {
 
-  TFile *fin = new TFile(Form("output-%s-2b.root","DATA"),"READ");
+  TFile *fin = new TFile(Form("output-%s-2b.root",type.c_str()),"READ");
   assert(fin && !fin->IsZombie());
 
   TFile *fin2;
   
   if (uf::usecustom) {
-    fin2 = new TFile("~/cernbox/CustomMCs/pThat5_P8_incl_5M_pt.root","READ");
+    fin2 = new TFile("rootfiles/pThat5_P8_dijet_5M_pt.root","READ");
     cout << "Use custom spectra for response matrix generation" << endl;
   }
   else {
@@ -86,6 +86,10 @@ void dagostiniUnfold(string type) {
   }
 
   bool ismc = jp::ismc;
+    cout<<"fin  : "<<fin->GetName()<<endl;
+    cout<<"fin2 : "<<fin2->GetName()<<endl;
+    cout<<"fout : "<<fout->GetName()<<endl;
+    cout<<"ismc : "<<ismc<<endl;
 
   if (uf::usecustom) recurseCustomFile(fin, fin2, fout, ismc);
   else recurseFile(fin, fin2, fout, ismc);
@@ -246,7 +250,7 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
   // Correct hpt (data) for ECAL prefire
   // Similar way as in https://github.com/miquork/jecsys/blob/2018_Moriond19/minitools/drawDeltaJEC.C
 
-  if (y1 >= 2.0 && y2 <= 3.0 && jp::yid < 2 && uf::doECALprefire) {
+  if (y1 >= 2.0 && y2 <= 3.0 && jp::yid <= 2 && uf::doECALprefire) {
     cout << "Correct ECAL prefire" << endl;
     jer_iov runECAL = prefireIOV();
 
@@ -256,7 +260,8 @@ void dagostiniUnfold_histo(TH1D *hpt, TH1D *hnlo, TDirectory *outdir,
       double y = hpt->GetBinContent(i);
       double yerr = hpt->GetBinError(i);
 
-      double ineff = ecalprefire(pt, y1+0.1, runECAL); 
+      //double ineff = ecalprefire(pt, y1+0.1, runECAL);
+      double ineff = ecalprefire(pt, y1+0.1, run2017f); //5Aralikta ekledim
       double eff = 1-ineff;
       double corr = 1./eff;
             

@@ -27,7 +27,7 @@ bool _usejme = false;
 enum jer_iov { none, run1, run2016, run2017, run2018, run2018abc, run2018d,
 	       run2016bcd, run2016ef, run2016gh,
 	       run2017b, run2017c, run2017d, run2017e, run2017f, run2017de,
-	       ul17, ul17b, ul17c, ul17d, ul17e, ul17f};
+	       ul17, ul17b, ul17c, ul17d, ul17e, ul17f, ul17h};
 
 jer_iov jerIOVauto(); // need to add switch for UL
 
@@ -270,7 +270,29 @@ const double vparul17f[_nres][3] =
    {4.76, 1.173, -0.0000},  // y 2.5-3.0, chi2 12.4/26
    {4.90, 0.898, 0.1412},  // y 3.0-3.2, chi2 38.0/20
    {4.57, -0.000, 0.1106}}; // y 3.2-4.7, chi2 112.8/18
+const double vparul17h[_nres][3] =
+// Fit of JER for R=0.4, 13 TeV file MC-UL17V4_H_8reco_5gen
+{{-3.65, 0.983, 0.0352},  // y 0.0-0.5, chi2 73.0/55
+ {-3.39, 0.985, 0.0402},  // y 0.5-1.0, chi2 46.1/54
+ {-3.49, 1.127, 0.0525},  // y 1.0-1.5, chi2 72.3/49
+ {-2.17, 1.054, 0.0345},  // y 1.5-2.0, chi2 21.8/41
+ {-1.94, 0.993, 0.0318},  // y 2.0-2.5, chi2 17.8/33
+ {1.23, 1.134, 0.0207},  // y 2.5-3.0, chi2 18.5/26
+ {3.00, 0.767, 0.1393},  // y 3.0-3.2, chi2 22.1/20
+ {-0.53, 0.699, 0.1005}};  // y 3.2-4.7, chi2 43.2/18
+ //{-3.77, 1.040, 0.0375}}; // y 0.0-1.3, chi2 65.0/54
 
+/*
+// Fit of JER for R=0.4, 13 TeV file MC-UL17V4_F
+  {{-3.64, 0.989, 0.0350},  // y 0.0-0.5, chi2 52.7/55
+   {-3.40, 0.990, 0.0403},  // y 0.5-1.0, chi2 45.4/54
+   {-3.58, 1.142, 0.0524},  // y 1.0-1.5, chi2 73.9/49
+   {-2.18, 1.054, 0.0345},  // y 1.5-2.0, chi2 21.8/41
+   {-1.95, 0.993, 0.0318},  // y 2.0-2.5, chi2 17.8/33
+   {1.21, 1.134, 0.0207},  // y 2.5-3.0, chi2 18.4/26
+   {2.98, 0.768, 0.1393},  // y 3.0-3.2, chi2 22.2/20
+   {-0.55, 0.700, 0.1004}};  // y 3.2-4.7, chi2 43.1/18
+*/
 const double vjesul17[_nres+1][3] =
 // Fit of JES for R=0.4, 13 TeV file MC-UL17V4_BCDEF
   {{0.0417, 2.708, 0.3844},  // y 0.0-0.5, chi2 31.4/6
@@ -343,6 +365,30 @@ const double vjesul17f[_nres+1][3] =
    {0.1965, 2.708, 0.3849}, // y 3.2-4.7, chi2 51.0/6
    {0.0578, 2.708, 0.4131}}; // y 0.0-1.3, chi2 22.8/6 (new)
 
+const double vjesul17h[_nres+1][3] =
+// Fit of JES for R=0.4, 13 TeV file MC-UL17V4_F
+ // Fit of JES for R=0.4, 13 TeV file MC-UL17V4_H_8reco_5gen
+ {{0.0466, 2.708, 0.2577},  // y 0.0-0.5, chi2 5.1/6
+  {0.0428, 2.708, 0.2259},  // y 0.5-1.0, chi2 3.9/6
+  {-0.0191, 2.708, 0.9141},  // y 1.0-1.5, chi2 7.8/6
+  {1.2297, 2.708, 0.3437},  // y 1.5-2.0, chi2 791.0/6
+  {602457424221512156535088415781158912.0000, 2.708, 0.0856},  // y 2.0-2.5, chi2 4.2/6
+  {0.0583, 2.708, 0.1709},  // y 2.5-3.0, chi2 27.0/6
+  {0.0919, 2.708, 0.4483},  // y 3.0-3.2, chi2 6.7/6
+  {0.0258, 2.708, 0.7028},  // y 3.2-4.7, chi2 4.3/6
+  //{0.0000, 0.000, 0.0000},  // y 4.7-0.0, chi2 0.0/39056080
+  {0.0434, 2.708, 0.2142}}; // y 0.0-1.3, chi2 3.9/6
+
+
+/* {{0.0478, 2.708, 0.2474},  // y 0.0-0.5, chi2 2.8/6
+   {0.0443, 2.708, 0.2134},  // y 0.5-1.0, chi2 6.8/6
+   {14529673326148344.0000, 2.708, 0.0112},  // y 1.0-1.5, chi2 423.6/6
+   {1.2243, 2.708, 0.3438},  // y 1.5-2.0, chi2 790.6/6
+   {5859548507734262700050431292798402560.0000, 2.708, 0.0845},  // y 2.0-2.5, chi2 3.9/6
+   {0.0590, 2.708, 0.1755},  // y 2.5-3.0, chi2 26.5/6
+   {0.0911, 2.708, 0.4532},  // y 3.0-3.2, chi2 6.9/6
+   {0.0261, 2.708, 0.7000},  // y 3.2-4.7, chi2 4.5/6
+   {0.0443, 2.708, 0.2052}}; // y 0.0-1.3, chi2 7.2/6 */
 double ptresolution(double pt, double eta) {
 
   //int ieta = min(_nres-1, int(fabs(eta) / 0.5));
@@ -360,12 +406,16 @@ double ptresolution(double pt, double eta) {
 
   // Own parameterized JER
   if (!_usejme) {
+      //cout<<"_jer_iov_____NOT!!!!!!!!!!!:  "<<_jer_iov<<endl;
+      _jer_iov=ul17h;
+      // cout<<"_jer_iov_____NOT!!!!!!!!!!!:  "<<_jer_iov<<endl;
+      
     if (_jer_iov==none) {
       assert(false); // not initialized
     }
     if (_jer_iov==run1) {
       double kn = pow(0.4/0.5,2); //  scale noise term down by jet area
-      res = sqrt(pow(kn*vpar2012[iy][0]/pt,2) + pow(vpar2012[iy][1],2)/pt + 
+      res = sqrt(pow(kn*vpar2012[iy][0]/pt,2) + pow(vpar2012[iy][1],2)/pt +
 		 pow(vpar2012[iy][2],2));
       if (!_ismcjer) res *= kpar2012[iy][0];
     }
@@ -437,6 +487,12 @@ double ptresolution(double pt, double eta) {
 		 pow(vparul17f[iy][2],2));
       if (!_ismcjer) res *= kparul17[iy][0];
     }
+    if (_jer_iov==ul17h) {
+      res = sqrt(vparul17h[iy][0]*fabs(vparul17h[iy][0])/(pt*pt) +
+                 pow(vparul17h[iy][1],2)/pt +
+                 pow(vparul17h[iy][2],2));
+      if (!_ismcjer) res *= kparul17[iy][0];
+    }
     
   }
 
@@ -444,7 +500,7 @@ double ptresolution(double pt, double eta) {
   if (_usejme) {
     // Example code from:
     // https://github.com/cms-sw/cmssw/blob/CMSSW_8_0_25/PhysicsTools/PatUtils/interface/SmearedJetProducerT.h
-
+    cout<<"_jer_iov_____:  "<<_jer_iov<<endl;
     if (_jer_iov==none) {
       assert(false); // not initialized
     }
@@ -502,7 +558,7 @@ double ptresolution(double pt, double eta) {
       _jer_sf = new JME::JetResolutionScaleFactor(scaleFactorFile);
     }
     if ((_jer_iov==ul17 || _jer_iov==ul17b || _jer_iov==ul17c
-	 || _jer_iov==ul17d || _jer_iov==ul17e || _jer_iov==ul17f)
+	 || _jer_iov==ul17d || _jer_iov==ul17e || _jer_iov==ul17f || _jer_iov==ul17h)
 	&& !_jer && !_jer_sf) {
       string resolutionFile = "../JRDatabase/textFiles/Summer19UL17_JRV2_MC/"
 	"Summer19UL17_JRV2_MC_PtResolution_AK4PFchs.txt";
@@ -558,6 +614,7 @@ double ptresponse(double pt, double eta) {
   if (_jer_iov==ul17d) p = &vjesul17d[iy][0];
   if (_jer_iov==ul17e) p = &vjesul17e[iy][0];
   if (_jer_iov==ul17f) p = &vjesul17f[iy][0];
+  if (_jer_iov==ul17h) p = &vjesul17h[iy][0];
 
   double jes = 1+p[0]*exp(-0.5*pow(log(pt)-p[1],2)/(p[2]*p[2]));
 
@@ -638,7 +695,7 @@ double ecalprefire(double pt, double eta, jer_iov run) {
     //{0.850, 164.1, 9.5}, // 2017F, eta 2.5-3.0
     {0.846, 163.4, 9.4}, // 2017F, eta 2.5-3.0
   };
-  
+  cout<<"ecal prefire : " <<run<<endl; //==========2Kasimda burayi ekledik========    
   if (fabs(eta)<2.0 || fabs(eta)>3.0) return 0;
   if (run==run2018) return 0;
   if (run==run2018d) return 0;
@@ -717,7 +774,9 @@ jer_iov jerIOVauto() {
     else if (strncmp(jp::run.c_str(),"E",4)) return ul17e;   
     else if (strncmp(jp::run.c_str(),"F",4)) return ul17f;
   }
-  else if (jp::yid == 2) return run2017;
+  else if (jp::yid == 2) {
+    if (strncmp(jp::run.c_str(),"H",4)) return ul17h;
+  }
   else if (jp::yid == 3) return run2018;
   return none;
 }
